@@ -1,0 +1,34 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "kuwala-books",
+	"compatibility_date": "2025-09-02",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	/**
+	 * Non-secret config. Locally, .dev.vars overrides these (see .dev.vars.example).
+	 * Secrets are set with `wrangler secret put <NAME>`:
+	 *   DATABASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, LENCO_PUBLIC_KEY,
+	 *   LENCO_API_SECRET_KEY, LENCO_WEBHOOK_HASH_KEY, LENCO_PAYOUT_ACCOUNT_ID,
+	 *   GOOGLE_BOOKS_API_KEY, RESEND_API_KEY
+	 */
+	"vars": {
+		"APP_ORIGIN": "https://kuwalabooks.com",
+		"EMAIL_FROM": "Kuwala Books <orders@kuwalabooks.com>",
+		// Flip to "false" only when live Lenco keys are set.
+		"LENCO_SANDBOX": "true"
+	}
+	/**
+	 * Later: put Supabase behind Hyperdrive for pooled, cached connections
+	 * https://developers.cloudflare.com/hyperdrive/
+	 */
+}

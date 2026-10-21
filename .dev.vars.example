@@ -1,0 +1,13 @@
+APP_ORIGIN=http://localhost:3000
+# Supabase > Connect > Transaction pooler (port 6543)
+DATABASE_URL=postgresql://postgres.xxxx:password@aws-0-eu-west-2.pooler.supabase.com:6543/postgres
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
+LENCO_SANDBOX=true
+LENCO_PUBLIC_KEY=pub-xxx
+LENCO_API_SECRET_KEY=xxx
+LENCO_WEBHOOK_HASH_KEY=
+LENCO_PAYOUT_ACCOUNT_ID=
+GOOGLE_BOOKS_API_KEY=
+RESEND_API_KEY=
+EMAIL_FROM=Kuwala Books <orders@kuwalabooks.com>

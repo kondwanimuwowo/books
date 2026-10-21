@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/* Tokens carried over from the prototype's design system. */
+@theme {
+  --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #1d1f20;
+  --color-neutral-50: #fafafb;
+  --color-neutral-100: #f5f5f8;
+  --color-neutral-200: #e7e7ea;
+  --color-neutral-300: #d4d4d7;
+  --color-neutral-400: #b7b7ba;
+  --color-neutral-500: #98989b;
+  --color-neutral-600: #7a7a7d;
+  --color-neutral-700: #5d5d60;
+  --color-neutral-800: #424244;
+  --color-neutral-900: #2b2b2d;
+
+  --color-accent-100: #eef6ff;
+  --color-accent-200: #d6ebff;
+  --color-accent-300: #b5d9fd;
+  --color-accent-500: #749dc4;
+  --color-accent-600: #597ea3;
+  --color-accent-700: #416180;
+  --color-accent-800: #2c455d;
+  --color-accent-900: #1d2d3d;
+
+  /* Zambian-copper, used only for the Zambian author mark. */
+  --color-copper-100: #fbefe6;
+  --color-copper-600: #b4602c;
+  --color-copper-700: #8f4a20;
+
+  --color-success-100: #e8f5ec;
+  --color-success-700: #2f6b45;
+  --color-danger-100: #fdecec;
+  --color-danger-700: #a33a3a;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2b2b2d 22%, transparent);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-[-0.01em];
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent-700);
+    outline-offset: 2px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* stops iOS zooming into inputs */
+  }
+  @media (hover: hover) {
+    a:hover {
+      color: var(--color-accent-800);
+    }
+  }
+}
+
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-neutral-800;
+  }
+  .input {
+    @apply h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-[15px] text-ink transition-colors placeholder:text-neutral-500 focus:border-accent-700 focus:outline-none disabled:bg-neutral-100;
+  }
+  textarea.input {
+    @apply h-auto py-2.5;
+  }
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium whitespace-nowrap transition-[background-color,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-accent-700 text-white hover:bg-accent-800 hover:text-white;
+  }
+  .btn-secondary {
+    @apply bg-neutral-100 text-ink hover:bg-neutral-200 hover:text-ink;
+  }
+  .btn-ghost {
+    @apply text-neutral-800 hover:bg-neutral-100;
+  }
+  .btn-sm {
+    @apply h-9 px-4 text-sm;
+  }
+  .card {
+    @apply rounded-xl border border-neutral-200 bg-white;
+  }
+  .pill {
+    @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.rise {
+  animation: rise 240ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
