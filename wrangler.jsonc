@@ -28,8 +28,8 @@
 	"vars": {
 		"APP_ORIGIN": "https://kuwalabooks.com",
 		"EMAIL_FROM": "Kuwala Books <orders@kuwalabooks.com>",
-		// Flip to "false" only when live Lenco keys are set.
-		"LENCO_SANDBOX": "true"
+		// Live Lenco API. Set "true" only alongside sandbox keys.
+		"LENCO_SANDBOX": "false"
 	}
 	/**
 	 * Hyperdrive keeps warm connections to Supabase. Create it with caching off (order and payment
