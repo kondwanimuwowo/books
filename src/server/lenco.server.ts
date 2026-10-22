@@ -110,6 +110,10 @@ export function initiateMobileMoneyTransfer(params: { recipientId: string; amoun
   })
 }
 
+export function getTransferStatus(reference: string) {
+  return request<LencoTransfer>(`/transfers/status/${encodeURIComponent(reference)}`, { method: 'GET' })
+}
+
 // The webhook signature scheme isn't in the offline docs (same gap titunge hit), so this check is
 // best-effort; callers must re-verify with getCollectionStatus before trusting anything.
 export async function isValidWebhookSignature(signature: string | null) {

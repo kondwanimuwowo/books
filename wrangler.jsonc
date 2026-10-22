@@ -9,11 +9,15 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
-	"main": "@tanstack/react-start/server-entry",
+	"main": "./src/server.ts",
 	"observability": {
 		"enabled": true
 	},
 	"upload_source_maps": true,
+	// Escrow auto-release, stale payment checks and payout reconciliation (src/server/jobs.server.ts).
+	"triggers": {
+		"crons": ["*/15 * * * *"]
+	},
 	/**
 	 * Non-secret config. Locally, .dev.vars overrides these (see .dev.vars.example).
 	 * Secrets are set with `wrangler secret put <NAME>`:
@@ -28,7 +32,9 @@
 		"LENCO_SANDBOX": "true"
 	}
 	/**
-	 * Later: put Supabase behind Hyperdrive for pooled, cached connections
-	 * https://developers.cloudflare.com/hyperdrive/
+	 * Hyperdrive keeps warm connections to Supabase. Create it with caching off (order and payment
+	 * reads must never be stale) against the session pooler on port 5432, then uncomment:
+	 *   npx wrangler hyperdrive create kuwala-db --caching-disabled --connection-string="postgresql://...:5432/postgres"
 	 */
+	// ,"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<id from the command above>" }]
 }
