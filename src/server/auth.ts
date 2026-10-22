@@ -1,4 +1,5 @@
 import { createMiddleware } from '@tanstack/react-start'
+import { getRequest } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { getDb } from '#/db/client.server'
 import { profiles, sellers } from '#/db/schema'
@@ -9,10 +10,21 @@ export interface SessionUser {
   email: string
 }
 
-async function readUser(): Promise<SessionUser | null> {
-  const { data } = await getSupabase().auth.getUser()
-  if (!data.user?.email) return null
-  return { id: data.user.id, email: data.user.email }
+// getClaims verifies the JWT locally against Supabase's cached JWKS instead of an
+// Auth API round trip per call. Memoised per request so loaders running in parallel
+// don't each refresh an expired session.
+const perRequest = new WeakMap<Request, Promise<SessionUser | null>>()
+
+function readUser(): Promise<SessionUser | null> {
+  const request = getRequest()
+  let user = perRequest.get(request)
+  if (!user) {
+    user = getSupabase()
+      .auth.getClaims()
+      .then(({ data }) => (data?.claims.email ? { id: data.claims.sub, email: data.claims.email } : null))
+    perRequest.set(request, user)
+  }
+  return user
 }
 
 export const optionalUserMiddleware = createMiddleware({ type: 'function' }).server(async ({ next }) => {
