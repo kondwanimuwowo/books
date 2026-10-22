@@ -11,8 +11,8 @@ interface HeaderUser {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link to="/" className={cn('text-2xl leading-none font-bold tracking-[-0.02em] text-ink no-underline hover:text-ink', className)}>
-      kuwala<span className="text-accent-700">books</span>
+    <Link to="/" className={cn('text-2xl leading-none font-extrabold tracking-[-0.03em] text-ink no-underline hover:text-ink', className)}>
+      kuwala<span className="font-light text-accent-700">books</span>
     </Link>
   )
 }
@@ -104,7 +104,7 @@ export function SiteFooter() {
           <p className="max-w-xs text-neutral-700">Books from readers, authors and bookshops across Zambia. Paid safely, delivered to every province.</p>
         </div>
         <div className="space-y-2">
-          <p className="font-semibold">Shop</p>
+          <p className="eyebrow">Shop</p>
           <ul className="space-y-1.5 text-neutral-700">
             <li>
               <Link to="/search" search={{ zambian: true }}>
@@ -124,7 +124,7 @@ export function SiteFooter() {
           </ul>
         </div>
         <div className="space-y-2">
-          <p className="font-semibold">Sell</p>
+          <p className="eyebrow">Sell</p>
           <ul className="space-y-1.5 text-neutral-700">
             <li>
               <Link to="/sell">List a book</Link>

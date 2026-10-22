@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 /* Tokens carried over from the prototype's design system. */
 @theme {
-  --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
   --color-ink: #1d1f20;
   /* Page canvas: light enough to read as white, dark enough for card shadows to land on. */
@@ -55,7 +54,7 @@
   h2,
   h3,
   h4 {
-    @apply font-semibold tracking-[-0.01em];
+    @apply font-semibold tracking-[-0.02em];
   }
   :focus-visible {
     outline: 2px solid var(--color-accent-700);
@@ -76,6 +75,10 @@
 @layer components {
   .page {
     @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  /* Small uppercase labels; wide tracking keeps them legible at this size. */
+  .eyebrow {
+    @apply text-[11px] font-semibold tracking-[0.14em] text-neutral-600 uppercase;
   }
   .field-label {
     @apply mb-1.5 block text-sm font-medium text-neutral-800;

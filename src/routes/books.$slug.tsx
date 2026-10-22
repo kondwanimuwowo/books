@@ -91,8 +91,8 @@ function BookPage() {
             <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-neutral-200 pt-6 text-sm sm:grid-cols-3">
               {specs.map(([k, v]) => (
                 <div key={String(k)}>
-                  <dt className="text-neutral-600">{k}</dt>
-                  <dd className="font-medium">{v}</dd>
+                  <dt className="eyebrow">{k}</dt>
+                  <dd className="mt-1 font-medium">{v}</dd>
                 </div>
               ))}
             </dl>

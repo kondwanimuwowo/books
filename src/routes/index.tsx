@@ -81,7 +81,9 @@ function Intro({ wall }: { wall: string[] }) {
         </>
       )}
       <div className="page rise relative py-8 sm:py-10">
-        <h1 className="max-w-2xl text-3xl leading-[1.1] text-white sm:text-4xl">Books from every corner of Zambia</h1>
+        <h1 className="max-w-2xl text-3xl leading-[1.1] font-light text-white sm:text-4xl">
+          Books from every corner of <span className="font-semibold">Zambia</span>
+        </h1>
         <p className="mt-2 max-w-xl text-accent-200">New and used copies from local authors, readers and bookshops. Your money is held until the books reach you.</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {QUICK_SEARCHES.map((s) => (
