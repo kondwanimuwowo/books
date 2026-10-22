@@ -1,6 +1,4 @@
 import { createMiddleware } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { env } from 'cloudflare:workers'
 import { eq } from 'drizzle-orm'
 import { getDb } from '#/db/client.server'
 import { profiles, sellers } from '#/db/schema'
@@ -16,20 +14,6 @@ async function readUser(): Promise<SessionUser | null> {
   if (!data.user?.email) return null
   return { id: data.user.id, email: data.user.email }
 }
-
-// Rejects cross-site mutations; SameSite=Lax alone doesn't cover sibling subdomains.
-// Webhooks are server-to-server (no Origin) and authenticate by re-verifying with the provider.
-export const csrfMiddleware = createMiddleware().server(async ({ next }) => {
-  const request = getRequest()
-  const isWebhook = new URL(request.url).pathname.startsWith('/api/webhooks/')
-  if (request.method !== 'GET' && request.method !== 'HEAD' && !isWebhook) {
-    const origin = request.headers.get('origin')
-    if (!origin || new URL(origin).origin !== new URL(env.APP_ORIGIN).origin) {
-      throw new Error('Origin check failed')
-    }
-  }
-  return next()
-})
 
 export const optionalUserMiddleware = createMiddleware({ type: 'function' }).server(async ({ next }) => {
   return next({ context: { user: await readUser() } })
