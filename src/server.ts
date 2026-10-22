@@ -16,7 +16,14 @@ async function runCron() {
 }
 
 export default {
-  fetch: start.fetch,
+  fetch(request) {
+    const url = new URL(request.url)
+    if (url.hostname.startsWith('www.')) {
+      url.hostname = url.hostname.slice(4)
+      return Response.redirect(url.toString(), 301)
+    }
+    return start.fetch(request)
+  },
   scheduled(_controller, _env, ctx) {
     ctx.waitUntil(runCron())
   },

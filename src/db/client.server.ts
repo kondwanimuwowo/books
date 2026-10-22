@@ -7,8 +7,10 @@ import * as schema from './schema'
 // Workers can't share sockets across requests, so each request gets its own client.
 // In production HYPERDRIVE (bound in wrangler.jsonc) keeps warm connections to Supabase near the database.
 // Without it, DATABASE_URL should be Supabase's transaction pooler (port 6543); prepare must be off for it.
+// Dev skips the local Hyperdrive emulation: it decodes the percent-encoded password into an invalid URL.
 export function createDb() {
-  const client = postgres(env.HYPERDRIVE?.connectionString ?? env.DATABASE_URL, { prepare: false, max: 1 })
+  const url = import.meta.env.DEV ? env.DATABASE_URL : (env.HYPERDRIVE?.connectionString ?? env.DATABASE_URL)
+  const client = postgres(url, { prepare: false, max: 1 })
   return drizzle(client, { schema, casing: 'snake_case' })
 }
 

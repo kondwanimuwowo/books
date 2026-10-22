@@ -5,6 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "kuwala-books",
+	"account_id": "7c64f94b6e4b44f69518798fd6f1ee58",
 	"compatibility_date": "2025-09-02",
 	"compatibility_flags": [
 		"nodejs_compat"
@@ -30,11 +31,13 @@
 		"EMAIL_FROM": "Kuwala Books <orders@kuwalabooks.com>",
 		// Live Lenco API. Set "true" only alongside sandbox keys.
 		"LENCO_SANDBOX": "false"
-	}
-	/**
-	 * Hyperdrive keeps warm connections to Supabase. Create it with caching off (order and payment
-	 * reads must never be stale) against the session pooler on port 5432, then uncomment:
-	 *   npx wrangler hyperdrive create kuwala-db --caching-disabled --connection-string="postgresql://...:5432/postgres"
-	 */
-	// ,"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<id from the command above>" }]
+	},
+	// Warm connections to Supabase (session pooler, caching off: order and payment reads must never be stale).
+	// Local dev connects directly via CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE in .env.
+	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f6e17abe3de147e6914c305c90466564" }],
+	// www redirects to the apex in src/server.ts.
+	"routes": [
+		{ "pattern": "kuwalabooks.com", "custom_domain": true },
+		{ "pattern": "www.kuwalabooks.com", "custom_domain": true }
+	]
 }
