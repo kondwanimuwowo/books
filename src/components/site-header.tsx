@@ -68,7 +68,7 @@ function SearchBox() {
 export function SiteHeader({ user }: { user: HeaderUser | null }) {
   const { count, ready } = useBag()
   return (
-    <header className="sticky top-0 z-30 bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/85">
+    <header className="sticky top-0 z-30 bg-white shadow-sm">
       <div className="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3 md:flex-nowrap md:py-4">
         <Logo />
         <div className="order-last w-full md:order-none md:flex-1">
@@ -97,7 +97,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-neutral-200 bg-neutral-50">
+    <footer className="mt-20 bg-white shadow-[0_-1px_0_var(--color-neutral-200)]">
       <div className="page grid gap-8 py-10 text-sm sm:grid-cols-3">
         <div className="space-y-2">
           <Logo className="text-xl" />

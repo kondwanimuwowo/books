@@ -55,7 +55,7 @@ function BookPage() {
       </nav>
 
       <div className="grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr_360px]">
-        <BookCover src={book.coverUrl} title={book.title} className="mx-auto w-48 md:w-full" />
+        <BookCover src={book.coverUrl} title={book.title} className="mx-auto w-48 shadow-lg md:w-full" />
 
         <div className="min-w-0">
           <h1 className="text-3xl leading-tight">{book.title}</h1>
@@ -99,8 +99,8 @@ function BookPage() {
           )}
         </div>
 
-        <aside className="md:col-span-2 lg:col-span-1">
-          <div className="card p-4 sm:p-5">
+        <aside className="md:col-span-2 lg:sticky lg:top-28 lg:col-span-1 lg:self-start">
+          <div className="card p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg">Choose a copy</h2>
               {hasNew && hasUsed && (

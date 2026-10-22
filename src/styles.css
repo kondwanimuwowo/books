@@ -6,6 +6,8 @@
   --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
 
   --color-ink: #1d1f20;
+  /* Page canvas: light enough to read as white, dark enough for card shadows to land on. */
+  --color-canvas: #f4f4f6;
   --color-neutral-50: #fafafb;
   --color-neutral-100: #f5f5f8;
   --color-neutral-200: #e7e7ea;
@@ -47,7 +49,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-white font-sans text-ink antialiased;
+    @apply bg-canvas font-sans text-ink antialiased;
   }
   h1,
   h2,
@@ -100,7 +102,11 @@
     @apply h-9 px-4 text-sm;
   }
   .card {
-    @apply rounded-xl border border-neutral-200 bg-white;
+    @apply rounded-xl bg-white shadow-md;
+  }
+  /* Clickable cards lift toward the reader, as in the prototype. */
+  .lift {
+    @apply transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-lg;
   }
   .pill {
     @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
@@ -125,5 +131,10 @@
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;
+  }
+  .lift,
+  .lift-cover {
+    transition: none;
+    transform: none !important;
   }
 }

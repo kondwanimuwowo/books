@@ -55,7 +55,9 @@ export const getHomeData = createServerFn({ method: 'GET' }).handler(async () =>
     categoriesWithCounts(db),
   ])
   publicCache(60)
-  return { zambian, recent, bargains, categories }
+  // The intro band's cover background reuses covers already loaded for the shelves.
+  const wall = [...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24)
+  return { zambian, recent, bargains, categories, wall }
 })
 
 export const getCategories = createServerFn({ method: 'GET' }).handler(async () => {
