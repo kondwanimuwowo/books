@@ -137,9 +137,18 @@ export async function getBookBySlug(db: Db, slug: string) {
 
   const [bookAuthorRows, offerRows] = await Promise.all([
     db
-      .select({ id: authors.id, slug: authors.slug, name: authors.name, isZambian: authors.isZambian, verified: sql<boolean>`${authors.verifiedSellerId} is not null` })
+      .select({
+        id: authors.id,
+        slug: authors.slug,
+        name: authors.name,
+        isZambian: authors.isZambian,
+        verified: sql<boolean>`${authors.verifiedSellerId} is not null`,
+        // The author's own shop, so the page can mark their copies and offer them an edit link.
+        shopSlug: sellers.slug,
+      })
       .from(bookAuthors)
       .innerJoin(authors, eq(authors.id, bookAuthors.authorId))
+      .leftJoin(sellers, eq(sellers.id, authors.verifiedSellerId))
       .where(eq(bookAuthors.bookId, book.book.id))
       .orderBy(asc(bookAuthors.position)),
     db
@@ -178,21 +187,64 @@ export async function getBookBySlug(db: Db, slug: string) {
       .limit(6)
   }
 
-  return { ...book.book, category: book.category, authors: bookAuthorRows, offers: offerRows, related }
+  const authorShops = new Set(bookAuthorRows.map((a) => a.shopSlug).filter(Boolean))
+  const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug) }))
+  return { ...book.book, category: book.category, authors: bookAuthorRows, offers, related }
 }
 
 export async function getAuthorBySlug(db: Db, slug: string) {
-  const [author] = await db.select().from(authors).where(eq(authors.slug, slug)).limit(1)
-  if (!author) return null
+  const [row] = await db
+    .select({ author: authors, shop: { id: sellers.id, slug: sellers.slug, storeName: sellers.storeName, town: sellers.town } })
+    .from(authors)
+    .leftJoin(sellers, eq(sellers.id, authors.verifiedSellerId))
+    .where(eq(authors.slug, slug))
+    .limit(1)
+  if (!row) return null
+  const { author, shop } = row
   const offers = offersSubquery(db)
   const authorBooks = await db
-    .select(cardColumns(offers))
+    .select({
+      ...cardColumns(offers),
+      publishedYear: books.publishedYear,
+      // In stock at the author's own shop: these sell direct.
+      direct: shop
+        ? sql<boolean>`exists (select 1 from ${listings} l where l.book_id = ${books.id} and l.seller_id = ${shop.id} and l.status = 'active' and l.quantity > 0)`
+        : sql<boolean>`false`,
+    })
     .from(books)
     .innerJoin(bookAuthors, eq(bookAuthors.bookId, books.id))
     .leftJoin(offers, eq(offers.bookId, books.id))
     .where(eq(bookAuthors.authorId, author.id))
-    .orderBy(desc(books.publishedYear))
-  return { ...author, books: authorBooks }
+    .orderBy(sql`${offers.bookId} is null`, desc(books.publishedYear))
+  const { verifiedSellerId: _seller, ...publicAuthor } = author
+  return {
+    ...publicAuthor,
+    shop: shop ? { slug: shop.slug, storeName: shop.storeName, town: shop.town } : null,
+    books: authorBooks.map(({ direct: _direct, publishedYear: _year, ...card }) => card),
+    direct: authorBooks.filter((b) => b.direct).map(({ direct: _direct, publishedYear: _year, ...card }) => card),
+    years: yearSpan(authorBooks.map((b) => b.publishedYear)),
+  }
+}
+
+function yearSpan(years: (number | null)[]) {
+  const known = years.filter((y): y is number => y !== null)
+  if (!known.length) return null
+  const [first, last] = [Math.min(...known), Math.max(...known)]
+  return first === last ? String(first) : `${first}–${last}`
+}
+
+/** Title, subtitle, author names and ISBNs, which feed the generated search vector. */
+export async function refreshSearchText(db: Db, bookId: string) {
+  await db
+    .update(books)
+    .set({
+      searchText: sql`concat_ws(' ', ${books.title}, ${books.subtitle}, (
+        select string_agg(a.name, ' ' order by ba.position)
+        from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id
+        where ba.book_id = ${books.id}
+      ), ${books.isbn13}, ${books.isbn10})`,
+    })
+    .where(eq(books.id, bookId))
 }
 
 export async function getSellerBySlug(db: Db, slug: string) {
@@ -223,11 +275,7 @@ export async function getSellerBySlug(db: Db, slug: string) {
     .where(and(eq(listings.sellerId, seller.id), eq(listings.status, 'active'), gt(listings.quantity, 0)))
     .groupBy(listings.bookId)
     .as('offers')
-  const sellerBooks = await db
-    .select(cardColumns(offers))
-    .from(books)
-    .innerJoin(offers, eq(offers.bookId, books.id))
-    .orderBy(desc(offers.latestAt))
+  const sellerBooks = await db.select(cardColumns(offers)).from(books).innerJoin(offers, eq(offers.bookId, books.id)).orderBy(desc(offers.latestAt))
   return { ...seller, books: sellerBooks }
 }
 
@@ -296,7 +344,10 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
 
   const authorIds = await upsertAuthors(db, candidate.authors, input.markZambian)
   const zambianAuthors = authorIds.length
-    ? await db.select({ id: authors.id }).from(authors).where(and(inArray(authors.id, authorIds), eq(authors.isZambian, true)))
+    ? await db
+        .select({ id: authors.id })
+        .from(authors)
+        .where(and(inArray(authors.id, authorIds), eq(authors.isZambian, true)))
     : []
 
   const slug = await uniqueSlug(db, books, slugify(`${candidate.title} ${candidate.authors[0] ?? ''}`))
@@ -334,7 +385,15 @@ export async function findCatalogueMatches(db: Db, query: string) {
   const isbn = toIsbn13(query)
   const where = isbn ? eq(books.isbn13, isbn) : or(sql`${books.searchVector} @@ websearch_to_tsquery('simple', ${query})`, ilike(books.title, `%${query}%`))
   return db
-    .select({ id: books.id, slug: books.slug, title: books.title, coverUrl: books.coverUrl, isbn13: books.isbn13, publishedYear: books.publishedYear, authorNames: authorNamesSql })
+    .select({
+      id: books.id,
+      slug: books.slug,
+      title: books.title,
+      coverUrl: books.coverUrl,
+      isbn13: books.isbn13,
+      publishedYear: books.publishedYear,
+      authorNames: authorNamesSql,
+    })
     .from(books)
     .where(where)
     .limit(8)

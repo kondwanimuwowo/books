@@ -16,7 +16,7 @@ export const FOOTER_NAV = [
   },
 ] as const
 
-export function accountNav(isSeller: boolean) {
+export function accountNav(isSeller: boolean, isAuthor: boolean) {
   return [
     { to: '/account', label: 'Orders', exact: true },
     ...(isSeller
@@ -25,6 +25,7 @@ export function accountNav(isSeller: boolean) {
           { to: '/account/listings', label: 'Listings', exact: false },
         ] as const)
       : []),
+    ...(isAuthor ? ([{ to: '/account/author', label: 'Your books', exact: false }] as const) : []),
     { to: '/account/shop', label: isSeller ? 'Shop and payouts' : 'Start selling', exact: false },
     { to: '/account/password', label: 'Password', exact: false },
   ] as const

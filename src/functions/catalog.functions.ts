@@ -2,20 +2,12 @@ import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { getCookie, setResponseHeader } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { profiles, sellers } from '#/db/schema'
+import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
-import {
-  categoriesWithCounts,
-  sellerTowns,
-  getAuthorBySlug,
-  getBookBySlug,
-  getSellerBySlug,
-  searchBooks,
-  shelf,
-} from '#/server/catalog.server'
+import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getSellerBySlug, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
 
 function publicCache(seconds: number) {
@@ -31,7 +23,12 @@ export const getSiteContext = createServerFn({ method: 'GET' })
     const currency: 'ZMW' | 'USD' = getCookie('kb_currency') === 'USD' ? 'USD' : 'ZMW'
     if (!context.user) return { user: null, fx, currency }
     const [row] = await db
-      .select({ displayName: profiles.displayName, isAdmin: profiles.isAdmin, sellerSlug: sellers.slug })
+      .select({
+        displayName: profiles.displayName,
+        isAdmin: profiles.isAdmin,
+        sellerSlug: sellers.slug,
+        isAuthor: sql<boolean>`exists (select 1 from ${authors} where ${authors.verifiedSellerId} = ${sellers.id})`,
+      })
       .from(profiles)
       .leftJoin(sellers, eq(sellers.profileId, profiles.id))
       .where(eq(profiles.id, context.user.id))
@@ -45,6 +42,7 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         // Admin runs on its own host with its own sign-in.
         adminUrl: row?.isAdmin ? (env.ADMIN_ORIGIN ?? '/admin') : null,
         sellerSlug: row?.sellerSlug ?? null,
+        isAuthor: row?.isAuthor ?? false,
       },
       fx,
       currency,

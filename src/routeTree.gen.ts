@@ -30,6 +30,7 @@ import { Route as BooksSlugRouteImport } from './routes/books.$slug'
 import { Route as CoversKeyRouteImport } from './routes/covers.$key'
 import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed/account/index'
+import { Route as AuthedAccountAuthorRouteImport } from './routes/_authed/account/author'
 import { Route as AuthedAccountListingsRouteImport } from './routes/_authed/account/listings'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
 import { Route as AuthedAccountSalesRouteImport } from './routes/_authed/account/sales'
@@ -144,6 +145,11 @@ const AuthedAccountIndexRoute = AuthedAccountIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedAccountRoute,
 } as any)
+const AuthedAccountAuthorRoute = AuthedAccountAuthorRouteImport.update({
+  id: '/author',
+  path: '/author',
+  getParentRoute: () => AuthedAccountRoute,
+} as any)
 const AuthedAccountListingsRoute = AuthedAccountListingsRouteImport.update({
   id: '/listings',
   path: '/listings',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/_authed/account/author': typeof AuthedAccountAuthorRoute
   '/_authed/account/listings': typeof AuthedAccountListingsRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
   '/_authed/account/sales': typeof AuthedAccountSalesRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/covers/$key'
     | '/sellers/$slug'
+    | '/account/author'
     | '/account/listings'
     | '/account/password'
     | '/account/sales'
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/covers/$key'
     | '/sellers/$slug'
+    | '/account/author'
     | '/account/listings'
     | '/account/password'
     | '/account/sales'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/covers/$key'
     | '/sellers/$slug'
+    | '/_authed/account/author'
     | '/_authed/account/listings'
     | '/_authed/account/password'
     | '/_authed/account/sales'
@@ -553,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountIndexRouteImport
       parentRoute: typeof AuthedAccountRoute
     }
+    '/_authed/account/author': {
+      id: '/_authed/account/author'
+      path: '/author'
+      fullPath: '/account/author'
+      preLoaderRoute: typeof AuthedAccountAuthorRouteImport
+      parentRoute: typeof AuthedAccountRoute
+    }
     '/_authed/account/listings': {
       id: '/_authed/account/listings'
       path: '/listings'
@@ -627,6 +646,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedAccountRouteChildren {
+  AuthedAccountAuthorRoute: typeof AuthedAccountAuthorRoute
   AuthedAccountListingsRoute: typeof AuthedAccountListingsRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
   AuthedAccountSalesRoute: typeof AuthedAccountSalesRoute
@@ -635,6 +655,7 @@ interface AuthedAccountRouteChildren {
 }
 
 const AuthedAccountRouteChildren: AuthedAccountRouteChildren = {
+  AuthedAccountAuthorRoute: AuthedAccountAuthorRoute,
   AuthedAccountListingsRoute: AuthedAccountListingsRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
   AuthedAccountSalesRoute: AuthedAccountSalesRoute,

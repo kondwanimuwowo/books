@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { CheckIcon, MapPinIcon } from '@heroicons/react/16/solid'
 import { ShieldCheckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
@@ -31,10 +31,16 @@ type Filter = 'all' | 'new' | 'used'
 
 function BookPage() {
   const book = Route.useLoaderData()
+  const { user } = useLoaderData({ from: '__root__' })
+  // The page is cached publicly, so who may edit is worked out here rather than on the server.
+  const isAuthor = !!user?.sellerSlug && book.authors.some((a) => a.shopSlug === user.sellerSlug)
   const { add, lines } = useBag()
   const [filter, setFilter] = useState<Filter>('all')
   const offers = useMemo(
-    () => book.offers.filter((o) => filter === 'all' || (filter === 'new' ? o.condition === 'new' : o.condition !== 'new')).sort((a, b) => a.priceNgwee - b.priceNgwee),
+    () =>
+      book.offers
+        .filter((o) => filter === 'all' || (filter === 'new' ? o.condition === 'new' : o.condition !== 'new'))
+        .sort((a, b) => a.priceNgwee - b.priceNgwee),
     [book.offers, filter],
   )
   const [pickedId, setPickedId] = useState<string | null>(null)
@@ -44,9 +50,7 @@ function BookPage() {
   const hasNew = book.offers.some((o) => o.condition === 'new')
   const hasUsed = book.offers.some((o) => o.condition !== 'new')
 
-  const action = selected && (
-    <AddButton inBag={inBag} onAdd={() => add(selected.id)} />
-  )
+  const action = selected && <AddButton inBag={inBag} onAdd={() => add(selected.id)} />
 
   return (
     <div className="page py-6 pb-28 sm:py-10 lg:pb-10">
@@ -63,7 +67,12 @@ function BookPage() {
       </nav>
 
       <div className="grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr_360px] lg:gap-10">
-        <BookCover src={book.coverUrl} title={book.title} author={book.authors.map((a) => a.name).join(', ')} className="rise mx-auto w-44 shadow-lg md:w-full" />
+        <BookCover
+          src={book.coverUrl}
+          title={book.title}
+          author={book.authors.map((a) => a.name).join(', ')}
+          className="rise mx-auto w-44 shadow-lg md:w-full"
+        />
 
         <div className="min-w-0">
           <h1 className="text-3xl leading-[1.1] sm:text-4xl">{book.title}</h1>
@@ -84,6 +93,11 @@ function BookPage() {
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {book.isZambian && <ZambianMark />}
               {book.authors.some((a) => a.verified) && <VerifiedMark label="Verified author" />}
+              {isAuthor && (
+                <Link to="/account/author" search={{ book: book.id }} className="text-sm font-medium text-accent-ink">
+                  Edit details
+                </Link>
+              )}
             </div>
           )}
 
@@ -225,7 +239,9 @@ function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean
     <label
       className={cn(
         'block cursor-pointer rounded-lg p-3.5 transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
-        checked ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
+        checked
+          ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]'
+          : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
       )}
     >
       <input type="radio" name="copy" className="sr-only" checked={checked} onChange={onPick} />
@@ -239,7 +255,7 @@ function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean
       {offer.notes && <span className="mt-1 block text-sm text-muted">{offer.notes}</span>}
       <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
         <span className="font-medium text-muted">{offer.seller.storeName}</span>
-        {offer.seller.verified && <VerifiedMark />}
+        {offer.fromAuthor ? <VerifiedMark label="From the author" /> : offer.seller.verified && <VerifiedMark />}
         <span className="inline-flex items-center gap-0.5">
           <MapPinIcon className="size-3.5" aria-hidden />
           {offer.seller.town}

@@ -33,16 +33,22 @@ type State = { kind: 'empty' } | { kind: 'uploading'; preview: string } | { kind
 export function CoverUpload({
   onChange,
   onBusy,
+  current = null,
+  label = 'Add cover photo',
   className,
 }: {
   onChange: (cover: { key: string; preview: string } | null) => void
   onBusy?: (busy: boolean) => void
+  /** The image already in place, shown until a new one is picked. */
+  current?: string | null
+  label?: string
   className?: string
 }) {
   const [state, setState] = useState<State>({ kind: 'empty' })
-  const preview = state.kind === 'uploading' || state.kind === 'done' ? state.preview : null
+  const local = state.kind === 'uploading' || state.kind === 'done' ? state.preview : null
+  const preview = local ?? current
 
-  useEffect(() => () => (preview ? URL.revokeObjectURL(preview) : undefined), [preview])
+  useEffect(() => () => (local ? URL.revokeObjectURL(local) : undefined), [local])
 
   const pick = async (file: File | undefined) => {
     if (!file) return
@@ -73,24 +79,27 @@ export function CoverUpload({
           preview ? 'shadow-md' : 'border-2 border-dashed border-line-strong text-subtle hover:border-accent-ink hover:text-accent-ink',
         )}
       >
-        <input type="file" accept="image/*" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} aria-label="Cover photo" />
+        <input type="file" accept="image/*" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} aria-label={label} />
         {preview ? (
           <>
             <img src={preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
             {state.kind === 'uploading' && (
               <span className="absolute inset-0 flex items-center justify-center bg-deep/50" role="status" aria-label="Uploading">
-                <span aria-hidden className="block size-6 animate-spin rounded-full border-[3px] border-on-accent/30 border-t-on-accent motion-reduce:animate-none" />
+                <span
+                  aria-hidden
+                  className="block size-6 animate-spin rounded-full border-[3px] border-on-accent/30 border-t-on-accent motion-reduce:animate-none"
+                />
               </span>
             )}
           </>
         ) : (
           <>
             <CameraIcon className="size-7" aria-hidden />
-            <span className="px-2 text-xs font-medium">Add cover photo</span>
+            <span className="px-2 text-xs font-medium">{label}</span>
           </>
         )}
       </label>
-      {state.kind === 'done' && <p className="text-xs text-subtle">Tap to change</p>}
+      {(state.kind === 'done' || (state.kind === 'empty' && current)) && <p className="text-xs text-subtle">Tap to change</p>}
       {state.kind === 'failed' && <Alert>{state.reason}</Alert>}
     </div>
   )

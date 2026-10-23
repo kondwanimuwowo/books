@@ -15,7 +15,7 @@ function AccountLayout() {
   const { user } = useLoaderData({ from: '__root__' })
   const router = useRouter()
   const navigate = useNavigate()
-  const nav = accountNav(!!user?.sellerSlug)
+  const nav = accountNav(!!user?.sellerSlug, !!user?.isAuthor)
   const leave = async () => {
     await signOut()
     await router.invalidate()
