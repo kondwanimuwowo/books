@@ -3,6 +3,7 @@ import { CheckBadgeIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 import { cn } from '#/lib/utils'
 import { Price } from './providers'
+import { ScrollRow } from './scroll-row'
 
 // Shadow here is physical, not decoration: it makes a cover read as an object you could pick up.
 export function BookCover({ src, title, author, className }: { src: string | null; title: string; author?: string | null; className?: string }) {
@@ -107,13 +108,13 @@ export function Shelf({ title, books, more }: { title: string; books: BookCardDa
         {more}
       </div>
       {/* Vertical padding keeps the cover shadows and hover lift from being clipped by the scroller. */}
-      <div className="no-scrollbar -mx-4 -my-3 flex snap-x gap-5 overflow-x-auto px-4 py-3 sm:-mx-6 sm:px-6">
+      <ScrollRow className="-mx-4 -my-3 flex snap-x gap-5 px-4 py-3 sm:-mx-6 sm:px-6">
         {books.map((b) => (
           <div key={b.slug} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
             <BookCard book={b} />
           </div>
         ))}
-      </div>
+      </ScrollRow>
     </section>
   )
 }
@@ -139,7 +140,7 @@ const SPINE_TONES = [
 /** Sections as book spines on a shelf. Hovering pulls one out, the way you would choose a book. */
 export function SectionShelf({ sections }: { sections: SectionCardData[] }) {
   return (
-    <div className="no-scrollbar -mx-4 overflow-x-auto px-4 pt-3 sm:-mx-6 sm:px-6 lg:overflow-visible">
+    <ScrollRow className="-mx-4 px-4 pt-3 sm:-mx-6 sm:px-6 lg:overflow-visible">
       <ul className="flex w-max items-end gap-1.5 border-b-[6px] border-line-strong lg:w-full lg:justify-between lg:gap-1">
         {sections.map((section, i) => (
           <li key={section.slug} className="snap-start">
@@ -160,6 +161,6 @@ export function SectionShelf({ sections }: { sections: SectionCardData[] }) {
           </li>
         ))}
       </ul>
-    </div>
+    </ScrollRow>
   )
 }

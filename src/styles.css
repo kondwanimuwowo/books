@@ -205,6 +205,38 @@
   .header-bar :focus-visible {
     outline-color: var(--color-on-accent);
   }
+  /* Horizontal shelves fade at whichever edge has more to see (ScrollRow sets the data attributes). */
+  .scroll-row {
+    --fade-start: 28px;
+    --fade-end: 44px;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+  }
+  .scroll-row[data-at-start='true'] {
+    --fade-start: 0px;
+  }
+  .scroll-row[data-at-end='true'] {
+    --fade-end: 0px;
+  }
+  /* The mobile menu drops from under the header. */
+  .menu-panel {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition:
+      opacity 200ms var(--ease-out),
+      transform 200ms var(--ease-out),
+      visibility 0s linear 200ms;
+  }
+  .menu-panel[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition:
+      opacity 200ms var(--ease-out),
+      transform 200ms var(--ease-out),
+      visibility 0s;
+  }
   .pill {
     @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
   }
@@ -275,6 +307,10 @@
   .lift-cover,
   .header-bar {
     transition: none;
+  }
+  .menu-panel,
+  .menu-panel[data-open='true'] {
+    transform: none;
   }
   .lift,
   .lift-cover {

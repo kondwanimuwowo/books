@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { MagnifyingGlassIcon, ShoppingBagIcon } from '@heroicons/react/20/solid'
-import { useEffect, useState } from 'react'
+import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV } from '#/data/navigation'
 import { useHideOnScroll } from './use-hide-on-scroll'
 import { cn } from '#/lib/utils'
@@ -83,6 +83,8 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
   const items = ready ? count : 0
   // Tucks away while reading down the page, returns the moment you scroll up or tab into it.
   const { ref, hidden, reveal } = useHideOnScroll<HTMLElement>()
+  const menu = useMobileMenu(ref, hidden)
+  const account = { to: user ? '/account' : '/login', label: user ? user.displayName.split(' ')[0] : 'Sign in' } as const
   return (
     <header ref={ref} data-hidden={hidden} onFocus={reveal} className="header-bar sticky top-0 z-30">
       <div className="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3 md:flex-nowrap md:py-4">
@@ -94,7 +96,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           <Link to="/search" className={cn(navLink, 'hidden sm:inline-flex')}>
             Browse
           </Link>
-          <Link to="/sell" className={navLink}>
+          <Link to="/sell" className={cn(navLink, 'hidden sm:inline-flex')}>
             Sell
           </Link>
           {user?.adminUrl && (
@@ -102,10 +104,12 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               Admin
             </a>
           )}
-          <Link to={user ? '/account' : '/login'} className={cn(navLink, 'max-w-[140px]')}>
-            <span className="truncate">{user ? user.displayName.split(' ')[0] : 'Sign in'}</span>
+          <Link to={account.to} className={cn(navLink, 'hidden max-w-[140px] sm:inline-flex')}>
+            <span className="truncate">{account.label}</span>
           </Link>
-          <CurrencySwitch />
+          <div className="hidden sm:block">
+            <CurrencySwitch />
+          </div>
           {/* Outlined, not filled: the bag is always here, so it must never outshout a page's own primary action. */}
           <Link
             to="/bag"
@@ -122,10 +126,93 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               </span>
             )}
           </Link>
+          <button
+            ref={menu.buttonRef}
+            type="button"
+            className={cn(navLink, 'px-2.5 sm:hidden')}
+            aria-label="Menu"
+            aria-expanded={menu.open}
+            aria-controls="mobile-menu"
+            onClick={() => menu.setOpen(!menu.open)}
+          >
+            {menu.open ? <XMarkIcon className="size-5" aria-hidden /> : <Bars3Icon className="size-5" aria-hidden />}
+          </button>
         </nav>
       </div>
+
+      {/* Phones: the header's links, in a panel that drops from under it. */}
+      <nav
+        id="mobile-menu"
+        aria-label="Menu"
+        data-open={menu.open}
+        className="menu-panel band absolute inset-x-0 top-full border-t border-on-deep-muted/15 shadow-lg sm:hidden"
+      >
+        <ul className="page py-2">
+          <MenuLink to="/search" first>
+            Browse
+          </MenuLink>
+          <MenuLink to="/sell">Sell</MenuLink>
+          <MenuLink to={account.to}>{user ? 'Your account' : 'Sign in'}</MenuLink>
+          {user?.adminUrl && (
+            <li>
+              <a href={user.adminUrl} className={menuItem} tabIndex={menu.open ? undefined : -1}>
+                Admin
+              </a>
+            </li>
+          )}
+        </ul>
+        <div className="page flex items-center justify-between border-t border-on-deep-muted/15 py-4">
+          <span className="text-sm text-on-deep-muted">Prices in</span>
+          <CurrencySwitch />
+        </div>
+      </nav>
     </header>
   )
+}
+
+const menuItem = 'block py-3 text-lg font-medium text-on-accent no-underline hover:text-on-deep-muted'
+
+function MenuLink({ to, first = false, children }: { to: '/search' | '/sell' | '/account' | '/login'; first?: boolean; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link to={to} className={menuItem} data-first-menu-item={first || undefined}>
+        {children}
+      </Link>
+    </li>
+  )
+}
+
+/** Open state for the phone menu: closes on navigation, Escape, a tap outside, or when the header tucks away. */
+function useMobileMenu(headerRef: React.RefObject<HTMLElement | null>, headerHidden: boolean) {
+  const [open, setOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const href = useRouterState({ select: (s) => s.location.href })
+
+  useEffect(() => setOpen(false), [href])
+  useEffect(() => {
+    if (headerHidden) setOpen(false)
+  }, [headerHidden])
+
+  useEffect(() => {
+    if (!open) return
+    headerRef.current?.querySelector<HTMLElement>('[data-first-menu-item]')?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setOpen(false)
+      buttonRef.current?.focus()
+    }
+    const onPointer = (e: PointerEvent) => {
+      if (!headerRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [open, headerRef])
+
+  return { open, setOpen, buttonRef }
 }
 
 const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
