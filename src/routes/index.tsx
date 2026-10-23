@@ -87,7 +87,7 @@ function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
       )}
       <div className="page rise relative py-8 sm:py-12">
         <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
-          Books across <span className="font-bold">Zambia &amp; Beyond</span>
+          Books across <span className="block font-bold">Zambia &amp; Beyond</span>
         </h1>
         <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
         {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}
