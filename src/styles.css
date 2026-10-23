@@ -189,6 +189,22 @@
   .band {
     @apply bg-deep text-on-accent;
   }
+  /* The site header: deep burgundy in both themes, frosted so content reads as it slides under. */
+  .header-bar {
+    @apply text-on-accent;
+    background-color: color-mix(in srgb, var(--color-deep) 94%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-accent) 8%, transparent);
+    transition: transform 280ms var(--ease-drawer);
+  }
+  .header-bar[data-hidden='true'] {
+    transform: translateY(-100%);
+  }
+  /* Burgundy focus rings vanish on a burgundy bar. */
+  .header-bar :focus-visible {
+    outline-color: var(--color-on-accent);
+  }
   .pill {
     @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
   }
@@ -256,8 +272,12 @@
     animation: none;
   }
   .lift,
-  .lift-cover {
+  .lift-cover,
+  .header-bar {
     transition: none;
+  }
+  .lift,
+  .lift-cover {
     transform: none !important;
   }
 }
