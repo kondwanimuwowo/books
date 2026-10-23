@@ -37,6 +37,8 @@
 	// Warm connections to Supabase (session pooler, caching off: order and payment reads must never be stale).
 	// Local dev connects directly via CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE in .env.
 	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "f6e17abe3de147e6914c305c90466564" }],
+	// Seller-photographed covers, served through the Worker at /covers/<key> (src/routes/covers.$key.ts).
+	"r2_buckets": [{ "binding": "COVERS", "bucket_name": "kuwala-covers" }],
 	// www redirects to the apex in src/server.ts.
 	"routes": [
 		{ "pattern": "kuwalabooks.com", "custom_domain": true },

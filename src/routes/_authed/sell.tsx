@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
 import { createListing, findBookForSale, getMySeller, getPriceGuide } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
+import { CoverUpload } from '#/components/cover-upload'
 import { Alert, Field, useAction } from '#/components/form'
 import { SellerProfileForm } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
@@ -162,7 +163,7 @@ function ResultRow({ title, meta, coverUrl, onClick }: { title: string; meta: st
   )
 }
 
-const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher: '', year: '', pages: '', language: 'en', description: '', coverUrl: '' }
+const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher: '', year: '', pages: '', language: 'en', description: '' }
 
 function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () => void }) {
   const { categories } = Route.useLoaderData()
@@ -176,6 +177,8 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState('')
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
+  const [cover, setCover] = useState<{ key: string; preview: string } | null>(null)
+  const [coverBusy, setCoverBusy] = useState(false)
 
   useEffect(() => {
     if (selection.kind === 'existing') void getPriceGuide({ data: { bookId: selection.id } }).then(setGuide)
@@ -203,11 +206,21 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
                 pageCount: manual.pages ? Number(manual.pages) : null,
                 language: manual.language,
                 description: manual.description.trim() || null,
-                coverUrl: manual.coverUrl.trim() || null,
+                coverUrl: null,
               },
             }
     const { slug } = await createListing({
-      data: { book, categorySlug: categorySlug || undefined, zambianAuthor, format, condition, priceKwacha: Number(price), quantity: Number(quantity), notes: notes || undefined },
+      data: {
+        book,
+        categorySlug: categorySlug || undefined,
+        zambianAuthor,
+        format,
+        condition,
+        priceKwacha: Number(price),
+        quantity: Number(quantity),
+        notes: notes || undefined,
+        coverKey: cover?.key,
+      },
     })
     await navigate({ to: '/books/$slug', params: { slug } })
   })
@@ -220,15 +233,15 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
       ? selection
       : selection.kind === 'external'
         ? { title: selection.candidate.title, authorNames: selection.candidate.authors.join(', '), coverUrl: selection.candidate.coverUrl }
-        : { title: manual.title || 'Your book', authorNames: manual.authors || null, coverUrl: manual.coverUrl || null }
+        : { title: manual.title || 'Your book', authorNames: manual.authors || null, coverUrl: null }
   const guideHint =
     guide && guide.count > 0
       ? [guide.newMin !== null && `New from ${formatMoney(guide.newMin)}`, guide.usedMin !== null && `used from ${formatMoney(guide.usedMin)}`].filter(Boolean).join(', ')
       : undefined
 
   const publish = (
-    <button type="submit" className="btn btn-primary w-full" disabled={submit.pending}>
-      {submit.pending ? 'Publishing…' : 'Publish'}
+    <button type="submit" className="btn btn-primary w-full" disabled={submit.pending || coverBusy}>
+      {submit.pending ? 'Publishing…' : coverBusy ? 'Uploading photo…' : 'Publish'}
     </button>
   )
 
@@ -280,13 +293,20 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
                   ))}
                 </select>
               </Field>
-              <Field label="Cover image link (optional)">
-                <input className="input" type="url" value={manual.coverUrl} onChange={setM('coverUrl')} />
-              </Field>
               <Field label="Description" className="sm:col-span-2">
                 <textarea className="input" rows={4} value={manual.description} onChange={setM('description')} />
               </Field>
             </div>
+          </section>
+        )}
+
+        {!heading.coverUrl && (
+          <section aria-labelledby="cover-heading">
+            <h2 id="cover-heading" className="text-xl">
+              Cover
+            </h2>
+            <p className="mt-1 mb-4 text-sm text-subtle">No cover online. A clear photo of the front sells faster.</p>
+            <CoverUpload onChange={setCover} onBusy={setCoverBusy} />
           </section>
         )}
 
@@ -360,7 +380,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
       <aside className="hidden lg:block">
         <div className="sticky top-28 space-y-5">
           <div className="mx-auto w-40">
-            <BookCover src={heading.coverUrl} title={heading.title} author={heading.authorNames} className="shadow-lg" />
+            <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} className="shadow-lg" />
           </div>
           <div className="text-center">
             <p className="line-clamp-2 font-medium">{heading.title}</p>

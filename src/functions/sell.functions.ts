@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { books, categories, listings, profiles, sellerOrders, sellers } from '#/db/schema'
@@ -13,6 +13,7 @@ import { findCatalogueMatches, findOrCreateBook } from '#/server/catalog.server'
 import { attemptPayout } from '#/server/orders.server'
 import { createMobileMoneyRecipient, resolveMobileMoney } from '#/server/lenco.server'
 import { toIsbn13 } from '#/lib/isbn'
+import { ownedCoverUrl } from '#/server/covers.server'
 
 const phoneSchema = z.string().transform((value, ctx) => {
   const local = normalizeLocalPhone(value)
@@ -119,12 +120,16 @@ export const createListing = createServerFn({ method: 'POST' })
       priceKwacha: z.number().min(5).max(100000),
       quantity: z.number().int().min(1).max(10000),
       notes: z.string().trim().max(500).optional(),
+      // A photo the seller uploaded through uploadCover.
+      coverKey: z.string().max(64).optional(),
     }),
   )
   .handler(async ({ data, context }) => {
     const db = getDb()
     let bookId: string
     let slug: string
+    const uploadedCover = data.coverKey ? await ownedCoverUrl(data.coverKey, context.user.id) : null
+    if (data.coverKey && !uploadedCover) throw new Error('That photo didn’t upload. Add it again.')
 
     if (data.book.kind === 'existing') {
       const [book] = await db.select({ id: books.id, slug: books.slug }).from(books).where(eq(books.id, data.book.bookId)).limit(1)
@@ -142,6 +147,11 @@ export const createListing = createServerFn({ method: 'POST' })
         createdBy: context.user.id,
       })
       ;({ id: bookId, slug } = book)
+    }
+
+    // Fills a missing cover only; replacing an existing one is for the book's verified author.
+    if (uploadedCover) {
+      await db.update(books).set({ coverUrl: uploadedCover }).where(and(eq(books.id, bookId), isNull(books.coverUrl)))
     }
 
     await db.insert(listings).values({

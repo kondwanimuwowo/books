@@ -5,7 +5,7 @@ import { routeTree } from './routeTree.gen'
 // admin.<domain>/sellers is served by the /admin/sellers routes; links on that host print without the prefix.
 const ADMIN_PREFIX = '/admin'
 // Requests the router never renders as pages: server functions, server routes and auth callbacks.
-const PASSTHROUGH = ['/_serverFn', '/api/', '/auth/']
+const PASSTHROUGH = ['/_serverFn', '/api/', '/auth/', '/covers/']
 
 const isAdminHost = (url: URL) => url.hostname.startsWith('admin.')
 const hasAdminPrefix = (path: string) => path === ADMIN_PREFIX || path.startsWith(`${ADMIN_PREFIX}/`)

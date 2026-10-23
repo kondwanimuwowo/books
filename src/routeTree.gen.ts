@@ -27,6 +27,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as BooksSlugRouteImport } from './routes/books.$slug'
+import { Route as CoversKeyRouteImport } from './routes/covers.$key'
 import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed/account/index'
 import { Route as AuthedAccountListingsRouteImport } from './routes/_authed/account/listings'
@@ -128,6 +129,11 @@ const BooksSlugRoute = BooksSlugRouteImport.update({
   path: '/books/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoversKeyRoute = CoversKeyRouteImport.update({
+  id: '/covers/$key',
+  path: '/covers/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SellersSlugRoute = SellersSlugRouteImport.update({
   id: '/sellers/$slug',
   path: '/sellers/$slug',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/password': typeof AuthedAccountPasswordRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/password': typeof AuthedAccountPasswordRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/covers/$key': typeof CoversKeyRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/_authed/account/listings': typeof AuthedAccountListingsRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/covers/$key'
     | '/sellers/$slug'
     | '/account/listings'
     | '/account/password'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/covers/$key'
     | '/sellers/$slug'
     | '/account/listings'
     | '/account/password'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/covers/$key'
     | '/sellers/$slug'
     | '/_authed/account/listings'
     | '/_authed/account/password'
@@ -387,6 +399,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
+  CoversKeyRoute: typeof CoversKeyRoute
   SellersSlugRoute: typeof SellersSlugRoute
   ApiWebhooksLencoRoute: typeof ApiWebhooksLencoRoute
 }
@@ -517,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/books/$slug'
       fullPath: '/books/$slug'
       preLoaderRoute: typeof BooksSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/covers/$key': {
+      id: '/covers/$key'
+      path: '/covers/$key'
+      fullPath: '/covers/$key'
+      preLoaderRoute: typeof CoversKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sellers/$slug': {
@@ -687,6 +707,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,
+  CoversKeyRoute: CoversKeyRoute,
   SellersSlugRoute: SellersSlugRoute,
   ApiWebhooksLencoRoute: ApiWebhooksLencoRoute,
 }
