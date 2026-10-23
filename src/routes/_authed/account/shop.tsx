@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { getMySeller } from '#/functions/sell.functions'
-import { PayoutForm, SellerProfileForm } from '#/components/seller-forms'
+import { DeliveryForm, PayoutForm, SellerProfileForm } from '#/components/seller-forms'
 import { VerifiedMark } from '#/components/book'
 
 export const Route = createFileRoute('/_authed/account/shop')({
@@ -48,6 +48,14 @@ function ShopSettings() {
     </section>
   )
 
+  const delivery = seller && (
+    <section key="delivery" className="lg:col-span-2">
+      <h2 className="text-2xl">Delivery</h2>
+      <p className="mt-1 mb-5 text-sm text-subtle">Buyers only see the ways you send books.</p>
+      <DeliveryForm current={{ deliveryMethods: seller.deliveryMethods, freeDeliveryOverNgwee: seller.freeDeliveryOverNgwee }} />
+    </section>
+  )
+
   // Whichever still needs doing comes first and carries the primary button.
-  return <div className="grid gap-12 lg:grid-cols-2">{needsPayout ? [payouts, shop] : [shop, payouts]}</div>
+  return <div className="grid gap-12 lg:grid-cols-2">{needsPayout ? [payouts, shop, delivery] : [shop, payouts, delivery]}</div>
 }

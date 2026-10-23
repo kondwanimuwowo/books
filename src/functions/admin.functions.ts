@@ -5,12 +5,12 @@ import { and, asc, desc, eq, ilike, inArray, isNull, lt, ne, or, sql } from 'dri
 import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { authors, bookAuthors, books, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
-import { formatMoney } from '#/lib/money'
+import { authors, bookAuthors, books, deliveryRates, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
+import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
 import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
 import { sendEmail } from '#/server/email.server'
-import { attemptPayout, completeOrderIfSettled, releaseToSeller } from '#/server/orders.server'
+import { attemptPayout, completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 
 const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
@@ -226,6 +226,34 @@ export const setSellerVerified = createServerFn({ method: 'POST' })
       .update(sellers)
       .set({ verifiedAt: data.verified ? new Date() : null })
       .where(eq(sellers.id, data.sellerId))
+    return { ok: true }
+  })
+
+export const listDeliveryRates = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .handler(() => loadDeliveryRates(getDb()))
+
+export const saveDeliveryRate = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(
+    z
+      .object({
+        method: z.enum(['courier', 'bus_parcel', 'zampost', 'collect']),
+        band: z.enum(['same_town', 'same_province', 'other_province']),
+        feeKwacha: z.number().min(0).max(5000),
+        extraItemKwacha: z.number().min(0).max(1000),
+        etaMinDays: z.number().int().min(0).max(60),
+        etaMaxDays: z.number().int().min(0).max(60),
+      })
+      .refine((r) => r.etaMaxDays >= r.etaMinDays, { message: 'The latest day can’t be before the earliest' }),
+  )
+  .handler(async ({ data }) => {
+    const [updated] = await getDb()
+      .update(deliveryRates)
+      .set({ feeNgwee: toNgwee(data.feeKwacha), extraItemNgwee: toNgwee(data.extraItemKwacha), etaMinDays: data.etaMinDays, etaMaxDays: data.etaMaxDays })
+      .where(and(eq(deliveryRates.method, data.method), eq(deliveryRates.band, data.band)))
+      .returning({ method: deliveryRates.method })
+    if (!updated) throw new Error('Rate not found')
     return { ok: true }
   })
 

@@ -76,6 +76,11 @@ export const shippingMethod = pgEnum('shipping_method', [
   'zampost',
   'collect',
 ])
+export const deliveryBand = pgEnum('delivery_band', [
+  'same_town',
+  'same_province',
+  'other_province',
+])
 export const paymentMethod = pgEnum('payment_method', ['mobile_money', 'card'])
 export const paymentStatus = pgEnum('payment_status', [
   'pending',
@@ -132,6 +137,13 @@ export const sellers = pgTable(
     payoutAccountNumber: text('payout_account_number'),
     payoutAccountName: text('payout_account_name'),
     lencoRecipientId: text('lenco_recipient_id'),
+    // Methods this seller uses; fees come from delivery_rates and can't be raised by the seller.
+    deliveryMethods: shippingMethod('delivery_methods')
+      .array()
+      .notNull()
+      .default(sql`'{courier,bus_parcel,zampost,collect}'`),
+    // Orders at or above this subtotal ship free (the seller covers it). Null: never.
+    freeDeliveryOverNgwee: integer('free_delivery_over_ngwee'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -139,6 +151,21 @@ export const sellers = pgTable(
     uniqueIndex('sellers_profile_id_key').on(t.profileId),
     uniqueIndex('sellers_slug_key').on(t.slug),
   ],
+).enableRLS()
+
+// The platform price list, edited in admin. A missing row means the method isn't offered for that band.
+export const deliveryRates = pgTable(
+  'delivery_rates',
+  {
+    method: shippingMethod('method').notNull(),
+    band: deliveryBand('band').notNull(),
+    feeNgwee: integer('fee_ngwee').notNull(),
+    extraItemNgwee: integer('extra_item_ngwee').notNull().default(0),
+    etaMinDays: integer('eta_min_days').notNull(),
+    etaMaxDays: integer('eta_max_days').notNull(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.method, t.band] })],
 ).enableRLS()
 
 export const authors = pgTable(

@@ -11,7 +11,7 @@ import { ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { initiateMobileMoneyCollection } from '#/server/lenco.server'
-import { autoReleaseDate, createOrder, loadCartListings, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
+import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
 import { sendEmail } from '#/server/email.server'
 
 const linesSchema = z
@@ -23,8 +23,9 @@ const placeSchema = z.object({ town: z.string().trim().min(2).max(60), province:
 export const quoteBag = createServerFn({ method: 'POST' })
   .validator(z.object({ lines: linesSchema, to: placeSchema.nullable() }))
   .handler(async ({ data }) => {
-    const rows = await loadCartListings(getDb(), data.lines)
-    const quote = quoteCart(rows, data.lines, data.to)
+    const db = getDb()
+    const [rows, rates] = await Promise.all([loadCartListings(db, data.lines), data.to ? loadDeliveryRates(db) : []])
+    const quote = quoteCart(rows, data.lines, data.to, rates)
     return {
       problems: quote.problems,
       groups: quote.groups.map((g) => ({

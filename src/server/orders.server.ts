@@ -1,8 +1,8 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { listings, orderItems, orders, payments, payouts, profiles, sellerOrders, sellers, books } from '#/db/schema'
-import { AUTO_RELEASE_DAYS, shippingFee, shippingOptions } from '#/data/shipping'
-import type { ShippingMethod } from '#/data/shipping'
+import { deliveryRates, listings, orderItems, orders, payments, payouts, profiles, sellerOrders, sellers, books } from '#/db/schema'
+import { AUTO_RELEASE_DAYS, shippingOptions } from '#/data/shipping'
+import type { DeliveryRate, ShippingMethod } from '#/data/shipping'
 import { COMMISSION_RATE } from '#/data/listing-options'
 import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
@@ -34,7 +34,15 @@ export async function loadCartListings(db: Db, lines: CartLine[]) {
       condition: listings.condition,
       format: listings.format,
       book: { id: books.id, slug: books.slug, title: books.title, coverUrl: books.coverUrl },
-      seller: { id: sellers.id, storeName: sellers.storeName, town: sellers.town, province: sellers.province, profileId: sellers.profileId },
+      seller: {
+        id: sellers.id,
+        storeName: sellers.storeName,
+        town: sellers.town,
+        province: sellers.province,
+        profileId: sellers.profileId,
+        deliveryMethods: sellers.deliveryMethods,
+        freeDeliveryOverNgwee: sellers.freeDeliveryOverNgwee,
+      },
     })
     .from(listings)
     .innerJoin(books, eq(books.id, listings.bookId))
@@ -42,10 +50,23 @@ export async function loadCartListings(db: Db, lines: CartLine[]) {
     .where(inArray(listings.id, ids))
 }
 
+export function loadDeliveryRates(db: Db): Promise<DeliveryRate[]> {
+  return db
+    .select({
+      method: deliveryRates.method,
+      band: deliveryRates.band,
+      feeNgwee: deliveryRates.feeNgwee,
+      extraItemNgwee: deliveryRates.extraItemNgwee,
+      etaMinDays: deliveryRates.etaMinDays,
+      etaMaxDays: deliveryRates.etaMaxDays,
+    })
+    .from(deliveryRates)
+}
+
 type CartListing = Awaited<ReturnType<typeof loadCartListings>>[number]
 
 /** Groups cart lines by seller and prices shipping for the buyer's town. Shared by checkout preview and order creation. */
-export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: string; province: string } | null) {
+export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: string; province: string } | null, rates: DeliveryRate[]) {
   const byId = new Map(rows.map((r) => [r.id, r]))
   const groups = new Map<string, { seller: CartListing['seller']; items: { listing: CartListing; quantity: number }[] }>()
   const problems: string[] = []
@@ -68,15 +89,16 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
     groups: [...groups.values()].map((g) => {
       const itemCount = g.items.reduce((n, i) => n + i.quantity, 0)
       const subtotalNgwee = g.items.reduce((n, i) => n + i.quantity * i.listing.priceNgwee, 0)
-      const options = to ? shippingOptions(g.seller, to).map((o) => ({ ...o, totalNgwee: shippingFee(o, itemCount) })) : []
+      const options = to ? shippingOptions(g.seller, to, rates, g.seller, { itemCount, subtotalNgwee }) : []
+      if (to && !options.length) problems.push(`${g.seller.storeName} doesn’t deliver to ${to.town}`)
       return { seller: { id: g.seller.id, storeName: g.seller.storeName, town: g.seller.town, province: g.seller.province, profileId: g.seller.profileId }, items: g.items, itemCount, subtotalNgwee, options }
     }),
   }
 }
 
 export async function createOrder(db: Db, buyerId: string, lines: CartLine[], shipTo: ShipTo, methods: Record<string, ShippingMethod>) {
-  const rows = await loadCartListings(db, lines)
-  const quote = quoteCart(rows, lines, shipTo)
+  const [rows, rates] = await Promise.all([loadCartListings(db, lines), loadDeliveryRates(db)])
+  const quote = quoteCart(rows, lines, shipTo, rates)
   if (quote.problems.length) throw new Error(quote.problems.join('. '))
   if (!quote.groups.length) throw new Error('Your bag is empty')
   if (quote.groups.some((g) => g.seller.profileId === buyerId)) throw new Error('You can’t buy your own listing')

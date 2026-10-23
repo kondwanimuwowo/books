@@ -3,8 +3,12 @@ import { useState } from 'react'
 import { savePayoutDetails, saveSellerProfile } from '#/functions/sell.functions'
 import { SELLER_KINDS } from '#/data/listing-options'
 import type { SellerKind } from '#/data/listing-options'
-import { MAJOR_TOWNS, PROVINCES } from '#/data/zambia'
+import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
+import { SHIPPING_METHODS, shippingLabel } from '#/data/shipping'
+import type { ShippingMethod } from '#/data/shipping'
+import { saveDeliverySettings } from '#/functions/sell.functions'
+import { TownField } from './town-field'
 import { detectOperator, OPERATOR_LABELS } from '#/lib/phone'
 import type { Operator } from '#/lib/phone'
 import { cn } from '#/lib/utils'
@@ -70,26 +74,11 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = tr
       <Field label="Shop name">
         <input className="input" required minLength={2} maxLength={60} value={form.storeName} onChange={set('storeName')} />
       </Field>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Phone number">
           <input className="input" type="tel" inputMode="tel" required value={form.phone} onChange={set('phone')} placeholder="097 123 4567" />
         </Field>
-        <Field label="Province">
-          <select className="input" required value={form.province} onChange={set('province')}>
-            <option value="">Choose</option>
-            {PROVINCES.map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Town you ship from">
-          <input className="input" list="seller-towns" required value={form.town} onChange={set('town')} />
-          <datalist id="seller-towns">
-            {(form.province ? MAJOR_TOWNS[form.province] : Object.values(MAJOR_TOWNS).flat()).map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-        </Field>
+        <TownField label="Town you ship from" value={form} onChange={(place) => setForm({ ...form, ...place })} />
       </div>
       <Field label="About (optional)">
         <textarea className="input" rows={3} maxLength={600} value={form.bio} onChange={set('bio')} />
@@ -177,6 +166,78 @@ export function PayoutForm({ current, primary = true }: { current: { phone: stri
           </button>
         )}
       </div>
+    </form>
+  )
+}
+
+const METHOD_NOTES: Record<ShippingMethod, string> = {
+  courier: 'Door to door, within your town',
+  collect: 'Buyers in your town meet you',
+  bus_parcel: 'You drop it at the bus station',
+  zampost: 'You post it at the post office',
+}
+
+export function DeliveryForm({ current }: { current: { deliveryMethods: ShippingMethod[]; freeDeliveryOverNgwee: number | null } }) {
+  const router = useRouter()
+  const [methods, setMethods] = useState<ShippingMethod[]>(current.deliveryMethods)
+  const [free, setFree] = useState(current.freeDeliveryOverNgwee !== null)
+  const [over, setOver] = useState(current.freeDeliveryOverNgwee !== null ? String(current.freeDeliveryOverNgwee / 100) : '300')
+  const [saved, setSaved] = useState(false)
+  const action = useAction(async () => {
+    await saveDeliverySettings({ data: { methods, freeOverKwacha: free ? Number(over) : null } })
+    setSaved(true)
+    await router.invalidate()
+  })
+  const toggle = (m: ShippingMethod) => {
+    setSaved(false)
+    setMethods(methods.includes(m) ? methods.filter((x) => x !== m) : [...methods, m])
+  }
+
+  return (
+    <form
+      className="space-y-5"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void action.run()
+      }}
+    >
+      {action.error && <Alert>{action.error}</Alert>}
+      {saved && <Alert tone="success">Saved.</Alert>}
+      <fieldset>
+        <legend className="field-label">How you send books</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {SHIPPING_METHODS.map((m) => (
+            <label
+              key={m}
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-lg p-3 text-sm transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
+                methods.includes(m) ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
+              )}
+            >
+              <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-accent)]" checked={methods.includes(m)} onChange={() => toggle(m)} />
+              <span>
+                <span className="block font-medium">{shippingLabel(m)}</span>
+                <span className="block text-xs text-subtle">{METHOD_NOTES[m]}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-subtle">Delivery prices are set by Kuwala, so buyers see the same fee from every shop.</p>
+      </fieldset>
+      <div className="space-y-3">
+        <label className="flex items-center gap-3 text-sm font-medium">
+          <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={free} onChange={(e) => (setFree(e.target.checked), setSaved(false))} />
+          Free delivery on bigger orders
+        </label>
+        {free && (
+          <Field label="When the books come to (K)" hint="Use 0 to always deliver free. You cover the fee.">
+            <input className="input max-w-40" type="number" inputMode="decimal" min={0} step={10} required value={over} onChange={(e) => (setOver(e.target.value), setSaved(false))} />
+          </Field>
+        )}
+      </div>
+      <button type="submit" className="btn btn-secondary" disabled={action.pending || !methods.length}>
+        {action.pending ? 'Saving…' : 'Save delivery'}
+      </button>
     </form>
   )
 }

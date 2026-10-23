@@ -13,17 +13,28 @@ export const PROVINCES = [
 
 export type Province = (typeof PROVINCES)[number]
 
-export const MAJOR_TOWNS: Record<Province, string[]> = {
-  Central: ['Kabwe', 'Kapiri Mposhi', 'Mkushi', 'Serenje', 'Mumbwa'],
-  Copperbelt: ['Ndola', 'Kitwe', 'Chingola', 'Mufulira', 'Luanshya', 'Chililabombwe'],
-  Eastern: ['Chipata', 'Katete', 'Petauke', 'Lundazi'],
-  Luapula: ['Mansa', 'Samfya', 'Kawambwa', 'Nchelenge'],
-  Lusaka: ['Lusaka', 'Chongwe', 'Kafue', 'Chilanga'],
-  Muchinga: ['Chinsali', 'Mpika', 'Nakonde', 'Isoka'],
-  Northern: ['Kasama', 'Mbala', 'Mpulungu', 'Luwingu'],
-  'North-Western': ['Solwezi', 'Kasempa', 'Mwinilunga', 'Zambezi'],
-  Southern: ['Livingstone', 'Choma', 'Mazabuka', 'Monze', 'Kalomo'],
-  Western: ['Mongu', 'Kaoma', 'Senanga', 'Sesheke'],
+// District towns, largest first. Delivery is priced by distance band, so a town only has to land in the right province.
+export const TOWNS: Record<Province, string[]> = {
+  Central: ['Kabwe', 'Kapiri Mposhi', 'Mkushi', 'Serenje', 'Mumbwa', 'Chibombo', 'Chisamba', 'Itezhi-Tezhi', 'Chitambo'],
+  Copperbelt: ['Ndola', 'Kitwe', 'Chingola', 'Mufulira', 'Luanshya', 'Chililabombwe', 'Kalulushi', 'Masaiti', 'Mpongwe', 'Lufwanyama'],
+  Eastern: ['Chipata', 'Petauke', 'Katete', 'Lundazi', 'Chadiza', 'Nyimba', 'Sinda', 'Mambwe', 'Vubwi'],
+  Luapula: ['Mansa', 'Samfya', 'Kawambwa', 'Nchelenge', 'Mwense', 'Milenge', 'Chiengi'],
+  Lusaka: ['Lusaka', 'Kafue', 'Chongwe', 'Chilanga', 'Chirundu', 'Rufunsa', 'Luangwa'],
+  Muchinga: ['Chinsali', 'Mpika', 'Nakonde', 'Isoka', 'Mafinga', 'Chama', 'Shiwang’andu'],
+  Northern: ['Kasama', 'Mbala', 'Mpulungu', 'Luwingu', 'Mporokoso', 'Mungwi', 'Kaputa', 'Chilubi'],
+  'North-Western': ['Solwezi', 'Kalumbila', 'Mwinilunga', 'Kabompo', 'Kasempa', 'Zambezi', 'Mufumbwe', 'Chavuma', 'Ikelenge'],
+  Southern: ['Livingstone', 'Choma', 'Mazabuka', 'Monze', 'Kalomo', 'Siavonga', 'Kazungula', 'Namwala', 'Sinazongwe', 'Gwembe', 'Pemba', 'Zimba'],
+  Western: ['Mongu', 'Kaoma', 'Senanga', 'Sesheke', 'Kalabo', 'Lukulu', 'Limulunga', 'Shang’ombo', 'Sioma', 'Mulobezi'],
+}
+
+// Where couriers deliver door to door within the town.
+export const COURIER_TOWNS: readonly string[] = ['Lusaka', 'Ndola', 'Kitwe', 'Chingola', 'Livingstone', 'Kabwe']
+
+export const sameTown = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+
+/** The list's spelling of a town, or null when it isn't on the list. */
+export function listedTown(town: string, province: string) {
+  return (TOWNS[province as Province] ?? []).find((t) => sameTown(t, town)) ?? null
 }
 
 // The seven official local languages first, so they lead the language filter.

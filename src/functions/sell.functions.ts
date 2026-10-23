@@ -46,6 +46,8 @@ export const getMySeller = createServerFn({ method: 'GET' })
             payoutPhone: seller.payoutPhone,
             payoutOperator: seller.payoutOperator,
             payoutAccountName: seller.payoutAccountName,
+            deliveryMethods: seller.deliveryMethods,
+            freeDeliveryOverNgwee: seller.freeDeliveryOverNgwee,
           }
         : null,
     }
@@ -75,6 +77,25 @@ export const saveSellerProfile = createServerFn({ method: 'POST' })
       await db.insert(sellers).values({ ...values, profileId: context.user.id, slug: taken ? `${base}-${randomCode(4)}` : base })
     }
     await db.update(profiles).set({ phone: data.phone, town: data.town, province: data.province }).where(eq(profiles.id, context.user.id))
+    return { ok: true }
+  })
+
+export const saveDeliverySettings = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .validator(
+    z.object({
+      methods: z.array(z.enum(['courier', 'bus_parcel', 'zampost', 'collect'])).min(1, 'Choose at least one way to send books'),
+      freeOverKwacha: z.number().min(0).max(100000).nullable(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    await getDb()
+      .update(sellers)
+      .set({
+        deliveryMethods: [...new Set(data.methods)],
+        freeDeliveryOverNgwee: data.freeOverKwacha === null ? null : toNgwee(data.freeOverKwacha),
+      })
+      .where(eq(sellers.id, context.seller.id))
     return { ok: true }
   })
 
