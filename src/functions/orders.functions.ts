@@ -1,7 +1,7 @@
 import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { books, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
@@ -121,7 +121,24 @@ export const getMyOrders = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
   .handler(async ({ context }) => {
     return getDb()
-      .select({ number: orders.number, status: orders.status, totalNgwee: orders.totalNgwee, createdAt: orders.createdAt })
+      .select({
+        number: orders.number,
+        status: orders.status,
+        totalNgwee: orders.totalNgwee,
+        createdAt: orders.createdAt,
+        // Up to three covers so an order is recognisable by its books, not its number.
+        books: sql<{ title: string; coverUrl: string | null }[]>`(
+          select coalesce(json_agg(x), '[]') from (
+            select oi.title, b.cover_url as "coverUrl"
+            from ${orderItems} oi
+            join ${sellerOrders} so on so.id = oi.seller_order_id
+            left join ${books} b on b.id = oi.book_id
+            where so.order_id = ${orders.id}
+            order by oi.id limit 3
+          ) x
+        )`,
+        itemCount: sql<number>`(select coalesce(sum(oi.quantity), 0)::int from ${orderItems} oi join ${sellerOrders} so on so.id = oi.seller_order_id where so.order_id = ${orders.id})`,
+      })
       .from(orders)
       .where(eq(orders.buyerId, context.user.id))
       .orderBy(desc(orders.createdAt))

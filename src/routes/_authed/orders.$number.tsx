@@ -1,8 +1,9 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { CheckCircle2, Phone } from 'lucide-react'
+import { CheckCircleIcon, PhoneIcon } from '@heroicons/react/16/solid'
 import { useCallback, useState } from 'react'
 import { confirmDelivered, getOrder, reportProblem } from '#/functions/orders.functions'
 import { BookCover } from '#/components/book'
+import { CheckoutSteps } from '#/components/checkout-steps'
 import { Alert, useAction } from '#/components/form'
 import { PaymentPanel } from '#/components/payment-panel'
 import { Price } from '#/components/providers'
@@ -16,17 +17,10 @@ export const Route = createFileRoute('/_authed/orders/$number')({
   component: OrderPage,
 })
 
-type Part = Awaited<ReturnType<typeof getOrder>>['parts'][number]
+type Data = Awaited<ReturnType<typeof getOrder>>
+type Part = Data['parts'][number]
 
-const PART_STATUS: Record<Part['status'], { label: string; tone: string }> = {
-  awaiting_payment: { label: 'Awaiting payment', tone: 'bg-neutral-100 text-neutral-800' },
-  to_ship: { label: 'Seller is preparing', tone: 'bg-accent-100 text-accent-800' },
-  shipped: { label: 'On its way', tone: 'bg-accent-100 text-accent-800' },
-  delivered: { label: 'Delivered', tone: 'bg-success-100 text-success-700' },
-  cancelled: { label: 'Cancelled', tone: 'bg-neutral-100 text-neutral-700' },
-  disputed: { label: 'Problem reported', tone: 'bg-danger-100 text-danger-700' },
-  refunded: { label: 'Refunded', tone: 'bg-neutral-100 text-neutral-700' },
-}
+const CONFIRMABLE: Part['status'][] = ['to_ship', 'shipped']
 
 function OrderPage() {
   const { order, parts, lastPayment } = Route.useLoaderData()
@@ -38,57 +32,112 @@ function OrderPage() {
   }, [router])
 
   const pending = order.status === 'pending_payment'
+  // One loud button per screen: only the first parcel awaiting confirmation gets it.
+  const firstConfirmable = parts.find((p) => CONFIRMABLE.includes(p.status))?.id
+
+  const payment = pending && (
+    <div className="space-y-3">
+      {lastPayment?.status === 'failed' && lastPayment.failureReason && <Alert>Last try failed: {lastPayment.failureReason}</Alert>}
+      <PaymentPanel orderNumber={order.number} totalNgwee={order.totalNgwee} defaultPhone={order.shipPhone} onPaid={onPaid} />
+    </div>
+  )
 
   return (
-    <div className="page grid gap-8 py-8 lg:grid-cols-[1fr_380px]">
-      <div className="min-w-0">
-        <p className="text-sm text-neutral-600">
-          <Link to="/account">Your orders</Link> / {order.number}
-        </p>
-        <h1 className="mt-1 text-3xl">{pending ? 'Complete your payment' : `Order ${order.number}`}</h1>
-        <p className="mt-1 text-sm text-neutral-700">
-          Placed {formatDate(order.createdAt)} · Delivering to {order.shipTown}, {order.shipProvince}
-        </p>
+    <div className="page py-8">
+      {pending && <CheckoutSteps current={2} />}
 
-        {justPaid && (
-          <div className="mt-5">
-            <Alert tone="success">Payment received. Your sellers have been told to ship, and we&rsquo;ve emailed you a receipt.</Alert>
+      <div className={cn('grid gap-8 lg:grid-cols-[1fr_360px] lg:gap-10', pending && 'mt-8')}>
+        <div className="min-w-0">
+          <p className="text-sm text-subtle">
+            <Link to="/account">Orders</Link> / <span className="tabular-nums">{order.number}</span>
+          </p>
+          <h1 className="mt-1 text-3xl sm:text-4xl">{pending ? 'Pay for your order' : `Order ${order.number}`}</h1>
+          <p className="mt-1 text-sm text-subtle">
+            {formatDate(order.createdAt)} · to {order.shipTown}
+          </p>
+
+          {justPaid && (
+            <div className="rise mt-5">
+              <Alert tone="success">Paid. Your sellers are packing.</Alert>
+            </div>
+          )}
+
+          {/* Phones pay first; the parcels can wait below. */}
+          {payment && <div className="mt-6 lg:hidden">{payment}</div>}
+
+          <div className="mt-6 space-y-5">
+            {parts.map((part, i) => (
+              <ParcelCard key={part.id} part={part} index={i} total={parts.length} pending={pending} destination={order.shipTown} primary={part.id === firstConfirmable} />
+            ))}
           </div>
-        )}
-
-        <div className="mt-6 space-y-5">
-          {parts.map((part) => (
-            <PartCard key={part.id} part={part} pending={pending} />
-          ))}
         </div>
+
+        <aside className="space-y-4 lg:pt-16">
+          {payment && <div className="hidden lg:block">{payment}</div>}
+          <div className="card space-y-2 p-5 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted">Books</span>
+              <Price ngwee={order.subtotalNgwee} className="tabular-nums" />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Delivery</span>
+              <Price ngwee={order.shippingNgwee} className="tabular-nums" />
+            </div>
+            <div className="flex items-baseline justify-between border-t border-line pt-2">
+              <span className="font-medium">Total</span>
+              <Price ngwee={order.totalNgwee} className="text-lg font-extrabold tracking-[-0.02em] tabular-nums" />
+            </div>
+            {!pending && <p className="pt-1 text-xs text-subtle">Held until you confirm delivery.</p>}
+          </div>
+        </aside>
       </div>
-
-      <aside className="space-y-4 lg:pt-14">
-        {pending && (
-          <PaymentPanel orderNumber={order.number} totalNgwee={order.totalNgwee} defaultPhone={order.shipPhone} onPaid={onPaid} />
-        )}
-        {pending && lastPayment?.status === 'failed' && lastPayment.failureReason && <Alert>Last attempt failed: {lastPayment.failureReason}</Alert>}
-        <div className="card space-y-2 p-5 text-sm">
-          <div className="flex justify-between">
-            <span>Items</span>
-            <Price ngwee={order.subtotalNgwee} />
-          </div>
-          <div className="flex justify-between">
-            <span>Delivery</span>
-            <Price ngwee={order.shippingNgwee} />
-          </div>
-          <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold">
-            <span>Total</span>
-            <Price ngwee={order.totalNgwee} />
-          </div>
-          {!pending && <p className="pt-1 text-xs text-neutral-600">Paid {order.paidAt ? formatDate(order.paidAt) : ''}. Held safely until you confirm delivery.</p>}
-        </div>
-      </aside>
     </div>
   )
 }
 
-function PartCard({ part, pending }: { part: Part; pending: boolean }) {
+const ROUTE_STOPS = ['Paid', 'Shipped', 'Delivered'] as const
+
+function stopIndex(status: Part['status']) {
+  if (status === 'delivered') return 2
+  if (status === 'shipped' || status === 'disputed') return 1
+  return 0
+}
+
+/** The parcel's journey from the seller's town to the buyer's, the way books actually travel here. */
+function ParcelRoute({ from, to, status }: { from: string; to: string; status: Part['status'] }) {
+  const reached = stopIndex(status)
+  const halted = status === 'disputed' || status === 'refunded' || status === 'cancelled'
+  return (
+    <div className="px-4 pt-4">
+      <div className="flex justify-between text-xs font-medium">
+        <span>{from}</span>
+        <span>{to}</span>
+      </div>
+      <ol className="relative mt-2 flex justify-between" aria-label={`Parcel status: ${ROUTE_STOPS[reached]}`}>
+        <span aria-hidden className="absolute inset-x-1 top-[5px] h-0.5 bg-line" />
+        <span
+          aria-hidden
+          className={cn('absolute top-[5px] left-1 h-0.5 transition-[width] duration-700 ease-out', halted ? 'bg-danger' : 'bg-accent')}
+          style={{ width: `calc(${(reached / 2) * 100}% - 0.5rem)` }}
+        />
+        {ROUTE_STOPS.map((stop, i) => (
+          <li key={stop} className="relative flex flex-col items-center first:items-start last:items-end">
+            <span className={cn('size-3 rounded-full ring-4 ring-surface', i <= reached ? (halted && i === reached ? 'bg-danger' : 'bg-accent') : 'bg-line-strong')} />
+            <span className={cn('mt-1.5 text-[11px]', i <= reached ? 'text-ink' : 'text-subtle')}>{stop}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
+const HALTED_LABEL: Partial<Record<Part['status'], { text: string; tone: string }>> = {
+  disputed: { text: 'Problem reported. Payment on hold.', tone: 'text-danger' },
+  refunded: { text: 'Refunded.', tone: 'text-subtle' },
+  cancelled: { text: 'Cancelled.', tone: 'text-subtle' },
+}
+
+function ParcelCard({ part, index, total, pending, destination, primary }: { part: Part; index: number; total: number; pending: boolean; destination: string; primary: boolean }) {
   const router = useRouter()
   const [reporting, setReporting] = useState(false)
   const [note, setNote] = useState('')
@@ -101,18 +150,22 @@ function PartCard({ part, pending }: { part: Part; pending: boolean }) {
     setReporting(false)
     await router.invalidate()
   })
-  const status = PART_STATUS[part.status]
-  const canConfirm = part.status === 'shipped' || part.status === 'to_ship'
+  const canConfirm = CONFIRMABLE.includes(part.status)
+  const halted = HALTED_LABEL[part.status]
 
   return (
-    <section className="card overflow-hidden">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
-        <span>
-          From <span className="font-semibold">{part.seller.storeName}</span> · {shippingLabel(part.shippingMethod)}
-        </span>
-        {!pending && <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', status.tone)}>{status.label}</span>}
+    <section className="card overflow-hidden" aria-label={`Parcel from ${part.seller.storeName}`}>
+      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3 text-sm">
+        <p>
+          {total > 1 && <span className="eyebrow mr-2">{`Parcel ${index + 1} of ${total}`}</span>}
+          <span className="font-medium">{part.seller.storeName}</span>
+        </p>
+        <span className="text-xs text-subtle">{shippingLabel(part.shippingMethod)}</span>
       </header>
-      <ul className="divide-y divide-neutral-200">
+
+      {!pending && <ParcelRoute from={part.seller.town} to={destination} status={part.status} />}
+
+      <ul className="divide-y divide-line">
         {part.items.map((item) => (
           <li key={item.id} className="flex gap-4 p-4">
             <div className="w-12 shrink-0">
@@ -126,42 +179,38 @@ function PartCard({ part, pending }: { part: Part; pending: boolean }) {
               ) : (
                 <p className="font-medium">{item.title}</p>
               )}
-              <p className="text-sm text-neutral-700">
-                {conditionLabel(item.condition)} · Qty {item.quantity}
+              <p className="text-sm text-subtle">
+                {conditionLabel(item.condition)}
+                {item.quantity > 1 && ` · ${item.quantity}`}
               </p>
             </div>
-            <Price ngwee={item.unitPriceNgwee * item.quantity} className="text-sm font-semibold" />
+            <Price ngwee={item.unitPriceNgwee * item.quantity} className="text-sm font-medium tabular-nums" />
           </li>
         ))}
       </ul>
 
       {!pending && (
-        <div className="space-y-3 border-t border-neutral-200 p-4 text-sm">
-          {part.trackingNote && (
-            <p>
-              <span className="font-medium">Delivery details: </span>
-              {part.trackingNote}
-            </p>
-          )}
+        <div className="space-y-3 border-t border-line p-4 text-sm">
+          {part.trackingNote && <p className="text-muted">{part.trackingNote}</p>}
           {part.seller.phone && (
-            <p className="flex items-center gap-2 text-neutral-700">
-              <Phone size={14} aria-hidden />
-              Seller: <a href={`tel:${part.seller.phone}`}>{part.seller.phone}</a>
-            </p>
+            <a href={`tel:${part.seller.phone}`} className="inline-flex items-center gap-1.5 text-muted">
+              <PhoneIcon className="size-3.5" aria-hidden />
+              {part.seller.phone}
+            </a>
           )}
           {part.status === 'delivered' && (
-            <p className="flex items-center gap-2 text-success-700">
-              <CheckCircle2 size={16} aria-hidden /> You confirmed delivery{part.deliveredAt ? ` on ${formatDate(part.deliveredAt)}` : ''}.
+            <p className="flex items-center gap-1.5 text-success">
+              <CheckCircleIcon className="size-4" aria-hidden /> Received{part.deliveredAt ? ` ${formatDate(part.deliveredAt)}` : ''}
             </p>
           )}
-          {part.status === 'shipped' && part.autoReleaseAt && (
-            <p className="text-xs text-neutral-600">If you don&rsquo;t confirm or report a problem, payment is released to the seller on {formatDate(part.autoReleaseAt)}.</p>
-          )}
+          {halted && <p className={halted.tone}>{halted.text}</p>}
+          {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-subtle">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}
           {(confirm.error || report.error) && <Alert>{confirm.error ?? report.error}</Alert>}
+
           {canConfirm && !reporting && (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-primary btn-sm" disabled={confirm.pending} onClick={() => void confirm.run()}>
-                I&rsquo;ve received these books
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button type="button" className={cn('btn btn-sm', primary ? 'btn-primary' : 'btn-secondary')} disabled={confirm.pending} onClick={() => void confirm.run()}>
+                {confirm.pending ? 'Confirming…' : 'I have these books'}
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setReporting(true)}>
                 Report a problem
@@ -169,11 +218,14 @@ function PartCard({ part, pending }: { part: Part; pending: boolean }) {
             </div>
           )}
           {reporting && (
-            <div className="space-y-2">
-              <textarea className="input" rows={3} placeholder="What went wrong? We hold the payment while we sort it out." value={note} onChange={(e) => setNote(e.target.value)} />
+            <div className="rise space-y-2">
+              <label className="sr-only" htmlFor={`report-${part.id}`}>
+                What went wrong?
+              </label>
+              <textarea id={`report-${part.id}`} className="input" rows={3} placeholder="What went wrong?" value={note} onChange={(e) => setNote(e.target.value)} />
               <div className="flex gap-2">
                 <button type="button" className="btn btn-primary btn-sm" disabled={report.pending || note.trim().length < 10} onClick={() => void report.run()}>
-                  Send report
+                  Send
                 </button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setReporting(false)}>
                   Cancel

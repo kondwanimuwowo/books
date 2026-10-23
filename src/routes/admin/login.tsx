@@ -35,8 +35,8 @@ function AdminLogin() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="rise w-full max-w-sm">
-        <p className="text-center text-2xl leading-none font-extrabold tracking-[-0.03em]">
-          kuwala<span className="font-light text-accent-700">books</span>
+        <p className="text-center text-3xl leading-none font-extrabold tracking-[-0.04em]">
+          kuwala<span className="font-normal text-accent-ink">books</span>
         </p>
         <p className="eyebrow mt-2 text-center">Admin</p>
 

@@ -19,7 +19,7 @@ interface SellerDefaults {
   province: string | null
 }
 
-export function SellerProfileForm({ defaults, submitLabel, onSaved }: { defaults: SellerDefaults; submitLabel: string; onSaved?: () => void }) {
+export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = true }: { defaults: SellerDefaults; submitLabel: string; onSaved?: () => void; primary?: boolean }) {
   const router = useRouter()
   const [form, setForm] = useState({
     storeName: defaults.storeName,
@@ -48,20 +48,26 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved }: { defaults
       }}
     >
       {action.error && <Alert>{action.error}</Alert>}
-      {saved && !onSaved && <Alert tone="success">Shop details saved.</Alert>}
+      {saved && !onSaved && <Alert tone="success">Saved.</Alert>}
       <fieldset>
         <legend className="field-label">I am a</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {SELLER_KINDS.map((k) => (
-            <label key={k.value} className={cn('cursor-pointer rounded-lg border p-3 text-sm transition-colors', form.kind === k.value ? 'border-accent-700 bg-accent-100' : 'border-neutral-300 hover:border-neutral-400')}>
+            <label
+              key={k.value}
+              className={cn(
+                'cursor-pointer rounded-lg p-3 text-sm transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
+                form.kind === k.value ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
+              )}
+            >
               <input type="radio" className="sr-only" name="kind" checked={form.kind === k.value} onChange={() => setForm({ ...form, kind: k.value })} />
               <span className="block font-medium">{k.label}</span>
-              <span className="block text-xs text-neutral-600">{k.note}</span>
+              <span className="block text-xs text-subtle">{k.note}</span>
             </label>
           ))}
         </div>
       </fieldset>
-      <Field label="Shop name" hint="Shown to buyers next to every book you sell">
+      <Field label="Shop name">
         <input className="input" required minLength={2} maxLength={60} value={form.storeName} onChange={set('storeName')} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -70,7 +76,7 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved }: { defaults
         </Field>
         <Field label="Province">
           <select className="input" required value={form.province} onChange={set('province')}>
-            <option value="">Choose&hellip;</option>
+            <option value="">Choose</option>
             {PROVINCES.map((p) => (
               <option key={p}>{p}</option>
             ))}
@@ -85,27 +91,45 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved }: { defaults
           </datalist>
         </Field>
       </div>
-      <Field label="About your shop (optional)">
+      <Field label="About (optional)">
         <textarea className="input" rows={3} maxLength={600} value={form.bio} onChange={set('bio')} />
       </Field>
-      <button type="submit" className="btn btn-primary" disabled={action.pending}>
+      <button type="submit" className={cn('btn', primary ? 'btn-primary' : 'btn-secondary')} disabled={action.pending}>
         {action.pending ? 'Saving…' : submitLabel}
       </button>
     </form>
   )
 }
 
-export function PayoutForm({ current }: { current: { phone: string | null; operator: Operator | null; accountName: string | null } }) {
+export function PayoutForm({ current, primary = true }: { current: { phone: string | null; operator: Operator | null; accountName: string | null }; primary?: boolean }) {
   const router = useRouter()
   const [phone, setPhone] = useState(current.phone ?? '')
-  const [operator, setOperator] = useState<Operator | null>(current.operator)
-  const [accountName, setAccountName] = useState(current.accountName)
+  const [operator, setOperator] = useState<Operator | null>(current.operator ?? detectOperator(current.phone ?? ''))
+  const [saved, setSaved] = useState(current.accountName && current.phone ? { name: current.accountName, phone: current.phone, operator: current.operator } : null)
+  const [editing, setEditing] = useState(!saved)
   const action = useAction(async () => {
     if (!operator) throw new Error('Choose your network')
     const result = await savePayoutDetails({ data: { phone, operator } })
-    setAccountName(result.accountName)
+    setSaved({ name: result.accountName, phone, operator })
+    setEditing(false)
     await router.invalidate()
   })
+
+  if (saved && !editing) {
+    return (
+      <div className="space-y-3">
+        {/* The name the network has on file, so the seller can see the money goes to them. */}
+        <div className="rise max-w-sm rounded-xl bg-deep p-5 text-on-accent shadow-md">
+          <p className="eyebrow text-on-deep-muted">{saved.operator ? OPERATOR_LABELS[saved.operator] : 'Mobile money'}</p>
+          <p className="mt-6 text-xl font-extrabold tracking-[-0.02em] uppercase">{saved.name}</p>
+          <p className="mt-1 text-sm text-on-deep-muted tabular-nums">{saved.phone}</p>
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm -ml-2" onClick={() => setEditing(true)}>
+          Change number
+        </button>
+      </div>
+    )
+  }
 
   return (
     <form
@@ -115,36 +139,44 @@ export function PayoutForm({ current }: { current: { phone: string | null; opera
         void action.run()
       }}
     >
-      {accountName && (
-        <Alert tone="success">
-          Payouts go to <strong>{accountName}</strong> ({current.phone ?? phone}).
-        </Alert>
-      )}
       {action.error && <Alert>{action.error}</Alert>}
-      <Field label="Mobile money number" hint="We check the registered name before saving">
-        <input
-          className="input max-w-xs"
-          type="tel"
-          inputMode="tel"
-          required
-          value={phone}
-          onChange={(e) => {
-            setPhone(e.target.value)
-            const detected = detectOperator(e.target.value)
-            if (detected) setOperator(detected)
-          }}
-        />
+      <Field label="Mobile money number" hint="We check who it is registered to.">
+        <span className="relative block max-w-xs">
+          <input
+            className="input pr-20"
+            type="tel"
+            inputMode="tel"
+            required
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value)
+              setOperator(detectOperator(e.target.value))
+            }}
+          />
+          {operator && (
+            <span className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-soft-ink">{OPERATOR_LABELS[operator]}</span>
+          )}
+        </span>
       </Field>
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(OPERATOR_LABELS) as Operator[]).map((op) => (
-          <button key={op} type="button" onClick={() => setOperator(op)} aria-pressed={operator === op} className={cn('pill', operator === op ? 'bg-accent-700 text-white' : 'bg-neutral-100 hover:bg-neutral-200')}>
-            {OPERATOR_LABELS[op]}
+      {!operator && phone.replace(/\D/g, '').length >= 3 && (
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Network">
+          {(Object.keys(OPERATOR_LABELS) as Operator[]).map((op) => (
+            <button key={op} type="button" role="radio" aria-checked={false} onClick={() => setOperator(op)} className="pill bg-sunken hover:bg-sunken-strong">
+              {OPERATOR_LABELS[op]}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <button type="submit" className={cn('btn', primary ? 'btn-primary' : 'btn-secondary')} disabled={action.pending || !operator}>
+          {action.pending ? 'Checking…' : 'Save number'}
+        </button>
+        {saved && (
+          <button type="button" className="btn btn-ghost" onClick={() => setEditing(false)}>
+            Cancel
           </button>
-        ))}
+        )}
       </div>
-      <button type="submit" className="btn btn-primary" disabled={action.pending}>
-        {action.pending ? 'Checking…' : 'Save payout number'}
-      </button>
     </form>
   )
 }

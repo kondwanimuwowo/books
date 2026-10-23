@@ -1,7 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
 import { getHomeData } from '#/functions/catalog.functions'
-import { SectionCard, Shelf } from '#/components/book'
+import { SectionShelf, Shelf } from '#/components/book'
 import { MIN_WALL_COVERS, QUICK_SEARCHES } from '#/data/home'
 
 export const Route = createFileRoute('/')({
@@ -10,53 +9,43 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const { zambian, recent, bargains, categories, wall } = Route.useLoaderData()
+  const { zambian, recent, bargains, categories, wall, towns } = Route.useLoaderData()
   const isEmpty = !zambian.length && !recent.length
 
   return (
     <>
-      <Intro wall={wall} />
+      <Intro wall={wall} towns={towns} />
 
       <div className="page">
         {isEmpty && (
-          <section className="card mt-10 p-8 text-center">
-            <h2 className="text-xl">The shelves are being stocked</h2>
-            <p className="mt-2 text-neutral-700">Be one of the first sellers on Kuwala Books.</p>
-            <Link to="/sell" className="btn btn-primary mt-5">
+          <section className="card rise mt-10 px-6 py-10 text-center sm:py-14">
+            <h2 className="text-2xl">The shelves are still empty</h2>
+            <Link to="/sell" className="btn btn-primary mt-6">
               List a book
             </Link>
           </section>
         )}
 
-        <Shelf
-          title="By Zambian authors"
-          note="Stories, history and knowledge written here at home"
-          books={zambian}
-          more={<MoreLink search={{ zambian: true }} />}
-        />
-        <Shelf title="Just listed" note="Fresh copies from sellers across the country" books={recent} more={<MoreLink search={{ sort: 'newest' }} />} />
-        <Shelf title="Used, under K100" note="Pre-loved books at reader-friendly prices" books={bargains} more={<MoreLink search={{ condition: 'used', sort: 'price' }} />} />
+        <Shelf title="By Zambian authors" books={zambian} more={<MoreLink search={{ zambian: true }} />} />
+        <Shelf title="Just listed" books={recent} more={<MoreLink search={{ sort: 'newest' }} />} />
+        <Shelf title="Used, under K100" books={bargains} more={<MoreLink search={{ condition: 'used', sort: 'price' }} />} />
 
         {categories.length > 0 && (
-          <section className="py-10">
-            <h2 className="mb-6 text-xl sm:text-2xl">Browse by section</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {categories.map((c) => (
-                <SectionCard key={c.slug} section={c} />
-              ))}
-            </div>
+          <section className="py-10" aria-labelledby="sections-heading">
+            <h2 id="sections-heading" className="mb-6 text-xl sm:text-2xl">
+              Pick a shelf
+            </h2>
+            <SectionShelf sections={categories} />
           </section>
         )}
 
-        <section className="my-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-accent-900 px-6 py-8 text-white shadow-lg sm:flex-row sm:items-center sm:px-10">
+        <section className="my-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
           <div>
-            <h2 className="text-2xl">Have books to sell?</h2>
-            <p className="mt-1 max-w-lg text-accent-200">
-              Authors, bookshops and readers list in minutes. Scan the ISBN, set your price, and get paid to your mobile money when the buyer receives the book.
-            </p>
+            <h2 className="text-xl sm:text-2xl">Books gathering dust?</h2>
+            <p className="mt-1 text-muted">Sell them here. Get paid by mobile money.</p>
           </div>
-          <Link to="/sell" className="btn bg-white text-accent-900 hover:bg-accent-100 hover:text-accent-900">
-            Start selling <ArrowRight size={16} aria-hidden />
+          <Link to="/sell" className="btn btn-secondary">
+            Sell your books
           </Link>
         </section>
       </div>
@@ -64,34 +53,42 @@ function Home() {
   )
 }
 
+function townList(towns: string[]) {
+  if (towns.length <= 1) return towns.join('')
+  return `${towns.slice(0, -1).join(', ')} and ${towns.at(-1)}`
+}
+
 // Short band so the shelves stay above the fold; covers from the catalogue sit behind it once there are enough.
-function Intro({ wall }: { wall: string[] }) {
+function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
   const tiles = wall.length >= MIN_WALL_COVERS ? Array.from({ length: 32 }, (_, i) => wall[i % wall.length]) : []
 
   return (
-    <section className="relative overflow-hidden bg-accent-900">
+    <section className="band relative overflow-hidden">
       {tiles.length > 0 && (
         <>
           <div aria-hidden className="absolute -inset-6 grid -rotate-[4deg] grid-cols-[repeat(auto-fill,minmax(96px,1fr))] content-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(120px,1fr))]">
             {tiles.map((src, i) => (
-              <img key={i} src={src} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-md bg-accent-800 object-cover" />
+              <img key={i} src={src} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-md object-cover" />
             ))}
           </div>
-          <div aria-hidden className="absolute inset-0 bg-accent-900/80" />
+          <div aria-hidden className="absolute inset-0 bg-deep/85" />
         </>
       )}
-      <div className="page rise relative py-8 sm:py-10">
-        <h1 className="max-w-2xl text-3xl leading-[1.1] font-light text-white sm:text-4xl">
-          Books from every corner of <span className="font-semibold">Zambia</span>
+      <div className="page rise relative py-8 sm:py-12">
+        <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
+          Books from every corner of <span className="font-extrabold">Zambia</span>
         </h1>
-        <p className="mt-2 max-w-xl text-accent-200">New and used copies from local authors, readers and bookshops. Your money is held until the books reach you.</p>
-        <div className="mt-5 flex flex-wrap gap-2">
+        <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
+        {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}
+        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Quick searches">
           {QUICK_SEARCHES.map((s) => (
-            <Link key={s.label} to="/search" search={s.search} className="pill h-8 bg-white/10 text-white no-underline hover:bg-white/20 hover:text-white">
-              {s.label}
-            </Link>
+            <li key={s.label}>
+              <Link to="/search" search={s.search} className="pill h-8 bg-on-accent/10 text-on-accent no-underline hover:bg-on-accent/20 hover:text-on-accent">
+                {s.label}
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   )
@@ -99,7 +96,7 @@ function Intro({ wall }: { wall: string[] }) {
 
 function MoreLink({ search }: { search: Record<string, string | boolean> }) {
   return (
-    <Link to="/search" search={search} className="shrink-0 text-sm font-medium text-accent-700">
+    <Link to="/search" search={search} className="shrink-0 text-sm font-medium text-accent-ink">
       See all
     </Link>
   )

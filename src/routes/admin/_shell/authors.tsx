@@ -22,10 +22,7 @@ function Authors() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Authors"
-        description="Marking an author as Zambian puts their books on the Zambian shelves. Linking their shop gives them the verified author badge; check their identity first."
-      />
+      <PageHeader title="Authors" description="Check identity before linking a shop." />
       <AdminSearch value={q ?? ''} placeholder="Search author name" onSearch={(value) => void navigate({ search: value ? { q: value } : {} })} />
       {authors.length ? (
         <ul className="space-y-3">
@@ -53,13 +50,13 @@ function AuthorRow({ author: a }: { author: Author }) {
   return (
     <li className="card space-y-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="flex flex-wrap items-center gap-2 font-semibold">
+        <p className="flex flex-wrap items-center gap-2 font-medium">
           <a href={storeUrl(`/authors/${a.slug}`)} target="_blank" rel="noreferrer">
             {a.name}
           </a>
           {a.isZambian && <ZambianMark />}
           {a.verifiedSeller && <VerifiedMark label="Verified author" />}
-          <span className="text-sm font-normal text-neutral-600">
+          <span className="text-sm font-normal text-subtle">
             {a.books} {a.books === 1 ? 'book' : 'books'}
           </span>
         </p>
@@ -69,7 +66,7 @@ function AuthorRow({ author: a }: { author: Author }) {
       </div>
 
       {a.verifiedSeller ? (
-        <p className="flex flex-wrap items-center gap-3 text-sm text-neutral-700">
+        <p className="flex flex-wrap items-center gap-3 text-sm text-muted">
           Linked to shop{' '}
           <a href={storeUrl(`/sellers/${a.verifiedSeller.slug}`)} target="_blank" rel="noreferrer" className="font-medium">
             {a.verifiedSeller.storeName}

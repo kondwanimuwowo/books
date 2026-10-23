@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { ExternalLink, LogOut } from 'lucide-react'
+import { ArrowRightStartOnRectangleIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import type { ReactNode } from 'react'
 import { signOut } from '#/functions/auth.functions'
 import { ADMIN_NAV } from '#/data/admin'
@@ -7,8 +7,8 @@ import { ADMIN_NAV } from '#/data/admin'
 function Wordmark() {
   return (
     <Link to="/admin" className="flex items-baseline gap-2 text-ink no-underline hover:text-ink">
-      <span className="text-xl leading-none font-extrabold tracking-[-0.03em]">
-        kuwala<span className="font-light text-accent-700">books</span>
+      <span className="text-xl leading-none font-extrabold tracking-[-0.04em]">
+        kuwala<span className="font-normal text-accent-ink">books</span>
       </span>
       <span className="eyebrow">Admin</span>
     </Link>
@@ -32,7 +32,7 @@ export function AdminShell({ email, storeUrl, children }: { email: string; store
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh flex-col bg-white px-4 py-6 shadow-sm lg:flex">
+      <aside className="glass-bar sticky top-0 hidden h-dvh flex-col px-4 py-6 lg:flex">
         <div className="px-3">
           <Wordmark />
         </div>
@@ -43,35 +43,35 @@ export function AdminShell({ email, storeUrl, children }: { email: string; store
               to={to}
               activeOptions={{ exact }}
               className={sideItem}
-              activeProps={{ className: 'bg-accent-100 text-accent-800 hover:text-accent-800' }}
-              inactiveProps={{ className: 'text-neutral-800 hover:bg-neutral-100 hover:text-ink' }}
+              activeProps={{ className: 'bg-accent-soft text-accent-soft-ink hover:text-accent-soft-ink' }}
+              inactiveProps={{ className: 'text-ink hover:bg-sunken hover:text-ink' }}
             >
-              <Icon size={18} strokeWidth={1.75} aria-hidden />
+              <Icon className="size-5" aria-hidden />
               {label}
             </Link>
           ))}
         </nav>
-        <div className="mt-auto space-y-1 border-t border-neutral-200 pt-4">
-          <a href={storeUrl} target="_blank" rel="noreferrer" className={`${sideItem} text-neutral-800 hover:bg-neutral-100 hover:text-ink`}>
-            <ExternalLink size={18} strokeWidth={1.75} aria-hidden />
+        <div className="mt-auto space-y-1 border-t border-line pt-4">
+          <a href={storeUrl} target="_blank" rel="noreferrer" className={`${sideItem} text-ink hover:bg-sunken hover:text-ink`}>
+            <ArrowTopRightOnSquareIcon className="size-5" aria-hidden />
             View store
           </a>
-          <p className="truncate px-3 pt-3 text-xs text-neutral-600" title={email}>
+          <p className="truncate px-3 pt-3 text-xs text-subtle" title={email}>
             {email}
           </p>
-          <button type="button" onClick={() => void signOutAndLeave()} className={`${sideItem} w-full text-neutral-800 hover:bg-neutral-100`}>
-            <LogOut size={18} strokeWidth={1.75} aria-hidden />
+          <button type="button" onClick={() => void signOutAndLeave()} className={`${sideItem} w-full text-ink hover:bg-sunken`}>
+            <ArrowRightStartOnRectangleIcon className="size-5" aria-hidden />
             Sign out
           </button>
         </div>
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 bg-white shadow-sm lg:hidden">
+        <header className="glass-bar sticky top-0 z-30 lg:hidden">
           <div className="flex items-center justify-between gap-4 px-4 py-3">
             <Wordmark />
             <button type="button" onClick={() => void signOutAndLeave()} className="btn btn-ghost btn-sm" aria-label="Sign out">
-              <LogOut size={16} aria-hidden />
+              <ArrowRightStartOnRectangleIcon className="size-5" aria-hidden />
             </button>
           </div>
           <nav className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Admin">
@@ -81,8 +81,8 @@ export function AdminShell({ email, storeUrl, children }: { email: string; store
                 to={to}
                 activeOptions={{ exact }}
                 className="pill h-8 shrink-0 px-3 no-underline"
-                activeProps={{ className: 'bg-accent-100 text-accent-800 hover:text-accent-800' }}
-                inactiveProps={{ className: 'text-neutral-800 hover:bg-neutral-100 hover:text-ink' }}
+                activeProps={{ className: 'bg-accent-soft text-accent-soft-ink hover:text-accent-soft-ink' }}
+                inactiveProps={{ className: 'text-ink hover:bg-sunken hover:text-ink' }}
               >
                 {label}
               </Link>

@@ -9,6 +9,7 @@ import { profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
 import {
   categoriesWithCounts,
+  sellerTowns,
   getAuthorBySlug,
   getBookBySlug,
   getSellerBySlug,
@@ -52,16 +53,17 @@ export const getSiteContext = createServerFn({ method: 'GET' })
 
 export const getHomeData = createServerFn({ method: 'GET' }).handler(async () => {
   const db = getDb()
-  const [zambian, recent, bargains, categories] = await Promise.all([
+  const [zambian, recent, bargains, categories, towns] = await Promise.all([
     shelf(db, 'zambian'),
     shelf(db, 'recent'),
     shelf(db, 'bargains'),
     categoriesWithCounts(db),
+    sellerTowns(db),
   ])
   publicCache(60)
   // The intro band's cover background reuses covers already loaded for the shelves.
   const wall = [...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24)
-  return { zambian, recent, bargains, categories, wall }
+  return { zambian, recent, bargains, categories, wall, towns }
 })
 
 export const getCategories = createServerFn({ method: 'GET' }).handler(async () => {

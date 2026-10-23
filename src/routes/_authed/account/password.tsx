@@ -18,19 +18,20 @@ function PasswordPage() {
 
   return (
     <form
-      className="max-w-sm space-y-4"
+      className="max-w-sm space-y-5"
       onSubmit={(e) => {
         e.preventDefault()
         void action.run()
       }}
     >
-      {done && <Alert tone="success">Password updated.</Alert>}
+      <h2 className="text-2xl">Password</h2>
+      {done && <Alert tone="success">Changed.</Alert>}
       {action.error && <Alert>{action.error}</Alert>}
       <Field label="New password" hint="At least 8 characters">
         <input className="input" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <button type="submit" className="btn btn-primary" disabled={action.pending}>
-        Update password
+        {action.pending ? 'Saving…' : 'Save password'}
       </button>
     </form>
   )

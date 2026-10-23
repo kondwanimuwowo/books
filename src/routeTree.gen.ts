@@ -15,8 +15,10 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BagRouteImport } from './routes/bag'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
 import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
@@ -67,6 +69,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -75,6 +82,11 @@ const SearchRoute = SearchRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
@@ -183,8 +195,10 @@ export interface FileRoutesByFullPath {
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/account': typeof AuthedAccountRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
@@ -211,8 +225,10 @@ export interface FileRoutesByTo {
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
   '/admin/login': typeof AdminLoginRoute
@@ -239,8 +255,10 @@ export interface FileRoutesById {
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
   '/_authed/sell': typeof AuthedSellRoute
@@ -270,8 +288,10 @@ export interface FileRouteTypes {
     | '/bag'
     | '/forgot-password'
     | '/login'
+    | '/privacy'
     | '/search'
     | '/signup'
+    | '/terms'
     | '/account'
     | '/checkout'
     | '/sell'
@@ -298,8 +318,10 @@ export interface FileRouteTypes {
     | '/bag'
     | '/forgot-password'
     | '/login'
+    | '/privacy'
     | '/search'
     | '/signup'
+    | '/terms'
     | '/checkout'
     | '/sell'
     | '/admin/login'
@@ -325,8 +347,10 @@ export interface FileRouteTypes {
     | '/bag'
     | '/forgot-password'
     | '/login'
+    | '/privacy'
     | '/search'
     | '/signup'
+    | '/terms'
     | '/_authed/account'
     | '/_authed/checkout'
     | '/_authed/sell'
@@ -356,8 +380,10 @@ export interface RootRouteChildren {
   BagRoute: typeof BagRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
@@ -409,6 +435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -421,6 +454,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/account': {
@@ -640,8 +680,10 @@ const rootRouteChildren: RootRouteChildren = {
   BagRoute: BagRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,

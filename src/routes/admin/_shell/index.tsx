@@ -22,26 +22,25 @@ function Overview() {
   const { overview, disputes } = Route.useLoaderData()
   return (
     <div className="space-y-10">
-      <PageHeader title="Overview" description="What needs attention across the marketplace." />
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatTile label="Open disputes" value={overview.disputed} alert={overview.disputed > 0} />
-        <StatTile
-          label="Late shipments"
-          value={overview.lateShipments}
-          hint="Paid more than 3 days ago, not yet shipped"
-          alert={overview.lateShipments > 0}
-        />
-        <StatTile label="Failed payouts" value={overview.failedPayouts} hint="Retried automatically up to 3 times" alert={overview.failedPayouts > 0} />
-        <StatTile label="Waiting on payout details" value={overview.awaitingPayoutDetails} hint="Released, seller has no mobile money number yet" />
-        <StatTile label="Awaiting verification" value={<Link to="/admin/sellers">{overview.unverifiedSellers}</Link>} hint="Authors, bookshops and publishers" />
-        <StatTile label="Held in escrow" value={<Price ngwee={overview.heldNgwee} />} hint="Paid by buyers, not yet released" />
+      <PageHeader title="Overview" />
+      {/* The one figure that matters most: buyers' money Kuwala is holding. */}
+      <section aria-label="Held in escrow">
+        <p className="eyebrow">Held in escrow</p>
+        <Price ngwee={overview.heldNgwee} className="mt-1 block text-5xl font-extrabold tracking-[-0.04em] tabular-nums sm:text-6xl" />
+      </section>
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatTile label="Disputes" value={overview.disputed} alert={overview.disputed > 0} />
+        <StatTile label="Late to ship" value={overview.lateShipments} hint="Paid 3+ days ago" alert={overview.lateShipments > 0} />
+        <StatTile label="Failed payouts" value={overview.failedPayouts} alert={overview.failedPayouts > 0} />
+        <StatTile label="No payout number" value={overview.awaitingPayoutDetails} />
+        <StatTile label="To verify" value={<Link to="/admin/sellers">{overview.unverifiedSellers}</Link>} />
       </section>
 
       <section>
         <h2 className="text-xl">Disputes</h2>
-        <p className="mt-1 text-sm text-neutral-700">Oldest first. The payment stays held until you resolve each one.</p>
+        <p className="mt-1 text-sm text-subtle">Oldest first.</p>
         <div className="mt-5 space-y-5">
-          {disputes.length ? disputes.map((d) => <DisputeCard key={d.id} dispute={d} />) : <Empty>No open disputes.</Empty>}
+          {disputes.length ? disputes.map((d) => <DisputeCard key={d.id} dispute={d} />) : <Empty>No disputes.</Empty>}
         </div>
       </section>
     </div>
@@ -68,17 +67,17 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
 
   return (
     <article className="card overflow-hidden">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-200 px-5 py-4">
-        <p className="font-semibold">
-          {d.orderNumber} <span className="font-normal text-neutral-600">· {d.storeName}</span>
+      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-4">
+        <p className="font-medium">
+          {d.orderNumber} <span className="font-normal text-subtle">· {d.storeName}</span>
         </p>
-        <p className="text-sm text-neutral-600">Reported {d.disputedAt ? formatDate(d.disputedAt) : 'earlier'}</p>
+        <p className="text-sm text-subtle">Reported {d.disputedAt ? formatDate(d.disputedAt) : 'earlier'}</p>
       </header>
 
       <div className="grid gap-6 p-5 md:grid-cols-2">
         <div className="space-y-4 text-sm">
-          <blockquote className="rounded-lg bg-danger-100 px-4 py-3 text-danger-700">
-            <p className="eyebrow text-danger-700">Buyer says</p>
+          <blockquote className="rounded-lg bg-danger-soft px-4 py-3 text-danger">
+            <p className="eyebrow text-danger">Buyer says</p>
             <p className="mt-1 whitespace-pre-line">{d.disputeNote ?? 'No note was saved with this report.'}</p>
           </blockquote>
           <ul className="space-y-0.5">
@@ -88,7 +87,7 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
               </li>
             ))}
           </ul>
-          <p className="text-neutral-700">
+          <p className="text-muted">
             {shippingLabel(d.shippingMethod)}
             {d.shippedAt ? `, shipped ${formatDate(d.shippedAt)}` : ', not marked as shipped'}
             {d.trackingNote && (
@@ -125,20 +124,20 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
           </div>
           <div>
             <dt className="eyebrow">Refund would be</dt>
-            <dd className="mt-1 font-semibold">
+            <dd className="mt-1 font-medium">
               <Price ngwee={d.subtotalNgwee + d.shippingNgwee} />
             </dd>
           </div>
           <div>
             <dt className="eyebrow">Seller would get</dt>
-            <dd className="mt-1 font-semibold">
+            <dd className="mt-1 font-medium">
               <Price ngwee={d.payoutNgwee} />
             </dd>
           </div>
         </dl>
       </div>
 
-      <footer className="space-y-4 border-t border-neutral-200 bg-neutral-50 p-5">
+      <footer className="space-y-4 border-t border-line bg-sunken p-5">
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Outcome">
           {(
             [
@@ -152,7 +151,7 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
               role="radio"
               aria-checked={outcome === value}
               onClick={() => setOutcome(value)}
-              className={cn('pill', outcome === value ? 'bg-accent-700 text-white' : 'bg-white shadow-sm hover:bg-neutral-100')}
+              className={cn('pill', outcome === value ? 'bg-accent text-on-accent' : 'bg-surface shadow-sm hover:bg-sunken')}
             >
               {label}
             </button>

@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
-import { MailCheck } from 'lucide-react'
+import { EnvelopeIcon } from '@heroicons/react/20/solid'
 import { useState } from 'react'
 import { z } from 'zod'
 import { signUp } from '#/functions/auth.functions'
@@ -32,10 +32,10 @@ function SignupPage() {
   if (sentTo) {
     return (
       <AuthShell title="Check your email">
-        <div className="flex gap-3 rounded-xl bg-accent-100 p-4 text-accent-900">
-          <MailCheck className="shrink-0" size={20} aria-hidden />
+        <div className="flex gap-3 rounded-xl bg-accent-soft p-4 text-accent-soft-ink">
+          <EnvelopeIcon className="size-5 shrink-0" aria-hidden />
           <p className="text-sm">
-            We sent a link to <strong>{sentTo}</strong>. Open it on this device to finish creating your account.
+            Open the link we sent to <strong>{sentTo}</strong>.
           </p>
         </div>
       </AuthShell>
@@ -47,10 +47,9 @@ function SignupPage() {
   return (
     <AuthShell
       title="Create an account"
-      subtitle="Buy from sellers across Zambia, or start selling your own books."
       footer={
         <>
-          Already have an account?{' '}
+          Have an account?{' '}
           <Link to="/login" search={{ next }} className="font-medium">
             Sign in
           </Link>
@@ -65,17 +64,17 @@ function SignupPage() {
         }}
       >
         {action.error && <Alert>{action.error}</Alert>}
-        <Field label="Your name">
+        <Field label="Name">
           <input className="input" autoComplete="name" required minLength={2} value={form.name} onChange={set('name')} />
         </Field>
         <Field label="Email">
           <input className="input" type="email" autoComplete="email" required value={form.email} onChange={set('email')} />
         </Field>
-        <Field label="Password" hint="At least 8 characters">
+        <Field label="Password" hint="8+ characters">
           <input className="input" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} />
         </Field>
         <button type="submit" className="btn btn-primary w-full" disabled={action.pending}>
-          {action.pending ? 'Creating account…' : 'Create account'}
+          {action.pending ? 'Creating…' : 'Create account'}
         </button>
       </form>
     </AuthShell>

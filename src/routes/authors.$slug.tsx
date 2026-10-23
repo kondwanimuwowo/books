@@ -12,25 +12,28 @@ function AuthorPage() {
   const author = Route.useLoaderData()
   return (
     <div className="page py-10">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+      <div className="rise flex flex-col gap-6 sm:flex-row sm:items-end">
+        {/* Portrait-shaped like a cover, not a round avatar: authors here are known by their books. */}
         {author.photoUrl ? (
-          <img src={author.photoUrl} alt="" className="h-24 w-24 rounded-full object-cover" />
+          <img src={author.photoUrl} alt="" className="aspect-[2/3] w-24 rounded-md object-cover shadow-md sm:w-28" />
         ) : (
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-accent-100 text-3xl font-semibold text-accent-800" aria-hidden>
+          <div className="band flex aspect-[2/3] w-24 items-end rounded-md p-3 text-5xl leading-none font-extrabold shadow-md sm:w-28" aria-hidden>
             {author.name.charAt(0)}
           </div>
         )}
         <div>
-          <h1 className="text-3xl">{author.name}</h1>
+          <h1 className="text-4xl sm:text-5xl">{author.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             {author.isZambian && <ZambianMark />}
             {author.verifiedSellerId && <VerifiedMark label="Verified author" />}
           </div>
         </div>
       </div>
-      {author.bio && <p className="mt-6 max-w-2xl leading-relaxed whitespace-pre-line text-neutral-800">{author.bio}</p>}
-      <h2 className="mt-10 mb-5 text-xl">Books</h2>
-      <BookGrid books={author.books} />
+      {author.bio && <p className="mt-6 max-w-prose leading-relaxed whitespace-pre-line">{author.bio}</p>}
+      <h2 className="mt-12 mb-6 text-xl">
+        {author.books.length} {author.books.length === 1 ? 'book' : 'books'}
+      </h2>
+      {author.books.length ? <BookGrid books={author.books} /> : <p className="text-muted">None for sale right now.</p>}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useRouteContext } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
+import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '#/lib/utils'
@@ -8,8 +8,8 @@ export function StatTile({ label, value, hint, alert = false }: { label: string;
   return (
     <div className="card p-5">
       <p className="eyebrow">{label}</p>
-      <p className={cn('mt-2 text-3xl font-semibold tabular-nums', alert && 'text-danger-700')}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-neutral-600">{hint}</p>}
+      <p className={cn('mt-2 text-3xl font-extrabold tracking-[-0.03em] tabular-nums', alert && 'text-danger')}>{value}</p>
+      {hint && <p className="mt-1 text-xs text-subtle">{hint}</p>}
     </div>
   )
 }
@@ -30,21 +30,21 @@ export function AdminSearch({ value, placeholder, onSearch }: { value: string; p
         onSearch(q.trim())
       }}
     >
-      <Search size={16} className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-neutral-600" aria-hidden />
+      <MagnifyingGlassIcon className="pointer-events-none size-4 absolute top-1/2 left-4 -translate-y-1/2 text-subtle" aria-hidden />
       <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="input rounded-full pl-10" />
     </form>
   )
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="card p-8 text-center text-neutral-700">{children}</p>
+  return <p className="card p-8 text-center text-muted">{children}</p>
 }
 
 export function PageHeader({ title, description }: { title: string; description?: ReactNode }) {
   return (
     <header className="mb-8">
       <h1 className="text-2xl sm:text-3xl">{title}</h1>
-      {description && <p className="mt-1 max-w-2xl text-sm text-neutral-700">{description}</p>}
+      {description && <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>}
     </header>
   )
 }

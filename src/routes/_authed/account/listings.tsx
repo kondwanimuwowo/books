@@ -5,6 +5,7 @@ import { BookCover } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
+import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/_authed/account/listings')({
   loader: () => getMyListings(),
@@ -12,81 +13,108 @@ export const Route = createFileRoute('/_authed/account/listings')({
 })
 
 type Listing = Awaited<ReturnType<typeof getMyListings>>[number]
+type Status = 'active' | 'paused' | 'removed'
+
+const STATE: Record<Listing['status'], string> = { active: 'Live', paused: 'Paused', sold_out: 'Sold out', removed: 'Removed' }
 
 function Listings() {
   const listings = Route.useLoaderData()
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <h2 className="text-2xl">
+          {listings.length} {listings.length === 1 ? 'listing' : 'listings'}
+        </h2>
         <Link to="/sell" className="btn btn-primary btn-sm">
-          List another book
+          List a book
         </Link>
       </div>
       {listings.length ? (
-        <ul className="card divide-y divide-neutral-200">
+        <ul className="grid gap-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-8">
           {listings.map((l) => (
-            <ListingRow key={l.id} listing={l} />
+            <ListingItem key={l.id} listing={l} />
           ))}
         </ul>
       ) : (
-        <p className="py-12 text-center text-neutral-700">You haven&rsquo;t listed anything yet.</p>
+        <p className="py-8 text-muted">Nothing listed yet.</p>
       )}
     </div>
   )
 }
 
-function ListingRow({ listing }: { listing: Listing }) {
+/** Phones: a compact row. Desktop: the cover on a shelf with a price sticker. Paused books fade out. */
+function ListingItem({ listing }: { listing: Listing }) {
   const router = useRouter()
-  const [editing, setEditing] = useState(false)
+  const [mode, setMode] = useState<'view' | 'edit' | 'confirm-remove'>('view')
   const [price, setPrice] = useState(String(listing.priceNgwee / 100))
   const [quantity, setQuantity] = useState(String(listing.quantity))
-  const save = useAction(async (status: 'active' | 'paused' | 'removed') => {
+  const save = useAction(async (status: Status) => {
     await updateListing({ data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status } })
-    setEditing(false)
+    setMode('view')
     await router.invalidate()
   })
-  const statusLabel = { active: 'Live', paused: 'Paused', sold_out: 'Sold out', removed: 'Removed' }[listing.status]
+  const dimmed = listing.status !== 'active'
 
   return (
-    <li className="flex gap-4 p-4">
-      <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="w-12 shrink-0">
-        <BookCover src={listing.book.coverUrl} title={listing.book.title} />
+    <li className="card flex gap-4 p-3 lg:flex-col lg:gap-3 lg:bg-transparent lg:p-0 lg:shadow-none">
+      <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="relative w-14 shrink-0 lg:w-full" tabIndex={-1}>
+        <BookCover src={listing.book.coverUrl} title={listing.book.title} className={cn('transition-[filter,opacity] duration-300', dimmed && 'opacity-60 grayscale')} />
+        <span className="absolute -top-2 -right-2 hidden rotate-6 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-on-accent shadow-md lg:block">
+          <Price ngwee={listing.priceNgwee} className="tabular-nums" />
+        </span>
       </Link>
+
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="line-clamp-1 font-semibold text-ink">
-              {listing.book.title}
-            </Link>
-            <p className="text-sm text-neutral-700">
-              {conditionLabel(listing.condition)} · {listing.quantity} in stock · <span className="font-medium">{statusLabel}</span>
-            </p>
+        <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="line-clamp-1 font-medium text-ink">
+          {listing.book.title}
+        </Link>
+        <p className="text-sm text-subtle">
+          <Price ngwee={listing.priceNgwee} className="font-medium text-ink tabular-nums lg:hidden" />
+          <span className="lg:hidden"> · </span>
+          {conditionLabel(listing.condition)} · {listing.quantity} left ·{' '}
+          <span className={cn(listing.status === 'active' ? 'text-success' : 'text-subtle')}>{STATE[listing.status]}</span>
+        </p>
+
+        {save.error && (
+          <div className="mt-2">
+            <Alert>{save.error}</Alert>
           </div>
-          <Price ngwee={listing.priceNgwee} className="font-semibold" />
-        </div>
-        {editing ? (
-          <div className="mt-3 space-y-2">
-            {save.error && <Alert>{save.error}</Alert>}
-            <div className="flex flex-wrap gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                K
-                <input className="input h-9 w-24" type="number" min={5} step="0.5" value={price} onChange={(e) => setPrice(e.target.value)} />
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                Qty
-                <input className="input h-9 w-20" type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-              </label>
-              <button type="button" className="btn btn-primary btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
-                Save
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>
-                Cancel
-              </button>
-            </div>
+        )}
+
+        {mode === 'edit' && (
+          <div className="rise mt-3 flex flex-wrap items-end gap-2">
+            <label className="text-xs text-subtle">
+              Price (K)
+              <input className="input mt-1 h-9 w-24" type="number" min={5} step="0.5" value={price} onChange={(e) => setPrice(e.target.value)} />
+            </label>
+            <label className="text-xs text-subtle">
+              Copies
+              <input className="input mt-1 h-9 w-20" type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            </label>
+            <button type="button" className="btn btn-primary btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
+              Save
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('view')}>
+              Cancel
+            </button>
           </div>
-        ) : (
-          <div className="mt-2 flex flex-wrap gap-1">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+        )}
+
+        {mode === 'confirm-remove' && (
+          <div className="rise mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span>Take it down?</span>
+            <button type="button" className="btn btn-sm bg-danger text-on-accent hover:opacity-90" disabled={save.pending} onClick={() => void save.run('removed')}>
+              Remove
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('view')}>
+              Keep
+            </button>
+          </div>
+        )}
+
+        {mode === 'view' && listing.status !== 'removed' && (
+          <div className="mt-2 -ml-2 flex flex-wrap">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('edit')}>
               Edit
             </button>
             {listing.status === 'active' && (
@@ -99,7 +127,7 @@ function ListingRow({ listing }: { listing: Listing }) {
                 Resume
               </button>
             )}
-            <button type="button" className="btn btn-ghost btn-sm text-danger-700" disabled={save.pending} onClick={() => void save.run('removed')}>
+            <button type="button" className="btn btn-ghost btn-sm hover:text-danger" onClick={() => setMode('confirm-remove')}>
               Remove
             </button>
           </div>

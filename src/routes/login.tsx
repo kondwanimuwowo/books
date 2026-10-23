@@ -27,10 +27,9 @@ function LoginPage() {
   return (
     <AuthShell
       title="Sign in"
-      subtitle="Welcome back to Kuwala Books."
       footer={
         <>
-          New here?{' '}
+          New?{' '}
           <Link to="/signup" search={{ next }} className="font-medium">
             Create an account
           </Link>
@@ -44,7 +43,7 @@ function LoginPage() {
           void action.run()
         }}
       >
-        {linkError && <Alert>That link has expired or was already used. Sign in, or request a new one.</Alert>}
+        {linkError && <Alert>That link has expired. Sign in or ask for a new one.</Alert>}
         {action.error && <Alert>{action.error}</Alert>}
         <Field label="Email">
           <input className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -56,7 +55,7 @@ function LoginPage() {
           {action.pending ? 'Signing in…' : 'Sign in'}
         </button>
         <Link to="/forgot-password" className="block text-center text-sm">
-          Forgot your password?
+          Forgot password?
         </Link>
       </form>
     </AuthShell>

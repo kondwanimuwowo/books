@@ -18,9 +18,9 @@ function ForgotPassword() {
   })
 
   return (
-    <AuthShell title="Reset your password" subtitle="We'll email you a link to choose a new one.">
+    <AuthShell title="Reset password">
       {sent ? (
-        <Alert tone="info">If an account exists for {email}, a reset link is on its way.</Alert>
+        <Alert tone="info">If {email} has an account, a link is on its way.</Alert>
       ) : (
         <form
           className="space-y-4"
@@ -34,7 +34,7 @@ function ForgotPassword() {
             <input className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           <button type="submit" className="btn btn-primary w-full" disabled={action.pending}>
-            Send reset link
+            {action.pending ? 'Sending…' : 'Send link'}
           </button>
         </form>
       )}

@@ -23,7 +23,7 @@ function Orders() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Orders" description="The latest 50 orders. Each seller's part is paid out separately." />
+      <PageHeader title="Orders" description="Latest 50." />
       <div className="flex gap-2">
         {[
           { label: 'Paid', value: false },
@@ -34,7 +34,7 @@ function Orders() {
             type="button"
             aria-pressed={!!unpaid === f.value}
             onClick={() => void navigate({ search: f.value ? { unpaid: true } : {} })}
-            className={cn('pill', !!unpaid === f.value ? 'bg-accent-700 text-white' : 'bg-white shadow-sm hover:bg-neutral-100')}
+            className={cn('pill', !!unpaid === f.value ? 'bg-accent text-on-accent' : 'bg-surface shadow-sm hover:bg-sunken')}
           >
             {f.label}
           </button>
@@ -57,15 +57,15 @@ function OrderRow({ order: o }: { order: Order }) {
   return (
     <li className="card p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-semibold">
-          {o.number} <span className="font-normal text-neutral-600">· {formatDate(o.createdAt)}</span>
+        <p className="font-medium">
+          {o.number} <span className="font-normal text-subtle">· {formatDate(o.createdAt)}</span>
         </p>
-        <Price ngwee={o.totalNgwee} className="font-semibold" />
+        <Price ngwee={o.totalNgwee} className="font-medium" />
       </div>
-      <p className="text-sm text-neutral-700">
+      <p className="text-sm text-muted">
         {o.buyerName}, {o.shipTown} · {o.buyerEmail}
       </p>
-      <ul className="mt-3 divide-y divide-neutral-200 border-t border-neutral-200">
+      <ul className="mt-3 divide-y divide-line border-t border-line">
         {o.parts.map((p) => (
           <PartRow key={p.id} part={p} />
         ))}
@@ -89,7 +89,7 @@ function PartRow({ part: p }: { part: Order['parts'][number] }) {
       <span className="flex flex-wrap items-center gap-2">
         <StatusPill label={status.label} tone={status.tone} />
         <StatusPill label={payout.label} tone={payout.tone} />
-        <Price ngwee={p.payoutNgwee} className="text-neutral-700" />
+        <Price ngwee={p.payoutNgwee} className="text-muted" />
         {p.payoutStatus === 'failed' && (
           <button type="button" className="btn btn-secondary btn-sm" disabled={retry.pending} onClick={() => void retry.run()}>
             Retry payout

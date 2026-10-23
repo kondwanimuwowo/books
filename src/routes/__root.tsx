@@ -15,14 +15,15 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { name: 'theme-color', content: '#ffffff' },
+      { name: 'theme-color', content: '#f8f3ec', media: '(prefers-color-scheme: light)' },
+      { name: 'theme-color', content: '#16110f', media: '(prefers-color-scheme: dark)' },
       { title: 'Kuwala Books: buy and sell books in Zambia' },
       { name: 'description', content: 'New and used books from Zambian authors, readers and bookshops. Pay with mobile money, delivered across Zambia.' },
     ],
     links: [
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300..800&display=swap' },
+      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;800&display=swap' },
       { rel: 'stylesheet', href: appCss },
     ],
   }),
@@ -75,11 +76,12 @@ function RootLayout() {
 
 export function NotFound() {
   return (
-    <div className="page py-24 text-center">
-      <h1 className="text-3xl">We couldn&rsquo;t find that page</h1>
-      <p className="mt-2 text-neutral-700">It may have been sold, removed or never existed.</p>
-      <Link to="/" className="btn btn-primary mt-6">
-        Back to the shop
+    <div className="page rise py-20 text-center sm:py-28">
+      {/* A page number, because this is a missing page. */}
+      <p aria-hidden className="text-[clamp(5rem,22vw,9rem)] leading-none font-normal tracking-[-0.06em] text-line-strong tabular-nums">404</p>
+      <h1 className="mt-4 text-2xl sm:text-3xl">This page has been torn out</h1>
+      <Link to="/" className="btn btn-primary mt-8">
+        Back to the shelves
       </Link>
     </div>
   )
@@ -87,11 +89,13 @@ export function NotFound() {
 
 function RootError({ error, reset }: ErrorComponentProps) {
   return (
-    <div className="page py-24 text-center">
-      <h1 className="text-3xl">Something went wrong</h1>
-      <p className="mt-2 text-neutral-700">{errorMessage(error)}</p>
-      <button type="button" onClick={reset} className="btn btn-secondary mt-6">
-        Try again
+    <div className="page rise py-24 text-center">
+      <h1 className="text-2xl sm:text-3xl">This page didn&rsquo;t load</h1>
+      <p className="mx-auto mt-2 max-w-md text-muted">Check your connection and try again.</p>
+      {/* Raw errors can contain SQL; only developers see them. */}
+      {import.meta.env.DEV && <p className="mx-auto mt-4 max-w-lg text-left font-mono text-xs break-words text-subtle">{errorMessage(error)}</p>}
+      <button type="button" onClick={reset} className="btn btn-primary mt-8">
+        Load it again
       </button>
     </div>
   )

@@ -1,8 +1,8 @@
-import { BookUser, LayoutDashboard, ReceiptText, Store } from 'lucide-react'
+import { BookOpenIcon, BuildingStorefrontIcon, ClipboardDocumentListIcon, Squares2X2Icon } from '@heroicons/react/20/solid'
 
 export const ADMIN_NAV = [
-  { to: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { to: '/admin/orders', label: 'Orders', icon: ReceiptText, exact: false },
-  { to: '/admin/sellers', label: 'Sellers', icon: Store, exact: false },
-  { to: '/admin/authors', label: 'Authors', icon: BookUser, exact: false },
+  { to: '/admin', label: 'Overview', icon: Squares2X2Icon, exact: true },
+  { to: '/admin/orders', label: 'Orders', icon: ClipboardDocumentListIcon, exact: false },
+  { to: '/admin/sellers', label: 'Sellers', icon: BuildingStorefrontIcon, exact: false },
+  { to: '/admin/authors', label: 'Authors', icon: BookOpenIcon, exact: false },
 ] as const

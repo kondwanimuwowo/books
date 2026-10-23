@@ -1,60 +1,72 @@
 import { Link, Outlet, createFileRoute, useLoaderData, useNavigate, useRouter } from '@tanstack/react-router'
 import { signOut } from '#/functions/auth.functions'
 import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
+import { accountNav } from '#/data/navigation'
+import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/_authed/account')({
   head: () => ({ meta: [{ title: 'Your account | Kuwala Books' }] }),
   component: AccountLayout,
 })
 
+const sideItem = 'block rounded-lg px-3 py-2 text-[15px] no-underline transition-colors'
+
 function AccountLayout() {
   const { user } = useLoaderData({ from: '__root__' })
   const router = useRouter()
   const navigate = useNavigate()
-  const isSeller = !!user?.sellerSlug
+  const nav = accountNav(!!user?.sellerSlug)
+  const leave = async () => {
+    await signOut()
+    await router.invalidate()
+    await navigate({ to: '/' })
+  }
 
   return (
-    <div className="page py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl">Your account</h1>
-          <p className="mt-1 text-sm text-neutral-700">{user?.email}</p>
+    <div className="page py-8 lg:py-12">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-4xl sm:text-5xl">{user?.displayName.split(' ')[0] ?? 'Account'}</h1>
+          <p className="mt-1 truncate text-sm text-subtle">{user?.email}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={async () => {
-            await signOut()
-            await router.invalidate()
-            await navigate({ to: '/' })
-          }}
-        >
+        <button type="button" className="btn btn-ghost btn-sm lg:hidden" onClick={() => void leave()}>
           Sign out
         </button>
-      </div>
-      <nav className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-        <Link to="/account" activeOptions={{ exact: true }} className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-          Orders
-        </Link>
-        {isSeller && (
-          <>
-            <Link to="/account/sales" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-              Sales
-            </Link>
-            <Link to="/account/listings" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-              Listings
-            </Link>
-          </>
-        )}
-        <Link to="/account/shop" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-          {isSeller ? 'Shop and payouts' : 'Start selling'}
-        </Link>
-        <Link to="/account/password" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-          Password
-        </Link>
+      </header>
+
+      {/* Phones: a row of tabs. Desktop: a menu beside the page. */}
+      <nav aria-label="Account" className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 py-1 sm:-mx-6 sm:px-6 lg:hidden">
+        {nav.map((item) => (
+          <Link key={item.to} to={item.to} activeOptions={{ exact: item.exact }} className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
+            {item.label}
+          </Link>
+        ))}
       </nav>
-      <div className="mt-8">
-        <Outlet />
+
+      <div className="mt-8 lg:mt-10 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-12">
+        <nav aria-label="Account" className="hidden lg:block">
+          <ul className="space-y-0.5">
+            {nav.map((item) => (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  activeOptions={{ exact: item.exact }}
+                  className={sideItem}
+                  activeProps={{ className: 'bg-accent-soft font-medium text-accent-soft-ink hover:text-accent-soft-ink' }}
+                  inactiveProps={{ className: 'text-muted hover:bg-sunken hover:text-ink' }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className={cn(sideItem, 'mt-6 w-full text-left text-subtle hover:bg-sunken hover:text-ink')} onClick={() => void leave()}>
+            Sign out
+          </button>
+        </nav>
+        <div className="min-w-0">
+          <Outlet />
+        </div>
       </div>
     </div>
   )

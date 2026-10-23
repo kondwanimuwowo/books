@@ -23,7 +23,7 @@ function Sellers() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Sellers" description="Verify authors, bookshops and publishers once you have checked their identity or business documents." />
+      <PageHeader title="Sellers" description="Verify once you've checked ID or business papers." />
       <AdminSearch value={q ?? ''} placeholder="Search shop name, address or email" onSearch={(value) => void navigate({ search: value ? { q: value } : {} })} />
       {sellers.length ? (
         <ul className="space-y-3">
@@ -50,17 +50,17 @@ function SellerRow({ seller: s }: { seller: Seller }) {
   return (
     <li className="card flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
       <div className="min-w-0 space-y-1">
-        <p className="flex flex-wrap items-center gap-2 font-semibold">
+        <p className="flex flex-wrap items-center gap-2 font-medium">
           <a href={storeUrl(`/sellers/${s.slug}`)} target="_blank" rel="noreferrer">
             {s.storeName}
           </a>
           {s.verifiedAt && <VerifiedMark />}
-          <StatusPill label={kind} tone="bg-neutral-100 text-neutral-800" />
+          <StatusPill label={kind} tone="bg-sunken text-ink" />
         </p>
-        <p className="text-sm text-neutral-700">
+        <p className="text-sm text-muted">
           {s.town} · {s.email} · {s.phone}
         </p>
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-subtle">
           Joined {formatDate(s.createdAt)} · {s.activeListings} active listings · {s.sales} sales ·{' '}
           {s.hasPayoutDetails ? 'Payout number set' : 'No payout number'}
         </p>
