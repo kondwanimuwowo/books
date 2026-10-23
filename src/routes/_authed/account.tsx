@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute, useLoaderData, useNavigate, useRouter } from '@tanstack/react-router'
 import { signOut } from '#/functions/auth.functions'
-import { activeTab, tabClass } from '#/components/tabs'
+import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
 
 export const Route = createFileRoute('/_authed/account')({
   head: () => ({ meta: [{ title: 'Your account | Kuwala Books' }] }),
@@ -33,23 +33,23 @@ function AccountLayout() {
         </button>
       </div>
       <nav className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-        <Link to="/account" activeOptions={{ exact: true }} className={tabClass} activeProps={activeTab}>
+        <Link to="/account" activeOptions={{ exact: true }} className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Orders
         </Link>
         {isSeller && (
           <>
-            <Link to="/account/sales" className={tabClass} activeProps={activeTab}>
+            <Link to="/account/sales" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
               Sales
             </Link>
-            <Link to="/account/listings" className={tabClass} activeProps={activeTab}>
+            <Link to="/account/listings" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
               Listings
             </Link>
           </>
         )}
-        <Link to="/account/shop" className={tabClass} activeProps={activeTab}>
+        <Link to="/account/shop" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           {isSeller ? 'Shop and payouts' : 'Start selling'}
         </Link>
-        <Link to="/account/password" className={tabClass} activeProps={activeTab}>
+        <Link to="/account/password" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Password
         </Link>
       </nav>

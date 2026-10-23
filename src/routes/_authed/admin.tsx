@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { getAdminAccess } from '#/functions/admin.functions'
-import { activeTab, tabClass } from '#/components/tabs'
+import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
 
 // Page guard only; every admin server function checks the admin flag itself.
 export const Route = createFileRoute('/_authed/admin')({
@@ -17,16 +17,16 @@ function AdminLayout() {
       <p className="eyebrow">Kuwala Books</p>
       <h1 className="mt-1 text-3xl">Admin</h1>
       <nav className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 py-1 sm:-mx-6 sm:px-6">
-        <Link to="/admin" activeOptions={{ exact: true }} className={tabClass} activeProps={activeTab}>
+        <Link to="/admin" activeOptions={{ exact: true }} className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Overview
         </Link>
-        <Link to="/admin/sellers" className={tabClass} activeProps={activeTab}>
+        <Link to="/admin/sellers" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Sellers
         </Link>
-        <Link to="/admin/authors" className={tabClass} activeProps={activeTab}>
+        <Link to="/admin/authors" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Authors
         </Link>
-        <Link to="/admin/orders" className={tabClass} activeProps={activeTab}>
+        <Link to="/admin/orders" className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
           Orders
         </Link>
       </nav>
