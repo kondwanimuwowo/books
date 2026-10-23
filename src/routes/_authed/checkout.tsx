@@ -191,7 +191,7 @@ function Checkout() {
           {action.error && <Alert>{action.error}</Alert>}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <Price ngwee={subtotal + shipping} className="text-lg font-extrabold tracking-[-0.02em] tabular-nums" />
+              <Price ngwee={subtotal + shipping} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
               <p className="text-xs text-subtle">{destination ? 'Including delivery' : 'Plus delivery'}</p>
             </div>
             <div className="w-48">{submit}</div>
@@ -215,7 +215,7 @@ function Totals({ subtotal, shipping }: { subtotal: number; shipping: number | n
       </div>
       <div className="flex items-baseline justify-between border-t border-line pt-3">
         <span className="font-medium">Total</span>
-        <Price ngwee={subtotal + (shipping ?? 0)} className="text-xl font-extrabold tracking-[-0.02em] tabular-nums" />
+        <Price ngwee={subtotal + (shipping ?? 0)} className="text-xl font-bold tracking-[-0.02em] tabular-nums" />
       </div>
     </>
   )

@@ -378,7 +378,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
         <div className="page flex items-center justify-between gap-4 py-3">
           <div>
             <p className="text-xs text-subtle">You get</p>
-            <p className="text-lg font-extrabold tracking-[-0.02em] tabular-nums">{formatMoney(priceNgwee - Math.round(priceNgwee * COMMISSION_RATE))}</p>
+            <p className="text-lg font-bold tracking-[-0.02em] tabular-nums">{formatMoney(priceNgwee - Math.round(priceNgwee * COMMISSION_RATE))}</p>
           </div>
           <div className="w-40">{publish}</div>
         </div>
@@ -402,7 +402,7 @@ function PayoutReceipt({ priceNgwee }: { priceNgwee: number }) {
       </div>
       <div className="flex items-baseline justify-between border-t border-dashed border-line-strong pt-2">
         <dt className="font-medium">You get</dt>
-        <dd className="text-xl font-extrabold tracking-[-0.02em]">{formatMoney(priceNgwee - fee)}</dd>
+        <dd className="text-xl font-bold tracking-[-0.02em]">{formatMoney(priceNgwee - fee)}</dd>
       </div>
       <p className="pt-1 text-xs text-subtle">Plus delivery, paid by the buyer.</p>
     </dl>

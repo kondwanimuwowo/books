@@ -7,7 +7,7 @@ import { ADMIN_NAV } from '#/data/admin'
 function Wordmark() {
   return (
     <Link to="/admin" className="flex items-baseline gap-2 text-ink no-underline hover:text-ink">
-      <span className="text-xl leading-none font-extrabold tracking-[-0.04em]">
+      <span className="text-xl leading-none font-bold tracking-[-0.04em]">
         kuwala<span className="font-normal text-accent-ink">books</span>
       </span>
       <span className="eyebrow">Admin</span>

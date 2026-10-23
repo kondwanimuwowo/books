@@ -6,6 +6,7 @@ import { searchBooksFn } from '#/functions/catalog.functions'
 import { BookGrid } from '#/components/book'
 import { LANGUAGES } from '#/data/zambia'
 import { cn } from '#/lib/utils'
+import { CoverGridShapes, PageShapes, Placeholder } from '#/components/placeholder'
 
 const searchParams = z.object({
   q: z.string().optional(),
@@ -21,6 +22,7 @@ type SearchState = z.infer<typeof searchParams>
 type Data = Awaited<ReturnType<typeof searchBooksFn>>
 
 export const Route = createFileRoute('/search')({
+  pendingComponent: () => <Placeholder mode="loading" label="Searching" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => searchBooksFn({ data: deps }),
@@ -221,9 +223,9 @@ function FilterRail({ search, categories }: { search: SearchState; categories: D
 
 function NoResults({ query, filtered }: { query?: string; filtered: boolean }) {
   return (
-    <div className="rise py-16 text-center">
-      <p className="text-xl font-medium">{query ? `No copies of “${query}” yet` : 'No books match'}</p>
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
+    <Placeholder mode="empty" label="Results" shapes={<CoverGridShapes count={5} />}>
+      <p className="text-xl font-bold tracking-[-0.02em]">{query ? `No copies of “${query}” yet` : 'No books match'}</p>
+      <div className="mt-5 flex flex-wrap justify-center gap-3">
         {filtered || query ? (
           <Link to="/search" className="btn btn-primary">
             Clear filters
@@ -236,7 +238,7 @@ function NoResults({ query, filtered }: { query?: string; filtered: boolean }) {
           </Link>
         )}
       </div>
-    </div>
+    </Placeholder>
   )
 }
 

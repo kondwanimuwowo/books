@@ -8,8 +8,10 @@ import { Price, useBag } from '#/components/providers'
 import { conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
 import { cn } from '#/lib/utils'
+import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 
 export const Route = createFileRoute('/books/$slug')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading book" shapes={<BookPageShapes />} />,
   loader: ({ params }) => getBook({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -100,12 +102,12 @@ function BookPage() {
             </div>
 
             {book.offers.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-muted">No copies for sale.</p>
-                <Link to="/sell" className="btn btn-secondary btn-sm mt-4">
+              <Placeholder mode="empty" label="Copies" className="mt-4 min-h-44" shapes={<CopyShapes />}>
+                <p className="font-medium">No copies for sale</p>
+                <Link to="/sell" className="btn btn-secondary btn-sm mt-3">
                   Sell yours
                 </Link>
-              </div>
+              </Placeholder>
             ) : (
               <>
                 <fieldset className="mt-4 space-y-2">
@@ -137,7 +139,7 @@ function BookPage() {
         <div className="glass-bar fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
           <div className="page flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
-              <Price ngwee={selected.priceNgwee} className="text-lg font-extrabold tracking-[-0.02em]" />
+              <Price ngwee={selected.priceNgwee} className="text-lg font-bold tracking-[-0.02em]" />
               <p className="truncate text-xs text-subtle">
                 {conditionLabel(selected.condition)} · {selected.seller.storeName}
               </p>
@@ -232,7 +234,7 @@ function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean
           <span className="font-medium">{conditionLabel(offer.condition)}</span>
           <span className="text-subtle"> · {formatLabel(offer.format)}</span>
         </span>
-        <Price ngwee={offer.priceNgwee} className="text-lg font-extrabold tracking-[-0.02em] tabular-nums" />
+        <Price ngwee={offer.priceNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
       </span>
       {offer.notes && <span className="mt-1 block text-sm text-muted">{offer.notes}</span>}
       <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">

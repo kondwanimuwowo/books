@@ -3,8 +3,10 @@ import { getMyOrders } from '#/functions/orders.functions'
 import { BookCover } from '#/components/book'
 import { Price } from '#/components/providers'
 import { cn, formatDate } from '#/lib/utils'
+import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/_authed/account/')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading orders" shapes={<RowShapes />} />,
   loader: () => getMyOrders(),
   component: Orders,
 })
@@ -22,12 +24,16 @@ function Orders() {
   const orders = Route.useLoaderData()
   if (!orders.length) {
     return (
-      <div className="rise py-12 text-center lg:text-left">
-        <p className="text-xl font-medium">No orders yet</p>
-        <Link to="/search" className="btn btn-primary mt-6">
-          Find a book
-        </Link>
-      </div>
+      <Placeholder mode="empty" label="Orders" shapes={<RowShapes />}>
+        <EmptyMessage
+          title="No orders yet"
+          action={
+            <Link to="/search" className="btn btn-primary">
+              Find a book
+            </Link>
+          }
+        />
+      </Placeholder>
     )
   }
   return (

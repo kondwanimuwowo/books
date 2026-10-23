@@ -7,8 +7,10 @@ import { Price } from '#/components/providers'
 import { shippingLabel } from '#/data/shipping'
 import { OPERATOR_LABELS } from '#/lib/phone'
 import { cn, formatDate } from '#/lib/utils'
+import { Placeholder, StatShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/admin/_shell/')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading overview" shapes={<StatShapes />} />,
   loader: async () => {
     const [overview, disputes] = await Promise.all([getAdminOverview(), listDisputes()])
     return { overview, disputes }
@@ -26,7 +28,7 @@ function Overview() {
       {/* The one figure that matters most: buyers' money Kuwala is holding. */}
       <section aria-label="Held in escrow">
         <p className="eyebrow">Held in escrow</p>
-        <Price ngwee={overview.heldNgwee} className="mt-1 block text-5xl font-extrabold tracking-[-0.04em] tabular-nums sm:text-6xl" />
+        <Price ngwee={overview.heldNgwee} className="mt-1 block text-5xl font-bold tracking-[-0.04em] tabular-nums sm:text-6xl" />
       </section>
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatTile label="Disputes" value={overview.disputed} alert={overview.disputed > 0} />

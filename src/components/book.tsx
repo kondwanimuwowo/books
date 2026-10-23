@@ -67,7 +67,7 @@ export function BookCard({ book }: { book: BookCardData }) {
         src={book.coverUrl}
         title={book.title}
         author={book.authorNames}
-        className="lift-cover transition-[transform,box-shadow] duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg"
+        className="lift-cover transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-lg"
       />
       <div className="mt-3 space-y-0.5">
         <p className="line-clamp-2 text-[15px] leading-snug font-medium">{book.title}</p>

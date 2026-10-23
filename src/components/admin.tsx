@@ -3,12 +3,13 @@ import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '#/lib/utils'
+import { Placeholder, RowShapes } from './placeholder'
 
 export function StatTile({ label, value, hint, alert = false }: { label: string; value: ReactNode; hint?: string; alert?: boolean }) {
   return (
     <div className="card p-5">
       <p className="eyebrow">{label}</p>
-      <p className={cn('mt-2 text-3xl font-extrabold tracking-[-0.03em] tabular-nums', alert && 'text-danger')}>{value}</p>
+      <p className={cn('mt-2 text-3xl font-bold tracking-[-0.03em] tabular-nums', alert && 'text-danger')}>{value}</p>
       {hint && <p className="mt-1 text-xs text-subtle">{hint}</p>}
     </div>
   )
@@ -37,7 +38,11 @@ export function AdminSearch({ value, placeholder, onSearch }: { value: string; p
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="card p-8 text-center text-muted">{children}</p>
+  return (
+    <Placeholder mode="empty" label="Empty" shapes={<RowShapes cover={false} />}>
+      <p className="text-lg font-bold tracking-[-0.02em]">{children}</p>
+    </Placeholder>
+  )
 }
 
 export function PageHeader({ title, description }: { title: string; description?: ReactNode }) {

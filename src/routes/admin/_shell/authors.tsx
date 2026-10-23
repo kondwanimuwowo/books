@@ -5,8 +5,10 @@ import { listAuthors, updateAuthor } from '#/functions/admin.functions'
 import { AdminSearch, Empty, PageHeader, useStoreUrl } from '#/components/admin'
 import { VerifiedMark, ZambianMark } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
+import { Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/admin/_shell/authors')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading authors" shapes={<RowShapes cover={false} />} />,
   validateSearch: z.object({ q: z.string().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listAuthors({ data: deps }),

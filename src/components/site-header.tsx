@@ -17,7 +17,7 @@ export function Logo({ className, tone = 'default' }: { className?: string; tone
     <Link
       to="/"
       className={cn(
-        'text-2xl leading-none font-extrabold tracking-[-0.04em] no-underline',
+        'text-2xl leading-none font-bold tracking-[-0.04em] no-underline',
         inverse ? 'text-on-accent hover:text-on-accent' : 'text-ink hover:text-ink',
         className,
       )}

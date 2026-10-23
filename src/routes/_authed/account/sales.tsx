@@ -7,8 +7,10 @@ import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
 import { PAYOUT_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
+import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/_authed/account/sales')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading sales" shapes={<RowShapes cover={false} />} />,
   loader: () => getMySales(),
   component: Sales,
 })
@@ -29,12 +31,16 @@ function Sales() {
   const sales = Route.useLoaderData()
   if (!sales.length) {
     return (
-      <div className="rise py-12">
-        <p className="text-xl font-medium">No sales yet</p>
-        <Link to="/sell" className="btn btn-primary mt-6">
-          List a book
-        </Link>
-      </div>
+      <Placeholder mode="empty" label="Sales" shapes={<RowShapes cover={false} />}>
+        <EmptyMessage
+          title="No sales yet"
+          action={
+            <Link to="/sell" className="btn btn-primary">
+              List a book
+            </Link>
+          }
+        />
+      </Placeholder>
     )
   }
 
@@ -50,7 +56,7 @@ function Sales() {
       <section className="flex flex-wrap items-end gap-x-10 gap-y-3" aria-label="Earnings">
         <div>
           <p className="eyebrow">Paid to you</p>
-          <Price ngwee={paid} className="mt-1 block text-4xl font-extrabold tracking-[-0.03em] tabular-nums" />
+          <Price ngwee={paid} className="mt-1 block text-4xl font-bold tracking-[-0.03em] tabular-nums" />
         </div>
         {coming > 0 && (
           <div>
@@ -108,7 +114,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
       </div>
 
       <p className="mt-3 flex flex-wrap items-baseline gap-x-3 text-sm">
-        <Price ngwee={sale.payoutNgwee} className="text-lg font-extrabold tracking-[-0.02em] tabular-nums" />
+        <Price ngwee={sale.payoutNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
         <span className="text-subtle">{PAYOUT_STATUS[sale.payoutStatus].label}</span>
       </p>
 

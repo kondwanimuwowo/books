@@ -10,8 +10,10 @@ import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
 import { cn, formatDate } from '#/lib/utils'
+import { PageShapes, ParcelShapes, Placeholder } from '#/components/placeholder'
 
 export const Route = createFileRoute('/_authed/orders/$number')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading order" shapes={<PageShapes><ParcelShapes /></PageShapes>} />,
   loader: ({ params }) => getOrder({ data: { number: params.number } }),
   head: ({ params }) => ({ meta: [{ title: `Order ${params.number} | Kuwala Books` }] }),
   component: OrderPage,
@@ -85,7 +87,7 @@ function OrderPage() {
             </div>
             <div className="flex items-baseline justify-between border-t border-line pt-2">
               <span className="font-medium">Total</span>
-              <Price ngwee={order.totalNgwee} className="text-lg font-extrabold tracking-[-0.02em] tabular-nums" />
+              <Price ngwee={order.totalNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
             </div>
             {!pending && <p className="pt-1 text-xs text-subtle">Held until you confirm delivery.</p>}
           </div>
@@ -117,8 +119,8 @@ function ParcelRoute({ from, to, status }: { from: string; to: string; status: P
         <span aria-hidden className="absolute inset-x-1 top-[5px] h-0.5 bg-line" />
         <span
           aria-hidden
-          className={cn('absolute top-[5px] left-1 h-0.5 transition-[width] duration-700 ease-out', halted ? 'bg-danger' : 'bg-accent')}
-          style={{ width: `calc(${(reached / 2) * 100}% - 0.5rem)` }}
+          className={cn('absolute inset-x-1 top-[5px] h-0.5 origin-left transition-transform duration-500 ease-out', halted ? 'bg-danger' : 'bg-accent')}
+          style={{ transform: `scaleX(${reached / 2})` }}
         />
         {ROUTE_STOPS.map((stop, i) => (
           <li key={stop} className="relative flex flex-col items-center first:items-start last:items-end">

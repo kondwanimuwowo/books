@@ -47,7 +47,15 @@
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2a1e17 10%, transparent);
   --shadow-md: 0 4px 14px -4px color-mix(in srgb, #2a1e17 16%, transparent);
   --shadow-lg: 0 14px 32px -10px color-mix(in srgb, #2a1e17 24%, transparent);
+
+  /* Motion. Strong curves replace Tailwind's weak defaults, so ease-out / ease-in-out utilities use them. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+/* Hover effects only for a real pointer; taps on phones fire false hovers. */
+@custom-variant hover (@media (hover: hover) and (pointer: fine) { &:hover });
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -93,10 +101,10 @@
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }
-  /* Three weights: 400 body, 500 UI, 800 display. Page and section headings carry the 800. */
+  /* Three weights: 400 body, 500 UI, 700 display. Page and section headings carry the 700. */
   h1,
   h2 {
-    @apply font-extrabold tracking-[-0.03em];
+    @apply font-bold tracking-[-0.03em];
   }
   h3,
   h4 {
@@ -199,22 +207,62 @@
   }
 }
 .rise {
-  animation: rise 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: rise 240ms var(--ease-out) both;
 }
 /* The pending payment prompt breathes so it reads as live, not frozen. */
 @keyframes prompt-pulse {
   50% {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
   }
 }
+
+/*
+ * Placeholders. Loading and empty share one set of shapes ("bones") that sketch the real content:
+ * while loading a highlight sweeps across them; when there is nothing to show, the sweep stops and
+ * the shapes fade into the page behind a short message.
+ */
+.bone {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-sunken-strong);
+}
+.is-loading .bone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-surface) 55%, transparent), transparent);
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+.placeholder-fade {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--color-canvas) 30%, transparent), var(--color-canvas) 78%);
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out);
+}
+.placeholder-fade[data-on='true'] {
+  opacity: 1;
+}
 @media (prefers-reduced-motion: reduce) {
+  /* Gentler, not zero: things still fade in, they just don't move. */
   .rise {
+    animation: fade-in 200ms ease both;
+  }
+  .is-loading .bone::after {
     animation: none;
   }
   .lift,
   .lift-cover {
     transition: none;
     transform: none !important;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }

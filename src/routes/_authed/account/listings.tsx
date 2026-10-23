@@ -6,8 +6,10 @@ import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { cn } from '#/lib/utils'
+import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/_authed/account/listings')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading listings" shapes={<RowShapes />} />,
   loader: () => getMyListings(),
   component: Listings,
 })
@@ -36,7 +38,9 @@ function Listings() {
           ))}
         </ul>
       ) : (
-        <p className="py-8 text-muted">Nothing listed yet.</p>
+        <Placeholder mode="empty" label="Listings" shapes={<RowShapes />}>
+          <EmptyMessage title="Nothing listed yet" />
+        </Placeholder>
       )}
     </div>
   )
@@ -58,7 +62,7 @@ function ListingItem({ listing }: { listing: Listing }) {
   return (
     <li className="card flex gap-4 p-3 lg:flex-col lg:gap-3 lg:bg-transparent lg:p-0 lg:shadow-none">
       <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="relative w-14 shrink-0 lg:w-full" tabIndex={-1}>
-        <BookCover src={listing.book.coverUrl} title={listing.book.title} className={cn('transition-[filter,opacity] duration-300', dimmed && 'opacity-60 grayscale')} />
+        <BookCover src={listing.book.coverUrl} title={listing.book.title} className={cn('transition-[filter,opacity] duration-200', dimmed && 'opacity-60 grayscale')} />
         <span className="absolute -top-2 -right-2 hidden rotate-6 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-on-accent shadow-md lg:block">
           <Price ngwee={listing.priceNgwee} className="tabular-nums" />
         </span>

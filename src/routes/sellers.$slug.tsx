@@ -4,8 +4,10 @@ import { getSeller } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark } from '#/components/book'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { formatDate } from '#/lib/utils'
+import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 
 export const Route = createFileRoute('/sellers/$slug')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
   loader: ({ params }) => getSeller({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({ meta: loaderData ? [{ title: `${loaderData.storeName} | Kuwala Books` }] : [] }),
   component: SellerPage,
@@ -30,7 +32,13 @@ function SellerPage() {
       <h2 className="mt-12 mb-6 text-xl">
         {seller.books.length} in stock
       </h2>
-      {seller.books.length > 0 && <BookGrid books={seller.books} />}
+      {seller.books.length > 0 ? (
+        <BookGrid books={seller.books} />
+      ) : (
+        <Placeholder mode="empty" label="Books" shapes={<CoverGridShapes count={5} />}>
+          <EmptyMessage title="Nothing in stock right now" />
+        </Placeholder>
+      )}
     </div>
   )
 }

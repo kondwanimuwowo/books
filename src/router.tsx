@@ -29,6 +29,8 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    defaultPendingMs: 300,
+    defaultPendingMinMs: 400,
     rewrite: adminSubdomain,
   })
 

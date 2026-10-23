@@ -6,8 +6,10 @@ import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { PAYOUT_STATUS, SELLER_ORDER_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
+import { Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/admin/_shell/orders')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading orders" shapes={<RowShapes cover={false} />} />,
   validateSearch: z.object({ unpaid: z.boolean().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listRecentOrders({ data: deps }),

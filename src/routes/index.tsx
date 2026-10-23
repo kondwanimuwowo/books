@@ -2,8 +2,10 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { getHomeData } from '#/functions/catalog.functions'
 import { SectionShelf, Shelf } from '#/components/book'
 import { MIN_WALL_COVERS, QUICK_SEARCHES } from '#/data/home'
+import { EmptyMessage, PageShapes, Placeholder, ShelfShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading" shapes={<PageShapes><ShelfShapes /></PageShapes>} />,
   loader: () => getHomeData(),
   component: Home,
 })
@@ -18,12 +20,21 @@ function Home() {
 
       <div className="page">
         {isEmpty && (
-          <section className="card rise mt-10 px-6 py-10 text-center sm:py-14">
-            <h2 className="text-2xl">The shelves are still empty</h2>
-            <Link to="/sell" className="btn btn-primary mt-6">
-              List a book
-            </Link>
-          </section>
+          <Placeholder
+            mode="empty"
+            label="Shelves"
+            className="mt-10"
+            shapes={<ShelfShapes />}
+          >
+            <EmptyMessage
+              title="The shelves are still empty"
+              action={
+                <Link to="/sell" className="btn btn-primary">
+                  List a book
+                </Link>
+              }
+            />
+          </Placeholder>
         )}
 
         <Shelf title="By Zambian authors" books={zambian} more={<MoreLink search={{ zambian: true }} />} />
@@ -76,7 +87,7 @@ function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
       )}
       <div className="page rise relative py-8 sm:py-12">
         <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
-          Books from every corner of <span className="font-extrabold">Zambia</span>
+          Books from every corner of <span className="font-bold">Zambia</span>
         </h1>
         <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
         {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}

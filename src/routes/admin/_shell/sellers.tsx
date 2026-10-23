@@ -6,8 +6,10 @@ import { VerifiedMark } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { formatDate } from '#/lib/utils'
+import { Placeholder, RowShapes } from '#/components/placeholder'
 
 export const Route = createFileRoute('/admin/_shell/sellers')({
+  pendingComponent: () => <Placeholder mode="loading" label="Loading sellers" shapes={<RowShapes cover={false} />} />,
   validateSearch: z.object({ q: z.string().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listSellers({ data: deps }),
