@@ -15,6 +15,13 @@
       "when": 1792561743854,
       "tag": "0001_auth_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792707609137,
+      "tag": "0002_admin_disputes",
+      "breakpoints": true
     }
   ]
 }

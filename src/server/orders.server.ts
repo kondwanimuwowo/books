@@ -241,23 +241,33 @@ async function sendPaidEmails(db: Db, orderId: string) {
   ])
 }
 
-/** Escrow release: the seller's share becomes payable. Sends it straight away when payouts are configured. */
-export async function releaseToSeller(db: Db, sellerOrderId: string) {
+type SellerOrderStatus = (typeof sellerOrders.status.enumValues)[number]
+
+/**
+ * Escrow release: the seller's share becomes payable. Sends it straight away when payouts are configured.
+ * Buyers confirm from shipped/to_ship; an admin closing a dispute in the seller's favour releases from disputed.
+ */
+export async function releaseToSeller(db: Db, sellerOrderId: string, from: SellerOrderStatus[] = ['shipped', 'to_ship']) {
   const [row] = await db
     .update(sellerOrders)
     .set({ status: 'delivered', deliveredAt: new Date(), payoutStatus: 'released' })
-    .where(and(eq(sellerOrders.id, sellerOrderId), inArray(sellerOrders.status, ['shipped', 'to_ship'])))
+    .where(and(eq(sellerOrders.id, sellerOrderId), inArray(sellerOrders.status, from)))
     .returning({ orderId: sellerOrders.orderId })
-  if (!row) return
+  if (!row) return false
 
+  await completeOrderIfSettled(db, row.orderId)
+  await attemptPayout(db, sellerOrderId)
+  return true
+}
+
+// An order is complete once none of its sellers' parts can still change hands.
+export async function completeOrderIfSettled(db: Db, orderId: string) {
   const open = await db
     .select({ id: sellerOrders.id })
     .from(sellerOrders)
-    .where(and(eq(sellerOrders.orderId, row.orderId), inArray(sellerOrders.status, ['awaiting_payment', 'to_ship', 'shipped', 'disputed'])))
+    .where(and(eq(sellerOrders.orderId, orderId), inArray(sellerOrders.status, ['awaiting_payment', 'to_ship', 'shipped', 'disputed'])))
     .limit(1)
-  if (!open.length) await db.update(orders).set({ status: 'completed' }).where(eq(orders.id, row.orderId))
-
-  await attemptPayout(db, sellerOrderId)
+  if (!open.length) await db.update(orders).set({ status: 'completed' }).where(eq(orders.id, orderId))
 }
 
 export async function attemptPayout(db: Db, sellerOrderId: string) {

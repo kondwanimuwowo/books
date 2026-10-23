@@ -1,13 +1,11 @@
 import { Link, Outlet, createFileRoute, useLoaderData, useNavigate, useRouter } from '@tanstack/react-router'
 import { signOut } from '#/functions/auth.functions'
+import { activeTab, tabClass } from '#/components/tabs'
 
 export const Route = createFileRoute('/_authed/account')({
   head: () => ({ meta: [{ title: 'Your account | Kuwala Books' }] }),
   component: AccountLayout,
 })
-
-const tabClass = 'pill shrink-0 bg-neutral-100 text-ink hover:bg-neutral-200 hover:text-ink'
-const activeTab = { className: 'pill shrink-0 bg-accent-700 text-white hover:bg-accent-700 hover:text-white' }
 
 function AccountLayout() {
   const { user } = useLoaderData({ from: '__root__' })

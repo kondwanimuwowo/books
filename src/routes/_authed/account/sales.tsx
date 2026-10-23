@@ -5,6 +5,7 @@ import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
+import { PAYOUT_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
 
 export const Route = createFileRoute('/_authed/account/sales')({
@@ -19,15 +20,9 @@ const STATUS: Partial<Record<Sale['status'], { label: string; tone: string }>> =
   shipped: { label: 'Shipped', tone: 'bg-accent-100 text-accent-800' },
   delivered: { label: 'Delivered', tone: 'bg-success-100 text-success-700' },
   disputed: { label: 'Problem reported', tone: 'bg-danger-100 text-danger-700' },
+  refunded: { label: 'Refunded to buyer', tone: 'bg-neutral-100 text-neutral-700' },
 }
 
-const PAYOUT: Record<Sale['payoutStatus'], string> = {
-  held: 'Held until delivery',
-  released: 'Ready to pay out',
-  processing: 'Paying out',
-  paid: 'Paid to you',
-  failed: 'Payout failed',
-}
 
 function Sales() {
   const sales = Route.useLoaderData()
@@ -87,7 +82,7 @@ function SaleCard({ sale }: { sale: Sale }) {
         <span>
           You receive <Price ngwee={sale.payoutNgwee} className="font-semibold" />
         </span>
-        <span className="text-neutral-600">{PAYOUT[sale.payoutStatus]}</span>
+        <span className="text-neutral-600">{PAYOUT_STATUS[sale.payoutStatus].label}</span>
       </div>
 
       {sale.status === 'to_ship' && (

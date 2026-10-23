@@ -68,6 +68,7 @@ export const sellerOrderStatus = pgEnum('seller_order_status', [
   'delivered',
   'cancelled',
   'disputed',
+  'refunded',
 ])
 export const shippingMethod = pgEnum('shipping_method', [
   'courier',
@@ -88,6 +89,8 @@ export const payoutStatus = pgEnum('payout_status', [
   'processing',
   'paid',
   'failed',
+  // Dispute resolved in the buyer's favour; nothing is paid to the seller.
+  'refunded',
 ])
 export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
@@ -300,6 +303,11 @@ export const sellerOrders = pgTable(
     deliveredAt: timestamp('delivered_at', { withTimezone: true }),
     // Escrow auto-releases at this time if the buyer has not confirmed or disputed.
     autoReleaseAt: timestamp('auto_release_at', { withTimezone: true }),
+    disputeNote: text('dispute_note'),
+    disputedAt: timestamp('disputed_at', { withTimezone: true }),
+    // Set by an admin when a dispute is closed, either way.
+    resolutionNote: text('resolution_note'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     payoutStatus: payoutStatus('payout_status').notNull().default('held'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

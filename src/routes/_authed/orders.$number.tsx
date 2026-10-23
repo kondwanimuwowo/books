@@ -25,6 +25,7 @@ const PART_STATUS: Record<Part['status'], { label: string; tone: string }> = {
   delivered: { label: 'Delivered', tone: 'bg-success-100 text-success-700' },
   cancelled: { label: 'Cancelled', tone: 'bg-neutral-100 text-neutral-700' },
   disputed: { label: 'Problem reported', tone: 'bg-danger-100 text-danger-700' },
+  refunded: { label: 'Refunded', tone: 'bg-neutral-100 text-neutral-700' },
 }
 
 function OrderPage() {

@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
+import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
 import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -28,6 +29,10 @@ import { Route as AuthedAccountListingsRouteImport } from './routes/_authed/acco
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
 import { Route as AuthedAccountSalesRouteImport } from './routes/_authed/account/sales'
 import { Route as AuthedAccountShopRouteImport } from './routes/_authed/account/shop'
+import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
+import { Route as AuthedAdminAuthorsRouteImport } from './routes/_authed/admin/authors'
+import { Route as AuthedAdminOrdersRouteImport } from './routes/_authed/admin/orders'
+import { Route as AuthedAdminSellersRouteImport } from './routes/_authed/admin/sellers'
 import { Route as AuthedOrdersNumberRouteImport } from './routes/_authed/orders.$number'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
 
@@ -68,6 +73,11 @@ const SignupRoute = SignupRouteImport.update({
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminRoute = AuthedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedCheckoutRoute = AuthedCheckoutRouteImport.update({
@@ -125,6 +135,26 @@ const AuthedAccountShopRoute = AuthedAccountShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => AuthedAccountRoute,
 } as any)
+const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminAuthorsRoute = AuthedAdminAuthorsRouteImport.update({
+  id: '/authors',
+  path: '/authors',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminOrdersRoute = AuthedAdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminSellersRoute = AuthedAdminSellersRouteImport.update({
+  id: '/sellers',
+  path: '/sellers',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
 const AuthedOrdersNumberRoute = AuthedOrdersNumberRouteImport.update({
   id: '/orders/$number',
   path: '/orders/$number',
@@ -144,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/account': typeof AuthedAccountRouteWithChildren
+  '/admin': typeof AuthedAdminRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -154,9 +185,13 @@ export interface FileRoutesByFullPath {
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
+  '/admin/authors': typeof AuthedAdminAuthorsRoute
+  '/admin/orders': typeof AuthedAdminOrdersRoute
+  '/admin/sellers': typeof AuthedAdminSellersRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
+  '/admin/': typeof AuthedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,9 +210,13 @@ export interface FileRoutesByTo {
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
+  '/admin/authors': typeof AuthedAdminAuthorsRoute
+  '/admin/orders': typeof AuthedAdminOrdersRoute
+  '/admin/sellers': typeof AuthedAdminSellersRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
+  '/admin': typeof AuthedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -189,6 +228,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/_authed/account': typeof AuthedAccountRouteWithChildren
+  '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
   '/_authed/sell': typeof AuthedSellRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -199,9 +239,13 @@ export interface FileRoutesById {
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
   '/_authed/account/sales': typeof AuthedAccountSalesRoute
   '/_authed/account/shop': typeof AuthedAccountShopRoute
+  '/_authed/admin/authors': typeof AuthedAdminAuthorsRoute
+  '/_authed/admin/orders': typeof AuthedAdminOrdersRoute
+  '/_authed/admin/sellers': typeof AuthedAdminSellersRoute
   '/_authed/orders/$number': typeof AuthedOrdersNumberRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
+  '/_authed/admin/': typeof AuthedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,6 +257,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/account'
+    | '/admin'
     | '/checkout'
     | '/sell'
     | '/auth/callback'
@@ -223,9 +268,13 @@ export interface FileRouteTypes {
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
+    | '/admin/authors'
+    | '/admin/orders'
+    | '/admin/sellers'
     | '/orders/$number'
     | '/api/webhooks/lenco'
     | '/account/'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -244,9 +293,13 @@ export interface FileRouteTypes {
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
+    | '/admin/authors'
+    | '/admin/orders'
+    | '/admin/sellers'
     | '/orders/$number'
     | '/api/webhooks/lenco'
     | '/account'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -257,6 +310,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/_authed/account'
+    | '/_authed/admin'
     | '/_authed/checkout'
     | '/_authed/sell'
     | '/auth/callback'
@@ -267,9 +321,13 @@ export interface FileRouteTypes {
     | '/_authed/account/password'
     | '/_authed/account/sales'
     | '/_authed/account/shop'
+    | '/_authed/admin/authors'
+    | '/_authed/admin/orders'
+    | '/_authed/admin/sellers'
     | '/_authed/orders/$number'
     | '/api/webhooks/lenco'
     | '/_authed/account/'
+    | '/_authed/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -343,6 +401,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AuthedAccountRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/checkout': {
@@ -422,6 +487,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountShopRouteImport
       parentRoute: typeof AuthedAccountRoute
     }
+    '/_authed/admin/': {
+      id: '/_authed/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthedAdminIndexRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/authors': {
+      id: '/_authed/admin/authors'
+      path: '/authors'
+      fullPath: '/admin/authors'
+      preLoaderRoute: typeof AuthedAdminAuthorsRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/orders': {
+      id: '/_authed/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AuthedAdminOrdersRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/sellers': {
+      id: '/_authed/admin/sellers'
+      path: '/sellers'
+      fullPath: '/admin/sellers'
+      preLoaderRoute: typeof AuthedAdminSellersRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
     '/_authed/orders/$number': {
       id: '/_authed/orders/$number'
       path: '/orders/$number'
@@ -459,8 +552,27 @@ const AuthedAccountRouteWithChildren = AuthedAccountRoute._addFileChildren(
   AuthedAccountRouteChildren,
 )
 
+interface AuthedAdminRouteChildren {
+  AuthedAdminAuthorsRoute: typeof AuthedAdminAuthorsRoute
+  AuthedAdminOrdersRoute: typeof AuthedAdminOrdersRoute
+  AuthedAdminSellersRoute: typeof AuthedAdminSellersRoute
+  AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
+}
+
+const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
+  AuthedAdminAuthorsRoute: AuthedAdminAuthorsRoute,
+  AuthedAdminOrdersRoute: AuthedAdminOrdersRoute,
+  AuthedAdminSellersRoute: AuthedAdminSellersRoute,
+  AuthedAdminIndexRoute: AuthedAdminIndexRoute,
+}
+
+const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
+  AuthedAdminRouteChildren,
+)
+
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
+  AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedCheckoutRoute: typeof AuthedCheckoutRoute
   AuthedSellRoute: typeof AuthedSellRoute
   AuthedOrdersNumberRoute: typeof AuthedOrdersNumberRoute
@@ -468,6 +580,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRouteWithChildren,
+  AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedCheckoutRoute: AuthedCheckoutRoute,
   AuthedSellRoute: AuthedSellRoute,
   AuthedOrdersNumberRoute: AuthedOrdersNumberRoute,

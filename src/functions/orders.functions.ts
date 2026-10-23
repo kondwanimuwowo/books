@@ -232,11 +232,14 @@ export const reportProblem = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const part = await buyerPart(data.sellerOrderId, context.user.id)
     if (part.status !== 'shipped' && part.status !== 'to_ship') throw new Error('This parcel can’t be disputed right now')
-    await getDb().update(sellerOrders).set({ status: 'disputed', autoReleaseAt: null }).where(eq(sellerOrders.id, part.id))
+    await getDb()
+      .update(sellerOrders)
+      .set({ status: 'disputed', autoReleaseAt: null, disputeNote: data.note, disputedAt: new Date() })
+      .where(eq(sellerOrders.id, part.id))
     await sendEmail({
       to: env.EMAIL_FROM.match(/<(.+)>/)?.[1] ?? env.EMAIL_FROM,
-      subject: `Dispute on seller order ${part.id}`,
-      lines: [`Buyer ${context.user.email} reported a problem:`, data.note],
+      subject: 'A buyer reported a problem with an order',
+      lines: [`Buyer ${context.user.email} reported a problem:`, data.note, `Resolve it at ${env.APP_ORIGIN}/admin`],
     })
     return { ok: true }
   })

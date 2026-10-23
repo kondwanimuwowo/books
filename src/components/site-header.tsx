@@ -7,6 +7,7 @@ import { useBag, useCurrency } from './providers'
 interface HeaderUser {
   displayName: string
   sellerSlug: string | null
+  isAdmin: boolean
 }
 
 export function Logo({ className }: { className?: string }) {
@@ -81,6 +82,11 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           <Link to="/sell" className="btn-ghost btn btn-sm">
             Sell
           </Link>
+          {user?.isAdmin && (
+            <Link to="/admin" className="btn-ghost btn btn-sm">
+              Admin
+            </Link>
+          )}
           <Link to={user ? '/account' : '/login'} className="btn-ghost btn btn-sm max-w-[140px]">
             <span className="truncate">{user ? user.displayName.split(' ')[0] : 'Sign in'}</span>
           </Link>
