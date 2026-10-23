@@ -23,7 +23,8 @@ export const signUp = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const callback = new URL('/auth/callback', env.APP_ORIGIN)
-    if (data.next) callback.searchParams.set('next', data.next)
+    // Always present: the email template appends &token_hash=… to this URL.
+    callback.searchParams.set('next', data.next ?? '/')
     const { data: result, error } = await getSupabase().auth.signUp({
       email: data.email,
       password: data.password,
