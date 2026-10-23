@@ -31,11 +31,8 @@ export function getDb(): Db {
 }
 
 // After a query stalls (lossy network), later queries on the same connection would queue behind it.
-// Drop the request's client so the next getDb() opens a fresh one.
+// Detach the request's client so the next getDb() opens a fresh one. It is not closed: loaders running
+// in parallel may still be using it, and closing it would kill their in-flight queries.
 export function discardRequestDb() {
-  const request = getRequest()
-  const db = perRequest.get(request)
-  if (!db) return
-  perRequest.delete(request)
-  void db.$client.end({ timeout: 0 })
+  perRequest.delete(getRequest())
 }
