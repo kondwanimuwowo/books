@@ -28,6 +28,8 @@
 	 */
 	"vars": {
 		"APP_ORIGIN": "https://kuwalabooks.com",
+		// Admin pages only render on this host (src/routes/admin.tsx).
+		"ADMIN_ORIGIN": "https://admin.kuwalabooks.com",
 		"EMAIL_FROM": "Kuwala Books <orders@kuwalabooks.com>",
 		// Live Lenco API. Set "true" only alongside sandbox keys.
 		"LENCO_SANDBOX": "false"
@@ -38,6 +40,7 @@
 	// www redirects to the apex in src/server.ts.
 	"routes": [
 		{ "pattern": "kuwalabooks.com", "custom_domain": true },
-		{ "pattern": "www.kuwalabooks.com", "custom_domain": true }
+		{ "pattern": "www.kuwalabooks.com", "custom_domain": true },
+		{ "pattern": "admin.kuwalabooks.com", "custom_domain": true }
 	]
 }

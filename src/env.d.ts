@@ -1,6 +1,7 @@
 declare namespace Cloudflare {
   interface Env {
     APP_ORIGIN: string
+    ADMIN_ORIGIN?: string
     DATABASE_URL: string
     HYPERDRIVE?: Hyperdrive
     SUPABASE_URL: string

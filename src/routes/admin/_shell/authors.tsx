@@ -1,12 +1,12 @@
-import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { listAuthors, updateAuthor } from '#/functions/admin.functions'
-import { AdminSearch, Empty } from '#/components/admin'
+import { AdminSearch, Empty, PageHeader, useStoreUrl } from '#/components/admin'
 import { VerifiedMark, ZambianMark } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
 
-export const Route = createFileRoute('/_authed/admin/authors')({
+export const Route = createFileRoute('/admin/_shell/authors')({
   validateSearch: z.object({ q: z.string().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listAuthors({ data: deps }),
@@ -22,10 +22,10 @@ function Authors() {
 
   return (
     <div className="space-y-5">
-      <p className="max-w-2xl text-sm text-neutral-700">
-        Marking an author as Zambian puts their books on the Zambian shelves. Linking their shop gives them the verified author badge; check their
-        identity first.
-      </p>
+      <PageHeader
+        title="Authors"
+        description="Marking an author as Zambian puts their books on the Zambian shelves. Linking their shop gives them the verified author badge; check their identity first."
+      />
       <AdminSearch value={q ?? ''} placeholder="Search author name" onSearch={(value) => void navigate({ search: value ? { q: value } : {} })} />
       {authors.length ? (
         <ul className="space-y-3">
@@ -42,6 +42,7 @@ function Authors() {
 
 function AuthorRow({ author: a }: { author: Author }) {
   const router = useRouter()
+  const storeUrl = useStoreUrl()
   const [shop, setShop] = useState('')
   const save = useAction(async (changes: { isZambian?: boolean; verifiedSellerSlug?: string | null }) => {
     await updateAuthor({ data: { authorId: a.id, ...changes } })
@@ -53,9 +54,9 @@ function AuthorRow({ author: a }: { author: Author }) {
     <li className="card space-y-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex flex-wrap items-center gap-2 font-semibold">
-          <Link to="/authors/$slug" params={{ slug: a.slug }}>
+          <a href={storeUrl(`/authors/${a.slug}`)} target="_blank" rel="noreferrer">
             {a.name}
-          </Link>
+          </a>
           {a.isZambian && <ZambianMark />}
           {a.verifiedSeller && <VerifiedMark label="Verified author" />}
           <span className="text-sm font-normal text-neutral-600">
@@ -70,9 +71,9 @@ function AuthorRow({ author: a }: { author: Author }) {
       {a.verifiedSeller ? (
         <p className="flex flex-wrap items-center gap-3 text-sm text-neutral-700">
           Linked to shop{' '}
-          <Link to="/sellers/$slug" params={{ slug: a.verifiedSeller.slug }} className="font-medium">
+          <a href={storeUrl(`/sellers/${a.verifiedSeller.slug}`)} target="_blank" rel="noreferrer" className="font-medium">
             {a.verifiedSeller.storeName}
-          </Link>
+          </a>
           <button type="button" className="btn btn-ghost btn-sm" disabled={save.pending} onClick={() => void save.run({ verifiedSellerSlug: null })}>
             Unlink
           </button>

@@ -1,5 +1,6 @@
 import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
+import { env } from 'cloudflare:workers'
 import { getCookie, setResponseHeader } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -23,8 +24,9 @@ function publicCache(seconds: number) {
 export const getSiteContext = createServerFn({ method: 'GET' })
   .middleware([optionalUserMiddleware])
   .handler(async ({ context }) => {
+    const fx = await getZmwPerUsd(getDb())
+    // Fetched after the fx lookup, which may have replaced a stalled connection.
     const db = getDb()
-    const fx = await getZmwPerUsd(db)
     const currency: 'ZMW' | 'USD' = getCookie('kb_currency') === 'USD' ? 'USD' : 'ZMW'
     if (!context.user) return { user: null, fx, currency }
     const [row] = await db
@@ -39,6 +41,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         email: context.user.email,
         displayName: row?.displayName ?? context.user.email,
         isAdmin: row?.isAdmin ?? false,
+        // Admin runs on its own host with its own sign-in.
+        adminUrl: row?.isAdmin ? (env.ADMIN_ORIGIN ?? '/admin') : null,
         sellerSlug: row?.sellerSlug ?? null,
       },
       fx,

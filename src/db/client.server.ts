@@ -10,7 +10,7 @@ import * as schema from './schema'
 // Dev skips the local Hyperdrive emulation: it decodes the percent-encoded password into an invalid URL.
 export function createDb() {
   const url = import.meta.env.DEV ? env.DATABASE_URL : (env.HYPERDRIVE?.connectionString ?? env.DATABASE_URL)
-  const client = postgres(url, { prepare: false, max: 1 })
+  const client = postgres(url, { prepare: false, max: 1, connect_timeout: 10 })
   return drizzle(client, { schema, casing: 'snake_case' })
 }
 
@@ -28,4 +28,14 @@ export function getDb(): Db {
     perRequest.set(request, db)
   }
   return db
+}
+
+// After a query stalls (lossy network), later queries on the same connection would queue behind it.
+// Drop the request's client so the next getDb() opens a fresh one.
+export function discardRequestDb() {
+  const request = getRequest()
+  const db = perRequest.get(request)
+  if (!db) return
+  perRequest.delete(request)
+  void db.$client.end({ timeout: 0 })
 }

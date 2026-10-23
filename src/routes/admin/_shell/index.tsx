@@ -1,14 +1,14 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getAdminOverview, listDisputes, resolveDispute } from '#/functions/admin.functions'
-import { Empty, StatTile } from '#/components/admin'
+import { Empty, PageHeader, StatTile, useStoreUrl } from '#/components/admin'
 import { Alert, Field, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { shippingLabel } from '#/data/shipping'
 import { OPERATOR_LABELS } from '#/lib/phone'
 import { cn, formatDate } from '#/lib/utils'
 
-export const Route = createFileRoute('/_authed/admin/')({
+export const Route = createFileRoute('/admin/_shell/')({
   loader: async () => {
     const [overview, disputes] = await Promise.all([getAdminOverview(), listDisputes()])
     return { overview, disputes }
@@ -22,6 +22,7 @@ function Overview() {
   const { overview, disputes } = Route.useLoaderData()
   return (
     <div className="space-y-10">
+      <PageHeader title="Overview" description="What needs attention across the marketplace." />
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatTile label="Open disputes" value={overview.disputed} alert={overview.disputed > 0} />
         <StatTile
@@ -56,6 +57,7 @@ function refundDestination(paidWith: Dispute['paidWith']) {
 
 function DisputeCard({ dispute: d }: { dispute: Dispute }) {
   const router = useRouter()
+  const storeUrl = useStoreUrl()
   const [outcome, setOutcome] = useState<'release' | 'refund' | null>(null)
   const [note, setNote] = useState('')
   const resolve = useAction(async () => {
@@ -112,9 +114,9 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
           <div>
             <dt className="eyebrow">Seller</dt>
             <dd className="mt-1">
-              <Link to="/sellers/$slug" params={{ slug: d.sellerSlug }}>
+              <a href={storeUrl(`/sellers/${d.sellerSlug}`)} target="_blank" rel="noreferrer">
                 {d.storeName}
-              </Link>
+              </a>
               <br />
               <a href={`mailto:${d.sellerEmail}`}>{d.sellerEmail}</a>
               <br />

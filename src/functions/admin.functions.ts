@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { getRequestUrl } from '@tanstack/react-start/server'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
@@ -15,13 +16,23 @@ const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
 const count = sql<number>`count(*)::int`
 
-// Page guard only; every function below re-checks with requireAdminMiddleware.
-export const getAdminAccess = createServerFn({ method: 'GET' })
+// Drives the admin layout and guard only; every function below re-checks with requireAdminMiddleware.
+export const getAdminContext = createServerFn({ method: 'GET' })
   .middleware([optionalUserMiddleware])
   .handler(async ({ context }) => {
-    if (!context.user) return false
-    const [row] = await getDb().select({ isAdmin: profiles.isAdmin }).from(profiles).where(eq(profiles.id, context.user.id)).limit(1)
-    return row?.isAdmin ?? false
+    const adminOrigin = env.ADMIN_ORIGIN ?? null
+    const onAdminHost = !adminOrigin || new URL(getRequestUrl()).host === new URL(adminOrigin).host
+    let isAdmin = false
+    if (context.user) {
+      const [row] = await getDb().select({ isAdmin: profiles.isAdmin }).from(profiles).where(eq(profiles.id, context.user.id)).limit(1)
+      isAdmin = row?.isAdmin ?? false
+    }
+    return {
+      onAdminHost,
+      adminOrigin,
+      appOrigin: env.APP_ORIGIN,
+      user: context.user ? { email: context.user.email, isAdmin } : null,
+    }
   })
 
 export const getAdminOverview = createServerFn({ method: 'GET' })

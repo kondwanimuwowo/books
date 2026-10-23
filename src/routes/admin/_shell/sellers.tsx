@@ -1,13 +1,13 @@
-import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
 import { listSellers, setSellerVerified } from '#/functions/admin.functions'
-import { AdminSearch, Empty, StatusPill } from '#/components/admin'
+import { AdminSearch, Empty, PageHeader, StatusPill, useStoreUrl } from '#/components/admin'
 import { VerifiedMark } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { formatDate } from '#/lib/utils'
 
-export const Route = createFileRoute('/_authed/admin/sellers')({
+export const Route = createFileRoute('/admin/_shell/sellers')({
   validateSearch: z.object({ q: z.string().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listSellers({ data: deps }),
@@ -23,6 +23,7 @@ function Sellers() {
 
   return (
     <div className="space-y-5">
+      <PageHeader title="Sellers" description="Verify authors, bookshops and publishers once you have checked their identity or business documents." />
       <AdminSearch value={q ?? ''} placeholder="Search shop name, address or email" onSearch={(value) => void navigate({ search: value ? { q: value } : {} })} />
       {sellers.length ? (
         <ul className="space-y-3">
@@ -39,6 +40,7 @@ function Sellers() {
 
 function SellerRow({ seller: s }: { seller: Seller }) {
   const router = useRouter()
+  const storeUrl = useStoreUrl()
   const verify = useAction(async (verified: boolean) => {
     await setSellerVerified({ data: { sellerId: s.id, verified } })
     await router.invalidate()
@@ -49,9 +51,9 @@ function SellerRow({ seller: s }: { seller: Seller }) {
     <li className="card flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
       <div className="min-w-0 space-y-1">
         <p className="flex flex-wrap items-center gap-2 font-semibold">
-          <Link to="/sellers/$slug" params={{ slug: s.slug }}>
+          <a href={storeUrl(`/sellers/${s.slug}`)} target="_blank" rel="noreferrer">
             {s.storeName}
-          </Link>
+          </a>
           {s.verifiedAt && <VerifiedMark />}
           <StatusPill label={kind} tone="bg-neutral-100 text-neutral-800" />
         </p>

@@ -1,4 +1,5 @@
 import { desc } from 'drizzle-orm'
+import { discardRequestDb } from '#/db/client.server'
 import type { Db } from '#/db/client.server'
 import { fxRates } from '#/db/schema'
 
@@ -6,11 +7,21 @@ import { fxRates } from '#/db/schema'
 // rather than taking down every page (this runs in the root loader).
 export async function getZmwPerUsd(db: Db): Promise<{ rate: number; day: string } | null> {
   try {
-    return await loadRate(db)
+    return await withTimeout(loadRate(db), FX_TIMEOUT_MS)
   } catch (error) {
+    if (error instanceof FxTimeout) discardRequestDb()
     console.error('fx rate unavailable', error instanceof Error ? (error.cause ?? error) : error)
     return null
   }
+}
+
+// On a lossy link a query can stall mid-send; the page shouldn't wait on a display-only rate.
+const FX_TIMEOUT_MS = 4000
+
+class FxTimeout extends Error {}
+
+function withTimeout<T>(promise: Promise<T>, ms: number) {
+  return Promise.race([promise, new Promise<never>((_, reject) => setTimeout(() => reject(new FxTimeout(`timed out after ${ms}ms`)), ms))])
 }
 
 // One rate per day, fetched lazily.

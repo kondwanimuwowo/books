@@ -1,3 +1,4 @@
+import { useRouteContext } from '@tanstack/react-router'
 import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -37,4 +38,19 @@ export function AdminSearch({ value, placeholder, onSearch }: { value: string; p
 
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="card p-8 text-center text-neutral-700">{children}</p>
+}
+
+export function PageHeader({ title, description }: { title: string; description?: ReactNode }) {
+  return (
+    <header className="mb-8">
+      <h1 className="text-2xl sm:text-3xl">{title}</h1>
+      {description && <p className="mt-1 max-w-2xl text-sm text-neutral-700">{description}</p>}
+    </header>
+  )
+}
+
+/** Admin runs on its own host, so public pages are linked by absolute URL. */
+export function useStoreUrl() {
+  const { admin } = useRouteContext({ from: '/admin' })
+  return (path: string) => `${admin.appOrigin}${path}`
 }

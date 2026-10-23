@@ -1,4 +1,6 @@
 APP_ORIGIN=http://localhost:3000
+# Chrome resolves *.localhost, so admin runs on its own host in dev too.
+ADMIN_ORIGIN=http://admin.localhost:3000
 # Supabase > Connect > Transaction pooler (port 6543)
 DATABASE_URL=postgresql://postgres.xxxx:password@aws-0-eu-west-2.pooler.supabase.com:6543/postgres
 SUPABASE_URL=https://xxxx.supabase.co

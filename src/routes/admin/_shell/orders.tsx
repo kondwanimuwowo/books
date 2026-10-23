@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
 import { listRecentOrders, retryPayout } from '#/functions/admin.functions'
-import { Empty, StatusPill } from '#/components/admin'
+import { Empty, PageHeader, StatusPill } from '#/components/admin'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { PAYOUT_STATUS, SELLER_ORDER_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
 
-export const Route = createFileRoute('/_authed/admin/orders')({
+export const Route = createFileRoute('/admin/_shell/orders')({
   validateSearch: z.object({ unpaid: z.boolean().optional() }),
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => listRecentOrders({ data: deps }),
@@ -23,6 +23,7 @@ function Orders() {
 
   return (
     <div className="space-y-5">
+      <PageHeader title="Orders" description="The latest 50 orders. Each seller's part is paid out separately." />
       <div className="flex gap-2">
         {[
           { label: 'Paid', value: false },
@@ -39,7 +40,6 @@ function Orders() {
           </button>
         ))}
       </div>
-      <p className="text-sm text-neutral-700">The latest 50 orders.</p>
       {orders.length ? (
         <ul className="space-y-3">
           {orders.map((o) => (

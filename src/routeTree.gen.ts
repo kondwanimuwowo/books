@@ -11,15 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BagRouteImport } from './routes/bag'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
-import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
 import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
+import { Route as AdminShellRouteImport } from './routes/admin/_shell'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as BooksSlugRouteImport } from './routes/books.$slug'
@@ -29,11 +31,11 @@ import { Route as AuthedAccountListingsRouteImport } from './routes/_authed/acco
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
 import { Route as AuthedAccountSalesRouteImport } from './routes/_authed/account/sales'
 import { Route as AuthedAccountShopRouteImport } from './routes/_authed/account/shop'
-import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
-import { Route as AuthedAdminAuthorsRouteImport } from './routes/_authed/admin/authors'
-import { Route as AuthedAdminOrdersRouteImport } from './routes/_authed/admin/orders'
-import { Route as AuthedAdminSellersRouteImport } from './routes/_authed/admin/sellers'
 import { Route as AuthedOrdersNumberRouteImport } from './routes/_authed/orders.$number'
+import { Route as AdminShellIndexRouteImport } from './routes/admin/_shell/index'
+import { Route as AdminShellAuthorsRouteImport } from './routes/admin/_shell/authors'
+import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
+import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
 
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BagRoute = BagRouteImport.update({
@@ -75,11 +82,6 @@ const AuthedAccountRoute = AuthedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedAdminRoute = AuthedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedCheckoutRoute = AuthedCheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -89,6 +91,15 @@ const AuthedSellRoute = AuthedSellRouteImport.update({
   id: '/sell',
   path: '/sell',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AdminShellRoute = AdminShellRouteImport.update({
+  id: '/_shell',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -135,30 +146,30 @@ const AuthedAccountShopRoute = AuthedAccountShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => AuthedAccountRoute,
 } as any)
-const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedAdminRoute,
-} as any)
-const AuthedAdminAuthorsRoute = AuthedAdminAuthorsRouteImport.update({
-  id: '/authors',
-  path: '/authors',
-  getParentRoute: () => AuthedAdminRoute,
-} as any)
-const AuthedAdminOrdersRoute = AuthedAdminOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AuthedAdminRoute,
-} as any)
-const AuthedAdminSellersRoute = AuthedAdminSellersRouteImport.update({
-  id: '/sellers',
-  path: '/sellers',
-  getParentRoute: () => AuthedAdminRoute,
-} as any)
 const AuthedOrdersNumberRoute = AuthedOrdersNumberRouteImport.update({
   id: '/orders/$number',
   path: '/orders/$number',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AdminShellIndexRoute = AdminShellIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellAuthorsRoute = AdminShellAuthorsRouteImport.update({
+  id: '/authors',
+  path: '/authors',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellOrdersRoute = AdminShellOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellSellersRoute = AdminShellSellersRouteImport.update({
+  id: '/sellers',
+  path: '/sellers',
+  getParentRoute: () => AdminShellRoute,
 } as any)
 const ApiWebhooksLencoRoute = ApiWebhooksLencoRouteImport.update({
   id: '/api/webhooks/lenco',
@@ -168,15 +179,16 @@ const ApiWebhooksLencoRoute = ApiWebhooksLencoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/account': typeof AuthedAccountRouteWithChildren
-  '/admin': typeof AuthedAdminRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
+  '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
@@ -185,16 +197,17 @@ export interface FileRoutesByFullPath {
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
-  '/admin/authors': typeof AuthedAdminAuthorsRoute
-  '/admin/orders': typeof AuthedAdminOrdersRoute
-  '/admin/sellers': typeof AuthedAdminSellersRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
+  '/admin/authors': typeof AdminShellAuthorsRoute
+  '/admin/orders': typeof AdminShellOrdersRoute
+  '/admin/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
-  '/admin/': typeof AuthedAdminIndexRoute
+  '/admin/': typeof AdminShellIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminShellIndexRoute
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -202,6 +215,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
+  '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
@@ -210,27 +224,28 @@ export interface FileRoutesByTo {
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
-  '/admin/authors': typeof AuthedAdminAuthorsRoute
-  '/admin/orders': typeof AuthedAdminOrdersRoute
-  '/admin/sellers': typeof AuthedAdminSellersRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
+  '/admin/authors': typeof AdminShellAuthorsRoute
+  '/admin/orders': typeof AdminShellOrdersRoute
+  '/admin/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
-  '/admin': typeof AuthedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/_authed/account': typeof AuthedAccountRouteWithChildren
-  '/_authed/admin': typeof AuthedAdminRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
   '/_authed/sell': typeof AuthedSellRoute
+  '/admin/_shell': typeof AdminShellRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
@@ -239,27 +254,28 @@ export interface FileRoutesById {
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
   '/_authed/account/sales': typeof AuthedAccountSalesRoute
   '/_authed/account/shop': typeof AuthedAccountShopRoute
-  '/_authed/admin/authors': typeof AuthedAdminAuthorsRoute
-  '/_authed/admin/orders': typeof AuthedAdminOrdersRoute
-  '/_authed/admin/sellers': typeof AuthedAdminSellersRoute
   '/_authed/orders/$number': typeof AuthedOrdersNumberRoute
+  '/admin/_shell/authors': typeof AdminShellAuthorsRoute
+  '/admin/_shell/orders': typeof AdminShellOrdersRoute
+  '/admin/_shell/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
-  '/_authed/admin/': typeof AuthedAdminIndexRoute
+  '/admin/_shell/': typeof AdminShellIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/bag'
     | '/forgot-password'
     | '/login'
     | '/search'
     | '/signup'
     | '/account'
-    | '/admin'
     | '/checkout'
     | '/sell'
+    | '/admin/login'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
@@ -268,16 +284,17 @@ export interface FileRouteTypes {
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
+    | '/orders/$number'
     | '/admin/authors'
     | '/admin/orders'
     | '/admin/sellers'
-    | '/orders/$number'
     | '/api/webhooks/lenco'
     | '/account/'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/bag'
     | '/forgot-password'
     | '/login'
@@ -285,6 +302,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/checkout'
     | '/sell'
+    | '/admin/login'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
@@ -293,26 +311,27 @@ export interface FileRouteTypes {
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
+    | '/orders/$number'
     | '/admin/authors'
     | '/admin/orders'
     | '/admin/sellers'
-    | '/orders/$number'
     | '/api/webhooks/lenco'
     | '/account'
-    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/_authed'
+    | '/admin'
     | '/bag'
     | '/forgot-password'
     | '/login'
     | '/search'
     | '/signup'
     | '/_authed/account'
-    | '/_authed/admin'
     | '/_authed/checkout'
     | '/_authed/sell'
+    | '/admin/_shell'
+    | '/admin/login'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
@@ -321,18 +340,19 @@ export interface FileRouteTypes {
     | '/_authed/account/password'
     | '/_authed/account/sales'
     | '/_authed/account/shop'
-    | '/_authed/admin/authors'
-    | '/_authed/admin/orders'
-    | '/_authed/admin/sellers'
     | '/_authed/orders/$number'
+    | '/admin/_shell/authors'
+    | '/admin/_shell/orders'
+    | '/admin/_shell/sellers'
     | '/api/webhooks/lenco'
     | '/_authed/account/'
-    | '/_authed/admin/'
+    | '/admin/_shell/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   BagRoute: typeof BagRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -359,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bag': {
@@ -403,13 +430,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/admin': {
-      id: '/_authed/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthedAdminRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/checkout': {
       id: '/_authed/checkout'
       path: '/checkout'
@@ -423,6 +443,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sell'
       preLoaderRoute: typeof AuthedSellRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/admin/_shell': {
+      id: '/admin/_shell'
+      path: ''
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminShellRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -487,40 +521,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountShopRouteImport
       parentRoute: typeof AuthedAccountRoute
     }
-    '/_authed/admin/': {
-      id: '/_authed/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AuthedAdminIndexRouteImport
-      parentRoute: typeof AuthedAdminRoute
-    }
-    '/_authed/admin/authors': {
-      id: '/_authed/admin/authors'
-      path: '/authors'
-      fullPath: '/admin/authors'
-      preLoaderRoute: typeof AuthedAdminAuthorsRouteImport
-      parentRoute: typeof AuthedAdminRoute
-    }
-    '/_authed/admin/orders': {
-      id: '/_authed/admin/orders'
-      path: '/orders'
-      fullPath: '/admin/orders'
-      preLoaderRoute: typeof AuthedAdminOrdersRouteImport
-      parentRoute: typeof AuthedAdminRoute
-    }
-    '/_authed/admin/sellers': {
-      id: '/_authed/admin/sellers'
-      path: '/sellers'
-      fullPath: '/admin/sellers'
-      preLoaderRoute: typeof AuthedAdminSellersRouteImport
-      parentRoute: typeof AuthedAdminRoute
-    }
     '/_authed/orders/$number': {
       id: '/_authed/orders/$number'
       path: '/orders/$number'
       fullPath: '/orders/$number'
       preLoaderRoute: typeof AuthedOrdersNumberRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/admin/_shell/': {
+      id: '/admin/_shell/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminShellIndexRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/authors': {
+      id: '/admin/_shell/authors'
+      path: '/authors'
+      fullPath: '/admin/authors'
+      preLoaderRoute: typeof AdminShellAuthorsRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/orders': {
+      id: '/admin/_shell/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminShellOrdersRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/sellers': {
+      id: '/admin/_shell/sellers'
+      path: '/sellers'
+      fullPath: '/admin/sellers'
+      preLoaderRoute: typeof AdminShellSellersRouteImport
+      parentRoute: typeof AdminShellRoute
     }
     '/api/webhooks/lenco': {
       id: '/api/webhooks/lenco'
@@ -552,27 +586,8 @@ const AuthedAccountRouteWithChildren = AuthedAccountRoute._addFileChildren(
   AuthedAccountRouteChildren,
 )
 
-interface AuthedAdminRouteChildren {
-  AuthedAdminAuthorsRoute: typeof AuthedAdminAuthorsRoute
-  AuthedAdminOrdersRoute: typeof AuthedAdminOrdersRoute
-  AuthedAdminSellersRoute: typeof AuthedAdminSellersRoute
-  AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
-}
-
-const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
-  AuthedAdminAuthorsRoute: AuthedAdminAuthorsRoute,
-  AuthedAdminOrdersRoute: AuthedAdminOrdersRoute,
-  AuthedAdminSellersRoute: AuthedAdminSellersRoute,
-  AuthedAdminIndexRoute: AuthedAdminIndexRoute,
-}
-
-const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
-  AuthedAdminRouteChildren,
-)
-
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
-  AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedCheckoutRoute: typeof AuthedCheckoutRoute
   AuthedSellRoute: typeof AuthedSellRoute
   AuthedOrdersNumberRoute: typeof AuthedOrdersNumberRoute
@@ -580,7 +595,6 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRouteWithChildren,
-  AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedCheckoutRoute: AuthedCheckoutRoute,
   AuthedSellRoute: AuthedSellRoute,
   AuthedOrdersNumberRoute: AuthedOrdersNumberRoute,
@@ -589,9 +603,40 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface AdminShellRouteChildren {
+  AdminShellAuthorsRoute: typeof AdminShellAuthorsRoute
+  AdminShellOrdersRoute: typeof AdminShellOrdersRoute
+  AdminShellSellersRoute: typeof AdminShellSellersRoute
+  AdminShellIndexRoute: typeof AdminShellIndexRoute
+}
+
+const AdminShellRouteChildren: AdminShellRouteChildren = {
+  AdminShellAuthorsRoute: AdminShellAuthorsRoute,
+  AdminShellOrdersRoute: AdminShellOrdersRoute,
+  AdminShellSellersRoute: AdminShellSellersRoute,
+  AdminShellIndexRoute: AdminShellIndexRoute,
+}
+
+const AdminShellRouteWithChildren = AdminShellRoute._addFileChildren(
+  AdminShellRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminShellRoute: typeof AdminShellRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminShellRoute: AdminShellRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   BagRoute: BagRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,

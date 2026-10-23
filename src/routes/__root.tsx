@@ -1,4 +1,4 @@
-import { HeadContent, Link, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Link, Outlet, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
@@ -48,6 +48,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function RootLayout() {
   const { user, fx, currency } = Route.useLoaderData()
+  // Admin brings its own shell (src/components/admin-shell.tsx) and always shows kwacha.
+  const isAdmin = useMatches({ select: (matches) => matches.some((m) => m.routeId === '/admin') })
+  if (isAdmin) {
+    return (
+      <CurrencyProvider initial="ZMW" rate={null}>
+        <Outlet />
+      </CurrencyProvider>
+    )
+  }
+
   return (
     <CurrencyProvider initial={currency} rate={fx?.rate ?? null}>
       <BagProvider>
