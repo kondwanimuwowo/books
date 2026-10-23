@@ -68,7 +68,9 @@ export function BagProvider({ children }: { children: ReactNode }) {
           return existing ? prev.map((l) => (l.listingId === listingId ? { ...l, quantity: l.quantity + quantity } : l)) : [...prev, { listingId, quantity }]
         }),
       setQuantity: (listingId, quantity) =>
-        update((prev) => (quantity < 1 ? prev.filter((l) => l.listingId !== listingId) : prev.map((l) => (l.listingId === listingId ? { ...l, quantity } : l)))),
+        update((prev) =>
+          quantity < 1 ? prev.filter((l) => l.listingId !== listingId) : prev.map((l) => (l.listingId === listingId ? { ...l, quantity } : l)),
+        ),
       remove: (listingId) => update((prev) => prev.filter((l) => l.listingId !== listingId)),
       clear: () => update(() => []),
     }),
@@ -89,6 +91,8 @@ export function useBag() {
 interface CurrencyContextValue {
   currency: Currency
   rate: number | null
+  /** e.g. "$1 = K26.10 on 23 Oct", so a USD guide price is never mistaken for live. */
+  rateNote: string | null
   setCurrency: (currency: Currency) => void
   format: (ngwee: number) => string
 }
@@ -96,20 +100,37 @@ interface CurrencyContextValue {
 const CurrencyContext = createContext<CurrencyContextValue | null>(null)
 export const CURRENCY_COOKIE = 'kb_currency'
 
-export function CurrencyProvider({ initial, rate, children }: { initial: Currency; rate: number | null; children: ReactNode }) {
+function describeRate(rate: number | null, day: string | null) {
+  if (!rate || !day) return null
+  const date = new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+  return `$1 = K${rate.toFixed(2)} on ${date}`
+}
+
+export function CurrencyProvider({
+  initial,
+  rate,
+  rateDay = null,
+  children,
+}: {
+  initial: Currency
+  rate: number | null
+  rateDay?: string | null
+  children: ReactNode
+}) {
   const [currency, setState] = useState<Currency>(rate ? initial : 'ZMW')
 
   const value = useMemo<CurrencyContextValue>(
     () => ({
       currency,
       rate,
+      rateNote: describeRate(rate, rateDay),
       setCurrency: (next) => {
         setState(next)
         document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
       },
       format: (ngwee) => formatMoney(ngwee, currency, rate),
     }),
-    [currency, rate],
+    [currency, rate, rateDay],
   )
 
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>

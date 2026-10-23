@@ -1,5 +1,6 @@
 import { HeadContent, Link, Outlet, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
@@ -26,6 +27,9 @@ export const Route = createRootRoute({
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap' },
       { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
     ],
   }),
   shellComponent: RootDocument,
@@ -61,7 +65,8 @@ function RootLayout() {
   }
 
   return (
-    <CurrencyProvider initial={currency} rate={fx?.rate ?? null}>
+    <CurrencyProvider initial={currency} rate={fx?.rate ?? null} rateDay={fx?.day ?? null}>
+      <ServiceWorker />
       <BagProvider>
         <div className="flex min-h-dvh flex-col">
           <SiteHeader user={user} />
@@ -75,11 +80,21 @@ function RootLayout() {
   )
 }
 
+// Store only: the admin host never registers it.
+function ServiceWorker() {
+  useEffect(() => {
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+  }, [])
+  return null
+}
+
 export function NotFound() {
   return (
     <div className="page rise py-20 text-center sm:py-28">
       {/* A page number, because this is a missing page. */}
-      <p aria-hidden className="text-[clamp(5rem,22vw,9rem)] leading-none font-normal tracking-[-0.06em] text-line-strong tabular-nums">404</p>
+      <p aria-hidden className="text-[clamp(5rem,22vw,9rem)] leading-none font-normal tracking-[-0.06em] text-line-strong tabular-nums">
+        404
+      </p>
       <h1 className="mt-4 text-2xl sm:text-3xl">This page has been torn out</h1>
       <Link to="/" className="btn btn-primary mt-8">
         Back to the shelves

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#431b20" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Offline | Kuwala Books</title>
+    <style>
+      :root {
+        --canvas: #f8f3ec;
+        --ink: #2a1e17;
+        --muted: #5b4a3c;
+        --accent: #722f37;
+        --deep: #431b20;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --canvas: #16110f;
+          --ink: #f3ece4;
+          --muted: #cdbfb1;
+          --accent: #8c3d47;
+          --deep: #2c1518;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      header {
+        background: var(--deep);
+        color: #fff;
+        padding: 18px 16px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+      }
+      header span {
+        font-weight: 400;
+        color: #edcfd2;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+      button {
+        margin-top: 28px;
+        height: 44px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>kuwala<span>books</span></header>
+    <main>
+      <h1>No connection</h1>
+      <p>Your bag is saved on this phone.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

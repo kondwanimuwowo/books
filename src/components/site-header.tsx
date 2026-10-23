@@ -29,10 +29,10 @@ export function Logo({ className, tone = 'default' }: { className?: string; tone
 }
 
 function CurrencySwitch() {
-  const { currency, rate, setCurrency } = useCurrency()
+  const { currency, rate, rateNote, setCurrency } = useCurrency()
   if (!rate) return null
   return (
-    <div className="inline-flex rounded-full bg-on-accent/10 p-0.5 text-xs font-medium" role="group" aria-label="Show prices in">
+    <div className="inline-flex rounded-full bg-on-accent/10 p-0.5 text-xs font-medium" role="group" aria-label="Show prices in" title={rateNote ?? undefined}>
       {(['ZMW', 'USD'] as const).map((c) => (
         <button
           key={c}
@@ -161,8 +161,11 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
             </li>
           )}
         </ul>
-        <div className="page flex items-center justify-between border-t border-on-deep-muted/15 py-4">
-          <span className="text-sm text-on-deep-muted">Prices in</span>
+        <div className="page flex items-center justify-between gap-4 border-t border-on-deep-muted/15 py-4">
+          <span className="text-sm text-on-deep-muted">
+            Prices in
+            <RateNote className="block text-xs" />
+          </span>
           <CurrencySwitch />
         </div>
       </nav>
@@ -215,6 +218,13 @@ function useMobileMenu(headerRef: React.RefObject<HTMLElement | null>, headerHid
   return { open, setOpen, buttonRef }
 }
 
+/** Dated, so a USD guide price is never mistaken for a live one. */
+function RateNote({ className, usdOnly = false }: { className?: string; usdOnly?: boolean }) {
+  const { currency, rateNote } = useCurrency()
+  if (!rateNote || (usdOnly && currency !== 'USD')) return null
+  return <span className={className}>{usdOnly ? `USD is a guide: ${rateNote}. You pay in kwacha.` : rateNote}</span>
+}
+
 const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
 
 export function SiteFooter() {
@@ -238,7 +248,10 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="page flex flex-wrap items-center justify-between gap-3 border-t border-on-deep-muted/20 py-5 text-xs text-on-deep-muted">
-        <p>&copy; {new Date().getFullYear()} Kuwala Books</p>
+        <p>
+          &copy; {new Date().getFullYear()} Kuwala Books
+          <RateNote usdOnly className="mt-1 block" />
+        </p>
         <nav aria-label="Legal" className="flex gap-5">
           <Link to="/terms" className={footerLink}>
             Terms
