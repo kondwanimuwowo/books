@@ -9,7 +9,7 @@ import { PROVINCES } from '#/data/zambia'
 import { normalizeLocalPhone } from '#/lib/phone'
 import { ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
-import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
+import { optionalUserMiddleware, requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { initiateMobileMoneyCollection } from '#/server/lenco.server'
 import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
 import { sendEmail } from '#/server/email.server'
@@ -21,10 +21,11 @@ const linesSchema = z
 const placeSchema = z.object({ town: z.string().trim().min(2).max(60), province: z.enum(PROVINCES) })
 
 export const quoteBag = createServerFn({ method: 'POST' })
+  .middleware([optionalUserMiddleware])
   .validator(z.object({ lines: linesSchema, to: placeSchema.nullable() }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const db = getDb()
-    const [rows, rates] = await Promise.all([loadCartListings(db, data.lines), data.to ? loadDeliveryRates(db) : []])
+    const [rows, rates] = await Promise.all([loadCartListings(db, data.lines, context.user?.id ?? null), data.to ? loadDeliveryRates(db) : []])
     const quote = quoteCart(rows, data.lines, data.to, rates)
     return {
       problems: quote.problems,
@@ -36,8 +37,10 @@ export const quoteBag = createServerFn({ method: 'POST' })
         items: g.items.map((i) => ({
           listingId: i.listing.id,
           quantity: i.quantity,
-          available: i.listing.quantity,
+          available: i.available,
           priceNgwee: i.listing.priceNgwee,
+          lineNgwee: i.lineNgwee,
+          offerNgwee: i.offerNgwee,
           condition: i.listing.condition,
           format: i.listing.format,
           book: i.listing.book,

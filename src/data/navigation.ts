@@ -19,6 +19,7 @@ export const FOOTER_NAV = [
 export function accountNav(isSeller: boolean, isAuthor: boolean) {
   return [
     { to: '/account', label: 'Orders', exact: true },
+    { to: '/account/offers', label: 'Offers', exact: false },
     ...(isSeller
       ? ([
           { to: '/account/sales', label: 'Sales', exact: false },

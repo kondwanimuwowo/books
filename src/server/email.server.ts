@@ -8,6 +8,10 @@ interface Message {
   action?: { label: string; path: string }
 }
 
+export function escapeHtml(text: string) {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+}
+
 function render({ lines, action }: Message) {
   const body = lines.map((l) => `<p style="margin:0 0 12px">${l}</p>`).join('')
   const button = action

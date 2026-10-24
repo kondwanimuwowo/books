@@ -113,9 +113,17 @@ function Parcel({ group: g, index, total }: { group: Group; index: number; total
                     <Link to="/books/$slug" params={{ slug: item.book.slug }} className="line-clamp-2 font-medium text-ink">
                       {item.book.title}
                     </Link>
-                    <Price ngwee={item.priceNgwee * item.quantity} className="shrink-0 font-medium tabular-nums" />
+                    <Price ngwee={item.lineNgwee} className="shrink-0 font-medium tabular-nums" />
                   </div>
-                  <p className="text-sm text-subtle">{conditionLabel(item.condition)}</p>
+                  <p className="text-sm text-subtle">
+                    {conditionLabel(item.condition)}
+                    {item.offerNgwee !== null && (
+                      <>
+                        {' · '}
+                        <span className="text-success">Your offer</span>
+                      </>
+                    )}
+                  </p>
                   <div className="mt-3 flex items-center gap-2">
                     <div className="inline-flex items-center rounded-full bg-sunken">
                       <button

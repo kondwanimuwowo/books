@@ -33,3 +33,8 @@ export const SELLER_KINDS = [
 export type SellerKind = (typeof SELLER_KINDS)[number]['value']
 
 export const COMMISSION_RATE = 0.1
+
+export const OFFER_REPLY_HOURS = 48
+export const OFFER_HOLD_HOURS = 24
+// Declined or withdrawn offers a buyer can make on one copy in a week, so sellers aren't worn down.
+export const OFFERS_PER_COPY_PER_WEEK = 3

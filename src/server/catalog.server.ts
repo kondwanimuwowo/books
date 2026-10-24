@@ -159,6 +159,7 @@ export async function getBookBySlug(db: Db, slug: string) {
         priceNgwee: listings.priceNgwee,
         quantity: listings.quantity,
         notes: listings.notes,
+        acceptsOffers: listings.acceptsOffers,
         seller: {
           id: sellers.id,
           slug: sellers.slug,

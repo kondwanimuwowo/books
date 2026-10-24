@@ -111,6 +111,18 @@ export const findBookForSale = createServerFn({ method: 'GET' })
     return { catalogue, external }
   })
 
+const offerFields = {
+  acceptsOffers: z.boolean(),
+  offerFloorKwacha: z.number().min(5).max(100000).nullable(),
+}
+
+function offerValues(data: { acceptsOffers: boolean; offerFloorKwacha: number | null; priceKwacha: number }) {
+  if (data.acceptsOffers && data.offerFloorKwacha !== null && data.offerFloorKwacha >= data.priceKwacha) {
+    throw new Error('The lowest you’ll take should be under your price')
+  }
+  return { acceptsOffers: data.acceptsOffers, offerFloorNgwee: data.acceptsOffers && data.offerFloorKwacha !== null ? toNgwee(data.offerFloorKwacha) : null }
+}
+
 const candidateSchema = z.object({
   isbn13: z.string().nullable(),
   isbn10: z.string().nullable(),
@@ -141,12 +153,14 @@ export const createListing = createServerFn({ method: 'POST' })
       priceKwacha: z.number().min(5).max(100000),
       quantity: z.number().int().min(1).max(10000),
       notes: z.string().trim().max(500).optional(),
+      ...offerFields,
       // A photo the seller uploaded through uploadCover.
       coverKey: z.string().max(64).optional(),
     }),
   )
   .handler(async ({ data, context }) => {
     const db = getDb()
+    const offerSettings = offerValues(data)
     let bookId: string
     let slug: string
     const uploadedCover = data.coverKey ? await ownedCoverUrl(data.coverKey, context.user.id) : null
@@ -183,6 +197,7 @@ export const createListing = createServerFn({ method: 'POST' })
       priceNgwee: toNgwee(data.priceKwacha),
       quantity: data.quantity,
       notes: data.notes || null,
+      ...offerSettings,
     })
     return { slug }
   })
@@ -212,6 +227,8 @@ export const getMyListings = createServerFn({ method: 'GET' })
         priceNgwee: listings.priceNgwee,
         quantity: listings.quantity,
         status: listings.status,
+        acceptsOffers: listings.acceptsOffers,
+        offerFloorNgwee: listings.offerFloorNgwee,
         createdAt: listings.createdAt,
         book: { slug: books.slug, title: books.title, coverUrl: books.coverUrl },
       })
@@ -229,13 +246,14 @@ export const updateListing = createServerFn({ method: 'POST' })
       priceKwacha: z.number().min(5).max(100000),
       quantity: z.number().int().min(0).max(10000),
       status: z.enum(['active', 'paused', 'removed']),
+      ...offerFields,
     }),
   )
   .handler(async ({ data, context }) => {
     const status = data.status === 'active' && data.quantity === 0 ? 'sold_out' : data.status
     const [updated] = await getDb()
       .update(listings)
-      .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status })
+      .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status, ...offerValues(data) })
       .where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id)))
       .returning({ id: listings.id })
     if (!updated) throw new Error('Listing not found')

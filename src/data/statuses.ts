@@ -1,7 +1,8 @@
-import type { payoutStatus, sellerOrderStatus } from '#/db/schema'
+import type { offerStatus, payoutStatus, sellerOrderStatus } from '#/db/schema'
 
 export type SellerOrderStatus = (typeof sellerOrderStatus.enumValues)[number]
 export type PayoutStatus = (typeof payoutStatus.enumValues)[number]
+export type OfferStatus = (typeof offerStatus.enumValues)[number]
 
 const NEUTRAL = 'bg-sunken text-ink'
 const ACTIVE = 'bg-accent-soft text-accent-soft-ink'
@@ -27,4 +28,14 @@ export const PAYOUT_STATUS: Record<PayoutStatus, { label: string; tone: string }
   paid: { label: 'Paid', tone: GOOD },
   failed: { label: 'Payout failed', tone: BAD },
   refunded: { label: 'Refunded to buyer', tone: NEUTRAL },
+}
+
+// Same states, worded for whoever is reading: the buyer who made the offer or the seller who got it.
+export const OFFER_STATUS: Record<OfferStatus, { buyer: string; seller: string; tone: string }> = {
+  pending: { buyer: 'Waiting for the seller', seller: 'Needs your answer', tone: WARN },
+  accepted: { buyer: 'Accepted', seller: 'Accepted, waiting for payment', tone: GOOD },
+  declined: { buyer: 'Declined', seller: 'Declined', tone: NEUTRAL },
+  expired: { buyer: 'Lapsed', seller: 'Lapsed', tone: NEUTRAL },
+  withdrawn: { buyer: 'Withdrawn', seller: 'Withdrawn by the buyer', tone: NEUTRAL },
+  purchased: { buyer: 'Bought', seller: 'Sold', tone: ACTIVE },
 }

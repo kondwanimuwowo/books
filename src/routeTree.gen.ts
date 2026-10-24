@@ -32,6 +32,7 @@ import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed/account/index'
 import { Route as AuthedAccountAuthorRouteImport } from './routes/_authed/account/author'
 import { Route as AuthedAccountListingsRouteImport } from './routes/_authed/account/listings'
+import { Route as AuthedAccountOffersRouteImport } from './routes/_authed/account/offers'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
 import { Route as AuthedAccountSalesRouteImport } from './routes/_authed/account/sales'
 import { Route as AuthedAccountShopRouteImport } from './routes/_authed/account/shop'
@@ -156,6 +157,11 @@ const AuthedAccountListingsRoute = AuthedAccountListingsRouteImport.update({
   path: '/listings',
   getParentRoute: () => AuthedAccountRoute,
 } as any)
+const AuthedAccountOffersRoute = AuthedAccountOffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
+  getParentRoute: () => AuthedAccountRoute,
+} as any)
 const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   id: '/password',
   path: '/password',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/sellers/$slug': typeof SellersSlugRoute
   '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
+  '/account/offers': typeof AuthedAccountOffersRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/sellers/$slug': typeof SellersSlugRoute
   '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
+  '/account/offers': typeof AuthedAccountOffersRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/account/sales': typeof AuthedAccountSalesRoute
   '/account/shop': typeof AuthedAccountShopRoute
@@ -295,6 +303,7 @@ export interface FileRoutesById {
   '/sellers/$slug': typeof SellersSlugRoute
   '/_authed/account/author': typeof AuthedAccountAuthorRoute
   '/_authed/account/listings': typeof AuthedAccountListingsRoute
+  '/_authed/account/offers': typeof AuthedAccountOffersRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
   '/_authed/account/sales': typeof AuthedAccountSalesRoute
   '/_authed/account/shop': typeof AuthedAccountShopRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/sellers/$slug'
     | '/account/author'
     | '/account/listings'
+    | '/account/offers'
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/sellers/$slug'
     | '/account/author'
     | '/account/listings'
+    | '/account/offers'
     | '/account/password'
     | '/account/sales'
     | '/account/shop'
@@ -396,6 +407,7 @@ export interface FileRouteTypes {
     | '/sellers/$slug'
     | '/_authed/account/author'
     | '/_authed/account/listings'
+    | '/_authed/account/offers'
     | '/_authed/account/password'
     | '/_authed/account/sales'
     | '/_authed/account/shop'
@@ -591,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountListingsRouteImport
       parentRoute: typeof AuthedAccountRoute
     }
+    '/_authed/account/offers': {
+      id: '/_authed/account/offers'
+      path: '/offers'
+      fullPath: '/account/offers'
+      preLoaderRoute: typeof AuthedAccountOffersRouteImport
+      parentRoute: typeof AuthedAccountRoute
+    }
     '/_authed/account/password': {
       id: '/_authed/account/password'
       path: '/password'
@@ -667,6 +686,7 @@ declare module '@tanstack/react-router' {
 interface AuthedAccountRouteChildren {
   AuthedAccountAuthorRoute: typeof AuthedAccountAuthorRoute
   AuthedAccountListingsRoute: typeof AuthedAccountListingsRoute
+  AuthedAccountOffersRoute: typeof AuthedAccountOffersRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
   AuthedAccountSalesRoute: typeof AuthedAccountSalesRoute
   AuthedAccountShopRoute: typeof AuthedAccountShopRoute
@@ -676,6 +696,7 @@ interface AuthedAccountRouteChildren {
 const AuthedAccountRouteChildren: AuthedAccountRouteChildren = {
   AuthedAccountAuthorRoute: AuthedAccountAuthorRoute,
   AuthedAccountListingsRoute: AuthedAccountListingsRoute,
+  AuthedAccountOffersRoute: AuthedAccountOffersRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
   AuthedAccountSalesRoute: AuthedAccountSalesRoute,
   AuthedAccountShopRoute: AuthedAccountShopRoute,

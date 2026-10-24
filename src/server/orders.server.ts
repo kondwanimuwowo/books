@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { deliveryRates, listings, orderItems, orders, payments, payouts, profiles, sellerOrders, sellers, books } from '#/db/schema'
+import { deliveryRates, listings, offers, orderItems, orders, payments, payouts, profiles, sellerOrders, sellers, books } from '#/db/schema'
 import { AUTO_RELEASE_DAYS, shippingOptions } from '#/data/shipping'
 import type { DeliveryRate, ShippingMethod } from '#/data/shipping'
 import { COMMISSION_RATE } from '#/data/listing-options'
@@ -22,7 +22,8 @@ export interface ShipTo {
   province: string
 }
 
-export async function loadCartListings(db: Db, lines: CartLine[]) {
+/** With a buyer, copies held for their accepted offers are priced at the offer and not counted as held. */
+export async function loadCartListings(db: Db, lines: CartLine[], buyerId: string | null = null) {
   const ids = [...new Set(lines.map((l) => l.listingId))]
   if (!ids.length) return []
   return db
@@ -33,6 +34,15 @@ export async function loadCartListings(db: Db, lines: CartLine[]) {
       status: listings.status,
       condition: listings.condition,
       format: listings.format,
+      held: sql<number>`(
+        select count(*)::int from ${offers} o
+        where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now() and o.buyer_id is distinct from ${buyerId}::uuid
+      )`,
+      offer: sql<{ id: string; amountNgwee: number } | null>`(
+        select json_build_object('id', o.id, 'amountNgwee', o.amount_ngwee) from ${offers} o
+        where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now() and o.buyer_id = ${buyerId}::uuid
+        limit 1
+      )`,
       book: { id: books.id, slug: books.slug, title: books.title, coverUrl: books.coverUrl },
       seller: {
         id: sellers.id,
@@ -68,19 +78,23 @@ type CartListing = Awaited<ReturnType<typeof loadCartListings>>[number]
 /** Groups cart lines by seller and prices shipping for the buyer's town. Shared by checkout preview and order creation. */
 export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: string; province: string } | null, rates: DeliveryRate[]) {
   const byId = new Map(rows.map((r) => [r.id, r]))
-  const groups = new Map<string, { seller: CartListing['seller']; items: { listing: CartListing; quantity: number }[] }>()
+  const groups = new Map<string, { seller: CartListing['seller']; items: { listing: CartListing; quantity: number; available: number; offerNgwee: number | null; lineNgwee: number }[] }>()
   const problems: string[] = []
 
   for (const line of lines) {
     const listing = byId.get(line.listingId)
-    if (!listing || listing.status !== 'active' || listing.quantity < 1) {
+    const available = listing ? listing.quantity - listing.held : 0
+    if (!listing || listing.status !== 'active' || available < 1) {
       problems.push(`${listing?.book.title ?? 'A book in your bag'} is no longer available`)
       continue
     }
-    const quantity = Math.min(line.quantity, listing.quantity)
-    if (quantity < line.quantity) problems.push(`Only ${listing.quantity} of ${listing.book.title} left`)
+    const quantity = Math.min(line.quantity, available)
+    if (quantity < line.quantity) problems.push(`Only ${available} of ${listing.book.title} left`)
+    // An accepted offer covers one copy (or the listed price, if the seller has since dropped below it); any more are at the listed price.
+    const offerNgwee = listing.offer ? Math.min(listing.offer.amountNgwee, listing.priceNgwee) : null
+    const lineNgwee = offerNgwee !== null ? offerNgwee + (quantity - 1) * listing.priceNgwee : quantity * listing.priceNgwee
     const group = groups.get(listing.seller.id) ?? { seller: listing.seller, items: [] }
-    group.items.push({ listing, quantity })
+    group.items.push({ listing, quantity, available, offerNgwee, lineNgwee })
     groups.set(listing.seller.id, group)
   }
 
@@ -88,7 +102,7 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
     problems,
     groups: [...groups.values()].map((g) => {
       const itemCount = g.items.reduce((n, i) => n + i.quantity, 0)
-      const subtotalNgwee = g.items.reduce((n, i) => n + i.quantity * i.listing.priceNgwee, 0)
+      const subtotalNgwee = g.items.reduce((n, i) => n + i.lineNgwee, 0)
       const options = to ? shippingOptions(g.seller, to, rates, g.seller, { itemCount, subtotalNgwee }) : []
       if (to && !options.length) problems.push(`${g.seller.storeName} doesn’t deliver to ${to.town}`)
       return { seller: { id: g.seller.id, storeName: g.seller.storeName, town: g.seller.town, province: g.seller.province, profileId: g.seller.profileId }, items: g.items, itemCount, subtotalNgwee, options }
@@ -97,7 +111,7 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
 }
 
 export async function createOrder(db: Db, buyerId: string, lines: CartLine[], shipTo: ShipTo, methods: Record<string, ShippingMethod>) {
-  const [rows, rates] = await Promise.all([loadCartListings(db, lines), loadDeliveryRates(db)])
+  const [rows, rates] = await Promise.all([loadCartListings(db, lines, buyerId), loadDeliveryRates(db)])
   const quote = quoteCart(rows, lines, shipTo, rates)
   if (quote.problems.length) throw new Error(quote.problems.join('. '))
   if (!quote.groups.length) throw new Error('Your bag is empty')
@@ -143,16 +157,19 @@ export async function createOrder(db: Db, buyerId: string, lines: CartLine[], sh
         })
         .returning({ id: sellerOrders.id })
       await tx.insert(orderItems).values(
-        g.items.map((i) => ({
-          sellerOrderId: sellerOrder.id,
-          listingId: i.listing.id,
-          bookId: i.listing.book.id,
-          title: i.listing.book.title,
-          condition: i.listing.condition,
-          format: i.listing.format,
-          unitPriceNgwee: i.listing.priceNgwee,
-          quantity: i.quantity,
-        })),
+        g.items.flatMap((i) => {
+          const item = {
+            sellerOrderId: sellerOrder.id,
+            listingId: i.listing.id,
+            bookId: i.listing.book.id,
+            title: i.listing.book.title,
+            condition: i.listing.condition,
+            format: i.listing.format,
+          }
+          if (!i.listing.offer || i.offerNgwee === null) return [{ ...item, unitPriceNgwee: i.listing.priceNgwee, quantity: i.quantity }]
+          const offerCopy = { ...item, unitPriceNgwee: i.offerNgwee, quantity: 1, offerId: i.listing.offer.id }
+          return i.quantity > 1 ? [offerCopy, { ...item, unitPriceNgwee: i.listing.priceNgwee, quantity: i.quantity - 1 }] : [offerCopy]
+        }),
       )
     }
     return order
@@ -204,7 +221,7 @@ export async function settlePayment(db: Db, reference: string): Promise<SettleRe
 
     await tx.update(sellerOrders).set({ status: 'to_ship' }).where(eq(sellerOrders.orderId, order.id))
     const items = await tx
-      .select({ listingId: orderItems.listingId, quantity: orderItems.quantity })
+      .select({ listingId: orderItems.listingId, quantity: orderItems.quantity, offerId: orderItems.offerId })
       .from(orderItems)
       .innerJoin(sellerOrders, eq(sellerOrders.id, orderItems.sellerOrderId))
       .where(eq(sellerOrders.orderId, order.id))
@@ -218,6 +235,8 @@ export async function settlePayment(db: Db, reference: string): Promise<SettleRe
         })
         .where(eq(listings.id, item.listingId))
     }
+    const offerIds = items.flatMap((i) => (i.offerId ? [i.offerId] : []))
+    if (offerIds.length) await tx.update(offers).set({ status: 'purchased' }).where(inArray(offers.id, offerIds))
     return true
   })
 

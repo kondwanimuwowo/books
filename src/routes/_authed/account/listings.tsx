@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { getMyListings, updateListing } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
+import { OfferSettings, offerSettingsData } from '#/components/seller-forms'
+import type { OfferSettingsValue } from '#/components/seller-forms'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { cn } from '#/lib/utils'
@@ -52,8 +54,12 @@ function ListingItem({ listing }: { listing: Listing }) {
   const [mode, setMode] = useState<'view' | 'edit' | 'confirm-remove'>('view')
   const [price, setPrice] = useState(String(listing.priceNgwee / 100))
   const [quantity, setQuantity] = useState(String(listing.quantity))
+  const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({
+    open: listing.acceptsOffers,
+    floor: listing.offerFloorNgwee !== null ? String(listing.offerFloorNgwee / 100) : '',
+  })
   const save = useAction(async (status: Status) => {
-    await updateListing({ data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status } })
+    await updateListing({ data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status, ...offerSettingsData(offerSettings) } })
     setMode('view')
     await router.invalidate()
   })
@@ -77,6 +83,7 @@ function ListingItem({ listing }: { listing: Listing }) {
           <span className="lg:hidden"> · </span>
           {conditionLabel(listing.condition)} · {listing.quantity} left ·{' '}
           <span className={cn(listing.status === 'active' ? 'text-success' : 'text-subtle')}>{STATE[listing.status]}</span>
+          {listing.acceptsOffers && ' · Offers'}
         </p>
 
         {save.error && (
@@ -95,6 +102,9 @@ function ListingItem({ listing }: { listing: Listing }) {
               Copies
               <input className="input mt-1 h-9 w-20" type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
             </label>
+            <div className="w-full">
+              <OfferSettings value={offerSettings} onChange={setOfferSettings} />
+            </div>
             <button type="button" className="btn btn-primary btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
               Save
             </button>

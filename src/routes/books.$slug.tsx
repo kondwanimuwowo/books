@@ -3,9 +3,11 @@ import { CheckIcon, MapPinIcon } from '@heroicons/react/16/solid'
 import { ShieldCheckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
 import { getBook } from '#/functions/catalog.functions'
+import { makeOffer } from '#/functions/offers.functions'
+import { Alert, useAction } from '#/components/form'
 import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { Price, useBag } from '#/components/providers'
-import { conditionLabel, formatLabel } from '#/data/listing-options'
+import { OFFER_REPLY_HOURS, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
 import { cn } from '#/lib/utils'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
@@ -132,6 +134,9 @@ function BookPage() {
                 </fieldset>
                 {/* Desktop keeps the action beside the list; phones get the bar pinned under the thumb. */}
                 <div className="mt-5 hidden lg:block">{action}</div>
+                {selected?.acceptsOffers && selected.seller.slug !== user?.sellerSlug && (
+                  <MakeOffer key={selected.id} copy={selected} signedIn={!!user} next={`/books/${book.slug}`} />
+                )}
                 <p className="mt-4 flex items-center gap-2 text-xs text-subtle">
                   <ShieldCheckIcon className="size-4 shrink-0 text-success" aria-hidden />
                   Seller is paid after you receive it.
@@ -261,7 +266,88 @@ function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean
           {offer.seller.town}
         </span>
         {offer.quantity > 1 && offer.quantity <= 5 && <span>· {offer.quantity} left</span>}
+        {offer.acceptsOffers && <span>· Open to offers</span>}
       </span>
     </label>
+  )
+}
+
+function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; next: string }) {
+  const [open, setOpen] = useState(false)
+  const [amount, setAmount] = useState('')
+  const [message, setMessage] = useState('')
+  const [result, setResult] = useState<'pending' | 'declined' | null>(null)
+  const send = useAction(async () => {
+    const { status } = await makeOffer({ data: { listingId: copy.id, amountKwacha: Number(amount), message: message.trim() || undefined } })
+    setResult(status)
+  })
+
+  if (!signedIn) {
+    return (
+      <Link to="/login" search={{ next }} className="btn btn-ghost mt-3 w-full">
+        Make an offer
+      </Link>
+    )
+  }
+  if (result === 'pending') {
+    return (
+      <div className="mt-4">
+        <Alert tone="success">
+          Offer sent. {copy.seller.storeName} has {OFFER_REPLY_HOURS} hours to answer.{' '}
+          <Link to="/account/offers" className="font-medium">
+            Your offers
+          </Link>
+        </Alert>
+      </div>
+    )
+  }
+  if (!open) {
+    return (
+      <button type="button" className="btn btn-ghost mt-3 w-full" onClick={() => setOpen(true)}>
+        Make an offer
+      </button>
+    )
+  }
+  return (
+    <form
+      className="rise mt-4 space-y-3 border-t border-line pt-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void send.run()
+      }}
+    >
+      {send.error && <Alert>{send.error}</Alert>}
+      {result === 'declined' && !send.error && <Alert tone="info">That’s below what the seller will take.</Alert>}
+      <label className="block">
+        <span className="field-label">Your offer</span>
+        <div className="relative">
+          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle">K</span>
+          <input
+            className="input pl-7 tabular-nums"
+            type="number"
+            inputMode="decimal"
+            min={5}
+            max={copy.priceNgwee / 100 - 0.5}
+            step="0.5"
+            required
+            autoFocus
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+      </label>
+      <label className="block">
+        <span className="field-label">Note to the seller (optional)</span>
+        <textarea className="input" rows={2} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)} />
+      </label>
+      <div className="flex gap-2">
+        <button type="submit" className="btn btn-secondary flex-1" disabled={send.pending}>
+          {send.pending ? 'Sending…' : 'Send offer'}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }

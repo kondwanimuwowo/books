@@ -1,6 +1,6 @@
-import { and, eq, gt, isNotNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { payments, payouts, sellerOrders, sellers } from '#/db/schema'
+import { listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
 import { getTransferStatus } from './lenco.server'
 import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
 
@@ -88,7 +88,22 @@ async function retryPayouts(db: Db) {
   })
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts }
+// Unanswered offers lapse, held copies go back on sale, and offers on copies taken down close.
+async function expireOffers(db: Db) {
+  const rows = await db
+    .update(offers)
+    .set({ status: 'expired' })
+    .where(
+      and(
+        inArray(offers.status, ['pending', 'accepted']),
+        or(lte(offers.expiresAt, new Date()), sql`exists (select 1 from ${listings} l where l.id = ${offers.listingId} and l.status <> 'active')`),
+      ),
+    )
+    .returning({ id: offers.id })
+  return rows.length
+}
+
+const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

@@ -81,6 +81,14 @@ export const deliveryBand = pgEnum('delivery_band', [
   'same_province',
   'other_province',
 ])
+export const offerStatus = pgEnum('offer_status', [
+  'pending',
+  'accepted',
+  'declined',
+  'expired',
+  'withdrawn',
+  'purchased',
+])
 export const paymentMethod = pgEnum('payment_method', ['mobile_money', 'card'])
 export const paymentStatus = pgEnum('payment_status', [
   'pending',
@@ -272,6 +280,9 @@ export const listings = pgTable(
     quantity: integer('quantity').notNull().default(1),
     notes: text('notes'),
     status: listingStatus('status').notNull().default('active'),
+    acceptsOffers: boolean('accepts_offers').notNull().default(false),
+    // Offers below this are declined automatically. Never shown to buyers.
+    offerFloorNgwee: integer('offer_floor_ngwee'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -363,8 +374,45 @@ export const orderItems = pgTable(
     format: bookFormat('format').notNull(),
     unitPriceNgwee: integer('unit_price_ngwee').notNull(),
     quantity: integer('quantity').notNull(),
+    // Set when this copy was bought at an accepted offer's price.
+    offerId: uuid('offer_id').references(() => offers.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => [index('order_items_seller_order_idx').on(t.sellerOrderId)],
+).enableRLS()
+
+// One copy at the buyer's price. Pending: the seller has until expiresAt to answer.
+// Accepted: the copy is held for the buyer until expiresAt.
+export const offers = pgTable(
+  'offers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    sellerId: uuid('seller_id')
+      .notNull()
+      .references(() => sellers.id, { onDelete: 'cascade' }),
+    amountNgwee: integer('amount_ngwee').notNull(),
+    message: text('message'),
+    status: offerStatus('status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('offers_open_key')
+      .on(t.listingId, t.buyerId)
+      .where(sql`status in ('pending', 'accepted')`),
+    index('offers_seller_idx').on(t.sellerId, t.status),
+    index('offers_buyer_idx').on(t.buyerId, t.status),
+    index('offers_expiry_idx').on(t.status, t.expiresAt),
+  ],
 ).enableRLS()
 
 // Each attempt to pay gets its own reference, so a failed prompt can be retried.

@@ -241,3 +241,31 @@ export function DeliveryForm({ current }: { current: { deliveryMethods: Shipping
     </form>
   )
 }
+
+export interface OfferSettingsValue {
+  open: boolean
+  floor: string
+}
+
+export function OfferSettings({ value, onChange }: { value: OfferSettingsValue; onChange: (value: OfferSettingsValue) => void }) {
+  return (
+    <div className="space-y-3">
+      <label className="flex items-center gap-3 text-sm font-medium">
+        <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={value.open} onChange={(e) => onChange({ ...value, open: e.target.checked })} />
+        Open to offers
+      </label>
+      {value.open && (
+        <Field label="Lowest you’ll take (optional)" hint="Buyers never see this. Offers below it are declined for you.">
+          <div className="relative max-w-40">
+            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle">K</span>
+            <input className="input pl-7 tabular-nums" type="number" inputMode="decimal" min={5} step="0.5" value={value.floor} onChange={(e) => onChange({ ...value, floor: e.target.value })} />
+          </div>
+        </Field>
+      )}
+    </div>
+  )
+}
+
+export function offerSettingsData(value: OfferSettingsValue) {
+  return { acceptsOffers: value.open, offerFloorKwacha: value.open && value.floor ? Number(value.floor) : null }
+}

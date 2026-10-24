@@ -7,7 +7,8 @@ import { createListing, findBookForSale, getMySeller, getPriceGuide } from '#/fu
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { Alert, Field, useAction } from '#/components/form'
-import { SellerProfileForm } from '#/components/seller-forms'
+import { OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
+import type { OfferSettingsValue } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
 import type { Condition, Format } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
@@ -176,6 +177,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState('')
+  const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({ open: false, floor: '' })
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
   const [cover, setCover] = useState<{ key: string; preview: string } | null>(null)
   const [coverBusy, setCoverBusy] = useState(false)
@@ -219,6 +221,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
         priceKwacha: Number(price),
         quantity: Number(quantity),
         notes: notes || undefined,
+        ...offerSettingsData(offerSettings),
         coverKey: cover?.key,
       },
     })
@@ -371,6 +374,9 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
           <Field label="Note for buyers (optional)" className="sm:col-span-2">
             <textarea className="input" rows={2} maxLength={500} placeholder="Signed, highlighted, edition" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </Field>
+          <div className="sm:col-span-2">
+            <OfferSettings value={offerSettings} onChange={setOfferSettings} />
+          </div>
         </section>
 
         {submit.error && <Alert>{submit.error}</Alert>}
