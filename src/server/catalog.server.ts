@@ -81,6 +81,7 @@ export interface SearchParams {
   page?: number
   /** Match misspellings by trigram similarity instead of exact words. */
   fuzzy?: boolean
+  limit?: number
 }
 
 export const PAGE_SIZE = 24
@@ -134,8 +135,8 @@ export async function searchBooks(db: Db, params: SearchParams) {
     .leftJoin(offers, eq(offers.bookId, books.id))
     .where(and(...where))
     .orderBy(...order)
-    .limit(PAGE_SIZE)
-    .offset((page - 1) * PAGE_SIZE)
+    .limit(params.limit ?? PAGE_SIZE)
+    .offset((page - 1) * (params.limit ?? PAGE_SIZE))
 
   return { results: rows.map(({ total: _total, ...card }) => card as BookCard), total: rows[0]?.total ?? 0, page }
 }

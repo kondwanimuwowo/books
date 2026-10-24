@@ -174,6 +174,23 @@ export const getAuthor = createServerFn({ method: 'GET' })
     return author
   })
 
+const QUICK_BOOKS = 6
+const QUICK_AUTHORS = 3
+
+/** Results for the header search box as someone types: exact words, then close spellings. No AI, it must keep up. */
+export const quickSearch = createServerFn({ method: 'GET' })
+  .validator(z.object({ q: z.string().trim().min(2).max(100) }))
+  .handler(async ({ data }) => {
+    const db = getDb()
+    const [exact, authors] = await Promise.all([
+      searchBooks(db, { q: data.q, limit: QUICK_BOOKS }),
+      listDirectory(db, 'authors', { query: data.q, limit: QUICK_AUTHORS }),
+    ])
+    const books = exact.total || toIsbn13(data.q) ? exact : await searchBooks(db, { q: data.q, limit: QUICK_BOOKS, fuzzy: true })
+    publicCache(60)
+    return { books: books.results, total: books.total, authors }
+  })
+
 export const getPublisher = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().max(120) }))
   .handler(async ({ data }) => {

@@ -2,6 +2,8 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV } from '#/data/navigation'
+import { quickSearch } from '#/functions/catalog.functions'
+import { BookCover } from './book'
 import { useHideOnScroll } from './use-hide-on-scroll'
 import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
@@ -48,11 +50,54 @@ function CurrencySwitch() {
   )
 }
 
+type Quick = Awaited<ReturnType<typeof quickSearch>>
+type QuickItem = { key: string; to: 'book' | 'author' | 'all'; slug: string }
+
+const QUICK_DELAY_MS = 250
+
+/** The header search: results drop down as you type; Enter on nothing highlighted runs the full search. */
 function SearchBox() {
   const navigate = useNavigate()
   const current = useRouterState({ select: (s) => (s.location.pathname === '/search' ? ((s.location.search as { q?: string }).q ?? '') : '') })
   const [q, setQ] = useState(current)
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+  const [found, setFound] = useState<{ q: string; result: Quick } | null>(null)
   useEffect(() => setQ(current), [current])
+  const term = q.trim()
+  const searching = open && term.length >= 2
+
+  useEffect(() => {
+    if (!searching) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      quickSearch({ data: { q: term } })
+        .then((result) => !cancelled && setFound({ q: term, result }))
+        .catch(() => undefined)
+    }, QUICK_DELAY_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [term, searching])
+
+  const result = searching && found?.q === term ? found.result : null
+  const items: QuickItem[] = result
+    ? [
+        ...result.books.map((b) => ({ key: `b-${b.slug}`, to: 'book' as const, slug: b.slug })),
+        ...result.authors.map((a) => ({ key: `a-${a.slug}`, to: 'author' as const, slug: a.slug })),
+        { key: 'all', to: 'all' as const, slug: '' },
+      ]
+    : []
+
+  const go = (item: QuickItem | undefined) => {
+    setOpen(false)
+    setActive(-1)
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    if (item?.to === 'book') return void navigate({ to: '/books/$slug', params: { slug: item.slug } })
+    if (item?.to === 'author') return void navigate({ to: '/authors/$slug', params: { slug: item.slug } })
+    void navigate({ to: '/search', search: term ? { q: term } : {} })
+  }
 
   return (
     <form
@@ -60,21 +105,111 @@ function SearchBox() {
       className="relative w-full"
       onSubmit={(e) => {
         e.preventDefault()
-        // Closes the phone keyboard and lets the header tuck away again while reading results.
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        void navigate({ to: '/search', search: q.trim() ? { q: q.trim() } : {} })
+        go(items[active])
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
       }}
     >
       <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" aria-hidden />
       <input
         type="search"
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value)
+          setActive(-1)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (!items.length) return
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActive((i) => Math.min(i + 1, items.length - 1))
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActive((i) => Math.max(i - 1, -1))
+          } else if (e.key === 'Escape') {
+            setOpen(false)
+          }
+        }}
+        role="combobox"
+        aria-expanded={!!result}
+        aria-controls="quick-results"
+        aria-autocomplete="list"
+        aria-activedescendant={result && active >= 0 ? `quick-${items[active]?.key}` : undefined}
+        autoComplete="off"
         placeholder="A title, an author, or an ISBN"
         aria-label="Search books"
         className="h-11 w-full rounded-full bg-on-accent/10 pr-4 pl-11 text-[15px] text-on-accent transition-colors placeholder:text-on-deep-muted focus:bg-on-accent/15 focus:shadow-[inset_0_0_0_1.5px_var(--color-on-deep-muted)] focus:outline-none md:h-12"
       />
+      {result && <QuickResults result={result} term={term} items={items} active={active} onHover={setActive} onPick={go} />}
     </form>
+  )
+}
+
+function QuickResults({
+  result,
+  term,
+  items,
+  active,
+  onHover,
+  onPick,
+}: {
+  result: Quick
+  term: string
+  items: QuickItem[]
+  active: number
+  onHover: (i: number) => void
+  onPick: (item: QuickItem) => void
+}) {
+  const { format } = useCurrency()
+  const row = (i: number) => ({
+    id: `quick-${items[i].key}`,
+    role: 'option' as const,
+    'aria-selected': i === active,
+    // Keeps focus in the input so the list doesn't close before the click lands.
+    onMouseDown: (e: React.MouseEvent) => e.preventDefault(),
+    onMouseEnter: () => onHover(i),
+    onClick: () => onPick(items[i]),
+    className: cn('flex cursor-pointer items-center gap-3 px-4 py-2 text-ink', i === active && 'bg-sunken'),
+  })
+  const authorStart = result.books.length
+  return (
+    <div className="card absolute inset-x-0 top-full z-40 mt-2 max-h-[min(70vh,34rem)] overflow-y-auto py-1 text-left">
+      <ul id="quick-results" role="listbox" aria-label="Search results">
+        {!result.books.length && !result.authors.length && <li className="px-4 py-3 text-sm text-subtle">No books match “{term}” yet</li>}
+        {result.books.map((b, i) => (
+          <li key={b.slug} {...row(i)}>
+            <div className="w-9 shrink-0">
+              <BookCover src={b.coverUrl} title={b.title} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-1 text-[15px] font-medium">{b.title}</p>
+              <p className="line-clamp-1 text-sm text-subtle">{b.authorNames}</p>
+            </div>
+            <span className={cn('shrink-0 text-sm tabular-nums', b.fromPriceNgwee !== null ? 'font-medium' : 'text-subtle')}>
+              {b.fromPriceNgwee !== null ? `from ${format(b.fromPriceNgwee)}` : 'None for sale'}
+            </span>
+          </li>
+        ))}
+        {result.authors.length > 0 && <li role="presentation" className="eyebrow px-4 pt-3 pb-1">Authors</li>}
+        {result.authors.map((a, i) => (
+          <li key={a.slug} {...row(authorStart + i)}>
+            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sunken text-sm font-bold" aria-hidden>
+              {a.name.charAt(0)}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{a.name}</span>
+            <span className="shrink-0 text-sm text-subtle tabular-nums">
+              {a.bookCount} {a.bookCount === 1 ? 'book' : 'books'}
+            </span>
+          </li>
+        ))}
+        <li {...row(items.length - 1)} className={cn(row(items.length - 1).className, 'mt-1 border-t border-line py-3 text-sm font-medium text-accent-ink')}>
+          {result.total > result.books.length ? `See all ${result.total} results for “${term}”` : `Search for “${term}”`}
+        </li>
+      </ul>
+    </div>
   )
 }
 
