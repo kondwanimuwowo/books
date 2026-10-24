@@ -81,16 +81,20 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
   const byId = new Map(rows.map((r) => [r.id, r]))
   const groups = new Map<string, { seller: CartListing['seller']; items: { listing: CartListing; quantity: number; available: number; offerNgwee: number | null; lineNgwee: number }[] }>()
   const problems: string[] = []
+  // Lines that can't be bought at all; the bag removes these, keeping the reason on screen.
+  const dropped: string[] = []
 
   for (const line of lines) {
     const listing = byId.get(line.listingId)
     const available = listing ? listing.quantity - listing.held : 0
     if (!listing || listing.status !== 'active' || available < 1) {
       problems.push(`${listing?.book.title ?? 'A book in your bag'} is no longer available`)
+      dropped.push(line.listingId)
       continue
     }
     if (buyerId && listing.seller.profileId === buyerId) {
-      problems.push(`${listing.book.title} is your own listing. Remove it from your bag`)
+      problems.push(`${listing.book.title} is your own listing, so we took it out of your bag`)
+      dropped.push(line.listingId)
       continue
     }
     const quantity = Math.min(line.quantity, available)
@@ -105,6 +109,7 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
 
   return {
     problems,
+    dropped,
     groups: [...groups.values()].map((g) => {
       const itemCount = g.items.reduce((n, i) => n + i.quantity, 0)
       const subtotalNgwee = g.items.reduce((n, i) => n + i.lineNgwee, 0)

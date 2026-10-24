@@ -30,6 +30,7 @@ export const quoteBag = createServerFn({ method: 'POST' })
     const quote = quoteCart(rows, data.lines, data.to, rates, context.user?.id ?? null)
     return {
       problems: quote.problems,
+      dropped: quote.dropped,
       groups: quote.groups.map((g) => ({
         seller: { id: g.seller.id, storeName: g.seller.storeName, town: g.seller.town, province: g.seller.province },
         itemCount: g.itemCount,

@@ -24,6 +24,11 @@ function BagPage() {
     return (
       <div className="page py-8">
         <h1 className="text-3xl sm:text-4xl">Your bag</h1>
+        {quote && quote.problems.length > 0 && (
+          <div className="mt-4 max-w-3xl">
+            <Alert>{quote.problems.join('. ')}.</Alert>
+          </div>
+        )}
         <Placeholder mode={quote ? 'empty' : 'loading'} label="Loading your bag" className="mt-6 max-w-3xl" shapes={<ParcelShapes />}>
           <EmptyMessage
             title="Your bag is empty"
