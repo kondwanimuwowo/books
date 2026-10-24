@@ -218,6 +218,8 @@ export const books = pgTable(
     subtitle: text('subtitle'),
     description: text('description'),
     coverUrl: text('cover_url'),
+    // Set once the cron has copied the best cover it could find into R2 (or found none).
+    coverCheckedAt: timestamp('cover_checked_at', { withTimezone: true }),
     publisher: text('publisher'),
     publishedYear: integer('published_year'),
     pageCount: integer('page_count'),

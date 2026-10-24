@@ -25,6 +25,7 @@ export interface BookCandidate {
 }
 
 interface GoogleVolume {
+  id: string
   volumeInfo: {
     title?: string
     subtitle?: string
@@ -48,9 +49,21 @@ function stripHtml(value: string | undefined) {
   return value ? value.replace(/<[^>]+>/g, '').trim() : null
 }
 
-function googleCover(links: GoogleVolume['volumeInfo']['imageLinks']) {
-  const url = links?.thumbnail ?? links?.smallThumbnail
-  return url ? url.replace('http://', 'https://').replace('&edge=curl', '') : null
+// The API's thumbnails are 128px wide; the publisher image behind them goes to 800. Only volumes with a
+// thumbnail have one, otherwise this URL returns a placeholder.
+export function googleCoverUrl(volumeId: string) {
+  return `https://books.google.com/books/publisher/content/images/frontcover/${encodeURIComponent(volumeId)}?fife=w800-h1200&source=gbs_api`
+}
+
+/** The volume id inside a Google thumbnail URL we saved before covers were mirrored. */
+export function googleVolumeId(url: string | null) {
+  const match = url?.match(/^https?:\/\/books\.google\.com\/books\/(?:content|publisher\/content\/images\/frontcover\/)(?:\?id=)?([\w-]+)/)
+  return match?.[1] ?? null
+}
+
+function googleCover(volume: GoogleVolume) {
+  const links = volume.volumeInfo.imageLinks
+  return links?.thumbnail || links?.smallThumbnail ? googleCoverUrl(volume.id) : null
 }
 
 function fromGoogle(volume: GoogleVolume): BookCandidate | null {
@@ -66,7 +79,7 @@ function fromGoogle(volume: GoogleVolume): BookCandidate | null {
     subtitle: info.subtitle ?? null,
     authors: info.authors ?? [],
     description: stripHtml(info.description),
-    coverUrl: googleCover(info.imageLinks),
+    coverUrl: googleCover(volume),
     publisher: info.publisher ?? null,
     publishedYear: year(info.publishedDate),
     pageCount: info.pageCount ?? null,
@@ -75,17 +88,30 @@ function fromGoogle(volume: GoogleVolume): BookCandidate | null {
   }
 }
 
-async function googleQuery(q: string, maxResults: number) {
+// Google's search fails with 503 backendFailed for a good share of requests and the next one often
+// works. 429 means our quota is spent, so it isn't retried.
+const GOOGLE_TRIES = 3
+
+/** Matching volumes, or null when Google didn't answer (as opposed to finding nothing). */
+async function googleSearch(q: string, maxResults: number, tries = GOOGLE_TRIES): Promise<BookCandidate[] | null> {
   const params = new URLSearchParams({ q, maxResults: String(maxResults), printType: 'books' })
   if (env.GOOGLE_BOOKS_API_KEY) params.set('key', env.GOOGLE_BOOKS_API_KEY)
-  try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?${params}`)
-    if (!response.ok) return []
-    const json = (await response.json()) as { items?: GoogleVolume[] }
-    return (json.items ?? []).map(fromGoogle).filter((b): b is BookCandidate => b !== null)
-  } catch {
-    return []
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    try {
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?${params}`)
+      if (response.status === 503 && attempt < tries) continue
+      if (!response.ok) return null
+      const json = (await response.json()) as { items?: GoogleVolume[] }
+      return (json.items ?? []).map(fromGoogle).filter((b): b is BookCandidate => b !== null)
+    } catch {
+      if (attempt === tries) return null
+    }
   }
+  return null
+}
+
+async function googleQuery(q: string, maxResults: number) {
+  return (await googleSearch(q, maxResults)) ?? []
 }
 
 interface OpenLibraryBook {
@@ -166,14 +192,14 @@ export async function findDescription(input: string) {
   return google?.description ?? (await openLibraryDescription(isbn13))
 }
 
-/** Google first for metadata; Open Library fills gaps, and usually has the sharper cover. */
+/** Google first for metadata and covers (800px against Open Library's ~500); Open Library fills gaps. */
 export async function lookupIsbn(input: string): Promise<BookCandidate | null> {
   const isbn13 = toIsbn13(input)
   if (!isbn13) return null
   const [google] = await googleQuery(`isbn:${cleanIsbn(input)}`, 1)
   const [openLibrary, olCover, olDescription] = await Promise.all([
     google ? Promise.resolve(null) : openLibraryByIsbn(isbn13),
-    openLibraryCover(isbn13),
+    google?.coverUrl ? Promise.resolve(null) : openLibraryCover(isbn13),
     google?.description ? Promise.resolve(null) : openLibraryDescription(isbn13),
   ])
   const base = google ?? openLibrary
@@ -182,8 +208,19 @@ export async function lookupIsbn(input: string): Promise<BookCandidate | null> {
     ...base,
     isbn13,
     description: base.description ?? olDescription,
-    coverUrl: olCover ?? base.coverUrl ?? openLibrary?.coverUrl ?? null,
+    coverUrl: google?.coverUrl ?? olCover ?? openLibrary?.coverUrl ?? null,
   }
+}
+
+/**
+ * The best cover we can find for an ISBN, best first. `undefined` means Google didn't answer, so the
+ * caller can try again later instead of settling for Open Library's smaller image.
+ */
+export async function findCoverUrls(isbn13: string): Promise<string[] | undefined> {
+  const google = await googleSearch(`isbn:${isbn13}`, 1)
+  if (google === null) return undefined
+  const olCover = await openLibraryCover(isbn13)
+  return [google[0]?.coverUrl, olCover].filter((url): url is string => !!url)
 }
 
 interface OpenLibraryDoc {

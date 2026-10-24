@@ -1,6 +1,8 @@
-import { and, eq, gt, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
+import { books, listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
+import { findCoverUrls, googleCoverUrl, googleVolumeId } from './book-sources.server'
+import { mirrorCover } from './covers.server'
 import { getTransferStatus } from './lenco.server'
 import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
 import { notifyLapsed } from './offers.server'
@@ -110,7 +112,41 @@ async function expireOffers(db: Db) {
   return rows.length
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart }
+// Each book can take several fetches (Google's retries plus the image), so batches stay small.
+const COVER_BATCH = 4
+
+// Copies each book's best cover into R2: Google's 800px image where it has one, else the cover we saved.
+async function mirrorCovers(db: Db) {
+  // Random order, so books waiting on Google don't hold up the rest.
+  const due = await db
+    .select({ id: books.id, isbn13: books.isbn13, coverUrl: books.coverUrl })
+    .from(books)
+    .where(isNull(books.coverCheckedAt))
+    .orderBy(sql`random()`)
+    .limit(COVER_BATCH)
+  return each(due, 'mirrorCovers', async (book) => {
+    const saved = book.coverUrl
+    let urls: string[] = []
+    if (!saved?.startsWith('/covers/')) {
+      const volumeId = googleVolumeId(saved)
+      const found = volumeId ? [googleCoverUrl(volumeId)] : book.isbn13 ? await findCoverUrls(book.isbn13) : []
+      if (!found) return
+      urls = [...new Set([...found, ...(saved ? [saved] : [])])]
+    }
+    let mirrored: string | null = null
+    for (const url of urls) {
+      mirrored = await mirrorCover(url, book.id)
+      if (mirrored) break
+    }
+    // Skips the write if a seller added a photo meanwhile; the next run picks the book up again.
+    await db
+      .update(books)
+      .set({ coverUrl: mirrored ?? saved, coverCheckedAt: new Date() })
+      .where(and(eq(books.id, book.id), saved ? eq(books.coverUrl, saved) : isNull(books.coverUrl)))
+  })
+}
+
+const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart, mirrorCovers }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {
