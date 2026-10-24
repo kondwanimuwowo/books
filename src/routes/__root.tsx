@@ -104,10 +104,12 @@ export function NotFound() {
 }
 
 function RootError({ error, reset }: ErrorComponentProps) {
+  // Only blame the connection when the browser says it's actually offline.
+  const offline = typeof navigator !== 'undefined' && !navigator.onLine
   return (
     <div className="page rise py-24 text-center">
-      <h1 className="text-2xl sm:text-3xl">This page didn&rsquo;t load</h1>
-      <p className="mx-auto mt-2 max-w-md text-muted">Check your connection and try again.</p>
+      <h1 className="text-2xl sm:text-3xl">{offline ? 'You’re offline' : 'This page didn’t load'}</h1>
+      <p className="mx-auto mt-2 max-w-md text-muted">{offline ? 'Connect and try again.' : 'It’s on our side, not your connection. Try again in a moment.'}</p>
       {/* Raw errors can contain SQL; only developers see them. */}
       {import.meta.env.DEV && <p className="mx-auto mt-4 max-w-lg text-left font-mono text-xs break-words text-subtle">{errorMessage(error)}</p>}
       <button type="button" onClick={reset} className="btn btn-primary mt-8">
