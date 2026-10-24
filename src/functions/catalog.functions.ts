@@ -143,8 +143,15 @@ export const searchBooksFn = createServerFn({ method: 'GET' })
     const db = getDb()
     const [result, categories] = await Promise.all([searchBooks(db, data), categoriesWithCounts(db)])
     publicCache(30)
+    // A misspelt title ("eccentric thots") is found by close spelling first; that's free, Claude isn't.
+    if (!result.total && data.q?.trim() && !data.exact && !toIsbn13(data.q)) {
+      const close = await searchBooks(db, { ...data, fuzzy: true })
+      if (close.total) return { ...close, categories, interpreted: null, closeMatches: true }
+    }
     const interpreted = await interpretIfUseful(db, data, result.total, categories)
-    return interpreted ? { ...interpreted.result, categories, interpreted: interpreted.applied } : { ...result, categories, interpreted: null }
+    return interpreted
+      ? { ...interpreted.result, categories, interpreted: interpreted.applied, closeMatches: false }
+      : { ...result, categories, interpreted: null, closeMatches: false }
   })
 
 export const getBook = createServerFn({ method: 'GET' })

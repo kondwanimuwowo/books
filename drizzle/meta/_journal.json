@@ -85,6 +85,13 @@
       "when": 1792852164543,
       "tag": "0011_courier_rates",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792860739146,
+      "tag": "0012_fuzzy_search",
+      "breakpoints": true
     }
   ]
 }

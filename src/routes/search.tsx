@@ -50,7 +50,7 @@ function useSetSearch() {
 
 function SearchPage() {
   const search = Route.useSearch()
-  const { results, total, page, categories, interpreted } = Route.useLoaderData()
+  const { results, total, page, categories, interpreted, closeMatches } = Route.useLoaderData()
   const category = categories.find((c) => c.slug === search.category)
   const title = search.q ? `“${search.q}”` : (category?.name ?? (search.zambian ? 'Zambian authors' : 'All books'))
   const pages = Math.ceil(total / 24)
@@ -69,6 +69,7 @@ function SearchPage() {
       </header>
 
       {interpreted && search.q && <Interpreted applied={interpreted} typed={search.q} categories={categories} />}
+      {closeMatches && <p className="mt-3 text-sm text-muted">No exact match, so these are the closest spellings.</p>}
 
       {/* Phones: one scrolling row of chips. Desktop: a rail beside the results. */}
       <MobileFilters search={search} categories={categories} />

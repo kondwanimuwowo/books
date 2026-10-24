@@ -79,9 +79,16 @@ export interface SearchParams {
   language?: string
   sort?: 'relevance' | 'price' | 'newest'
   page?: number
+  /** Match misspellings by trigram similarity instead of exact words. */
+  fuzzy?: boolean
 }
 
 export const PAGE_SIZE = 24
+
+// How much of the typed text must resemble some stretch of a book's title, authors and ISBNs (0 to 1).
+const FUZZY_THRESHOLD = 0.45
+// pg_trgm lives in Supabase's extensions schema; named in full so it doesn't depend on the search path.
+const fuzzyScore = (q: string) => sql<number>`extensions.word_similarity(${q}, ${books.searchText})`
 
 export async function searchBooks(db: Db, params: SearchParams) {
   const offers = offersSubquery(db, params.condition)
@@ -93,6 +100,9 @@ export async function searchBooks(db: Db, params: SearchParams) {
     const isbn = toIsbn13(q)
     if (isbn) {
       where.push(eq(books.isbn13, isbn))
+    } else if (params.fuzzy) {
+      where.push(sql`${fuzzyScore(q)} >= ${FUZZY_THRESHOLD}`)
+      rank = fuzzyScore(q)
     } else {
       const tsQuery = sql`websearch_to_tsquery('simple', ${q})`
       const match = or(sql`${books.searchVector} @@ ${tsQuery}`, ilike(books.title, `%${q}%`))
@@ -475,7 +485,7 @@ export async function cheapestCopies(db: Db, bookIds: string[]) {
     .orderBy(listings.bookId, asc(listings.priceNgwee))
 }
 
-/** Books a seller can list: matches for a query, or the whole catalogue A–Z when there's none yet. */
+/** Books a seller can list: matches for a query (close spellings if nothing matches), or the whole catalogue A–Z. */
 export async function findCatalogueMatches(db: Db, query: string | null, limit = 8) {
   const isbn = query ? toIsbn13(query) : null
   const where = !query
@@ -483,6 +493,12 @@ export async function findCatalogueMatches(db: Db, query: string | null, limit =
     : isbn
       ? eq(books.isbn13, isbn)
       : or(sql`${books.searchVector} @@ websearch_to_tsquery('simple', ${query})`, ilike(books.title, `%${query}%`))
+  const exact = await catalogueRows(db, where, limit, asc(books.title))
+  if (exact.length || !query || isbn) return exact
+  return catalogueRows(db, sql`${fuzzyScore(query)} >= ${FUZZY_THRESHOLD}`, limit, desc(fuzzyScore(query)))
+}
+
+function catalogueRows(db: Db, where: SQL | undefined, limit: number, order: SQL) {
   return db
     .select({
       id: books.id,
@@ -496,6 +512,6 @@ export async function findCatalogueMatches(db: Db, query: string | null, limit =
     })
     .from(books)
     .where(where)
-    .orderBy(asc(books.title))
+    .orderBy(order)
     .limit(limit)
 }
