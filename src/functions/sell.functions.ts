@@ -190,9 +190,20 @@ export const createListing = createServerFn({ method: 'POST' })
       ;({ id: bookId, slug } = book)
     } else {
       const [category] = data.categorySlug ? await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, data.categorySlug)).limit(1) : []
-      const candidate = data.book.candidate
-      const isbn13 = candidate.isbn13 ? toIsbn13(candidate.isbn13) : null
-      if (candidate.isbn13 && !isbn13) throw new Error('That ISBN doesn’t look right')
+      const isbn13 = data.book.candidate.isbn13 ? toIsbn13(data.book.candidate.isbn13) : null
+      if (data.book.candidate.isbn13 && !isbn13) throw new Error('That ISBN doesn’t look right')
+      // Open Library search results can carry the work's title; save the picked edition's own details.
+      const edition = data.book.kind === 'external' && data.book.source === 'openlibrary' && isbn13 ? await lookupIsbn(isbn13) : null
+      const picked = data.book.candidate
+      const candidate = edition
+        ? {
+            ...picked,
+            ...edition,
+            authors: edition.authors.length ? edition.authors : picked.authors,
+            coverUrl: edition.coverUrl ?? picked.coverUrl,
+            description: edition.description ?? picked.description,
+          }
+        : picked
       const book = await findOrCreateBook(db, {
         candidate: { ...candidate, isbn13, description: candidate.description ?? data.description ?? null, source: data.book.kind === 'manual' ? 'manual' : data.book.source },
         categoryId: category?.id ?? null,

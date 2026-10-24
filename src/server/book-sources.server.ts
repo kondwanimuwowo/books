@@ -192,12 +192,23 @@ interface OpenLibraryDoc {
   author_name?: string[]
   first_publish_year?: number
   number_of_pages_median?: number
+  isbn?: string[]
+  cover_i?: number
+  publisher?: string[]
   editions?: { docs?: { title?: string; isbn?: string[]; publisher?: string[]; cover_i?: number; number_of_pages?: number; publish_date?: string[] }[] }
 }
 
-// Each result is a work; `lang=en` makes Open Library pick its best English edition, whose ISBN we list.
+// ISBN groups 0 and 1 are English-language publishers.
+function preferEnglish(isbns: string[] | undefined) {
+  const valid = (isbns ?? []).map((i) => toIsbn13(i)).filter((i): i is string => i !== null)
+  return valid.find((i) => i.startsWith('9780') || i.startsWith('9781')) ?? valid[0] ?? null
+}
+
+// Each result is a work. `lang=en` makes Open Library attach its best English edition, but only when an
+// edition's own title matches the query; otherwise we fall back to the work's ISBNs.
 async function openLibrarySearch(query: string, limit: number): Promise<BookCandidate[]> {
-  const fields = 'title,subtitle,author_name,first_publish_year,number_of_pages_median,editions,editions.title,editions.isbn,editions.publisher,editions.cover_i,editions.number_of_pages,editions.publish_date'
+  const fields =
+    'title,subtitle,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,publisher,editions,editions.title,editions.isbn,editions.publisher,editions.cover_i,editions.number_of_pages,editions.publish_date'
   const params = new URLSearchParams({ q: query, limit: String(limit), lang: 'en', fields })
   try {
     const response = await fetch(`https://openlibrary.org/search.json?${params}`, OPEN_LIBRARY)
@@ -205,8 +216,9 @@ async function openLibrarySearch(query: string, limit: number): Promise<BookCand
     const json = (await response.json()) as { docs?: OpenLibraryDoc[] }
     return (json.docs ?? []).flatMap((doc): BookCandidate[] => {
       const edition = doc.editions?.docs?.[0]
-      const isbn13 = edition?.isbn?.map((i) => toIsbn13(i)).find((i) => i !== null) ?? null
+      const isbn13 = preferEnglish(edition?.isbn) ?? preferEnglish(doc.isbn)
       const title = edition?.title ?? doc.title
+      const coverId = edition?.cover_i ?? doc.cover_i
       if (!title || !isbn13) return []
       return [
         {
@@ -217,8 +229,8 @@ async function openLibrarySearch(query: string, limit: number): Promise<BookCand
           authors: doc.author_name ?? [],
           // Fetched once the seller picks it, so a search costs one request.
           description: null,
-          coverUrl: edition?.cover_i ? `https://covers.openlibrary.org/b/id/${edition.cover_i}-L.jpg` : null,
-          publisher: edition?.publisher?.[0] ?? null,
+          coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null,
+          publisher: edition?.publisher?.[0] ?? doc.publisher?.[0] ?? null,
           publishedYear: year(edition?.publish_date?.[0]) ?? doc.first_publish_year ?? null,
           pageCount: edition?.number_of_pages ?? doc.number_of_pages_median ?? null,
           language: 'en',
