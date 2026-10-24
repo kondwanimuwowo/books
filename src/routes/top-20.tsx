@@ -68,7 +68,7 @@ function ChartPage() {
             <h2 id="new-zambian" className="text-xl sm:text-2xl">
               New from Zambian authors
             </h2>
-            <Link to="/search" search={{ zambian: true }} className="shrink-0 text-sm font-medium text-accent-ink">
+            <Link to="/search" search={{ zambian: true }} className="shrink-0 btn btn-secondary btn-sm">
               See all
             </Link>
           </div>

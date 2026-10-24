@@ -109,7 +109,7 @@ export function Shelf({ title, books, more, ranked = false }: { title: string; b
   if (!books.length) return null
   return (
     <section className="py-10">
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="text-xl sm:text-2xl">{title}</h2>
         {more}
       </div>

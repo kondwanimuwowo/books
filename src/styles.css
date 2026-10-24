@@ -125,6 +125,20 @@
   textarea {
     font-size: 16px; /* stops iOS zooming into inputs */
   }
+  /* Tailwind's reset gives buttons the arrow cursor; everything you can click gets the hand. */
+  button:not(:disabled),
+  [role='button'],
+  [role='option'],
+  summary,
+  select:not(:disabled),
+  label:has(> input:is([type='checkbox'], [type='radio'], [type='file']):not(:disabled)),
+  input:is([type='checkbox'], [type='radio'], [type='file']):not(:disabled) {
+    cursor: pointer;
+  }
+  :is(button, select, input):disabled,
+  label:has(> input:disabled) {
+    cursor: not-allowed;
+  }
   @media (hover: hover) {
     a:hover {
       color: var(--color-accent-ink);

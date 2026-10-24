@@ -185,8 +185,8 @@ function BookPage() {
                   {ownCopy ? 'You’re paid once the buyer has it.' : 'Seller is paid after you receive it.'}
                 </p>
                 {selected && (
-                  <Link to="/sellers/$slug" params={{ slug: selected.seller.slug }} className="mt-3 inline-block text-sm font-medium text-accent-ink">
-                    View {selected.seller.storeName}&rsquo;s shop
+                  <Link to="/sellers/$slug" params={{ slug: selected.seller.slug }} className="btn btn-secondary btn-sm mt-3 w-full">
+                    <span className="truncate">View {selected.seller.storeName}&rsquo;s shop</span>
                   </Link>
                 )}
               </>

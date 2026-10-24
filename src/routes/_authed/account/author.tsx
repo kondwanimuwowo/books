@@ -85,7 +85,7 @@ function ProfileEditor({ page }: { page: AuthorPage }) {
         <h2 id={`author-${page.id}`} className="text-2xl">
           {page.name}
         </h2>
-        <Link to="/authors/$slug" params={{ slug: page.slug }} className="text-sm font-medium text-accent-ink">
+        <Link to="/authors/$slug" params={{ slug: page.slug }} className="btn btn-secondary btn-sm shrink-0">
           View page
         </Link>
       </div>

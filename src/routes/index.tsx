@@ -43,7 +43,7 @@ function Home() {
           ranked
           books={chart.map((e) => e.book)}
           more={
-            <Link to="/top-20" className="shrink-0 text-sm font-medium text-accent-ink">
+            <Link to="/top-20" className="shrink-0 btn btn-secondary btn-sm">
               Full chart
             </Link>
           }
@@ -129,7 +129,7 @@ function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
 
 function MoreLink({ search }: { search: Record<string, string | boolean> }) {
   return (
-    <Link to="/search" search={search} className="shrink-0 text-sm font-medium text-accent-ink">
+    <Link to="/search" search={search} className="shrink-0 btn btn-secondary btn-sm">
       See all
     </Link>
   )
