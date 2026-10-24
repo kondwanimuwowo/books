@@ -9,6 +9,9 @@ import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
 import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
+import { interpretSearch } from '#/server/ai.server'
+import { SEARCH_REQUEST_WORDS } from '#/data/ai'
+import { toIsbn13 } from '#/lib/isbn'
 import { loadDeliveryRates } from '#/server/orders.server'
 import { loadChart } from '#/server/chart.server'
 
@@ -94,7 +97,45 @@ export const searchSchema = z.object({
   language: z.string().max(8).optional(),
   sort: z.enum(['relevance', 'price', 'newest']).optional(),
   page: z.number().int().min(1).max(500).optional(),
+  // Search for exactly what was typed, without AI's reading of it.
+  exact: z.boolean().optional(),
 })
+
+type SearchInput = z.infer<typeof searchSchema>
+
+/**
+ * When a search finds nothing, or reads like a request ("grade 7 maths in Bemba"), Claude rewrites it into keywords
+ * and filters. The rewrite is only used if it finds books; the page then offers the exact search too.
+ */
+async function interpretIfUseful(db: ReturnType<typeof getDb>, data: SearchInput, total: number, sections: { slug: string; name: string }[]) {
+  const q = data.q?.trim()
+  if (!q || data.exact || (data.page ?? 1) > 1 || q.length < 3 || toIsbn13(q)) return null
+  if (total > 0 && !SEARCH_REQUEST_WORDS.test(q)) return null
+  const reading = await interpretSearch(db, q, sections)
+  if (!reading) return null
+  const applied = {
+    q: reading.query.trim() || undefined,
+    category: data.category ?? reading.section ?? undefined,
+    language: data.language ?? reading.language ?? undefined,
+    condition: data.condition ?? reading.condition ?? undefined,
+    zambian: data.zambian || reading.zambian || undefined,
+  }
+  const changed =
+    applied.q?.toLowerCase() !== q.toLowerCase() ||
+    applied.category !== data.category ||
+    applied.language !== data.language ||
+    applied.condition !== data.condition ||
+    applied.zambian !== data.zambian
+  if (!changed) return null
+  const result = await searchBooks(db, { ...data, ...applied })
+  if (result.total > 0) return { result, applied }
+  // Keywords plus filters can be too narrow; the filters alone still answer "used Zambian novels".
+  const hasFilters = applied.category || applied.language || applied.condition || applied.zambian
+  if (!applied.q || !hasFilters) return null
+  const broader = { ...applied, q: undefined }
+  const fallback = await searchBooks(db, { ...data, ...broader })
+  return fallback.total > 0 ? { result: fallback, applied: broader } : null
+}
 
 export const searchBooksFn = createServerFn({ method: 'GET' })
   .validator(searchSchema)
@@ -102,7 +143,8 @@ export const searchBooksFn = createServerFn({ method: 'GET' })
     const db = getDb()
     const [result, categories] = await Promise.all([searchBooks(db, data), categoriesWithCounts(db)])
     publicCache(30)
-    return { ...result, categories }
+    const interpreted = await interpretIfUseful(db, data, result.total, categories)
+    return interpreted ? { ...interpreted.result, categories, interpreted: interpreted.applied } : { ...result, categories, interpreted: null }
   })
 
 export const getBook = createServerFn({ method: 'GET' })

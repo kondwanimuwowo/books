@@ -4,10 +4,10 @@ export const AI_MODELS = {
   light: 'claude-haiku-5-5',
 } as const
 
-export type AiKind = 'photos' | 'tidy' | 'summary' | 'list'
+export type AiKind = 'photos' | 'tidy' | 'summary' | 'list' | 'search'
 
 // Per person per day. Generous for a real seller, a hard stop for a script.
-export const AI_DAILY_LIMITS: Record<Exclude<AiKind, 'summary'>, number> = {
+export const AI_DAILY_LIMITS: Record<Exclude<AiKind, 'summary' | 'search'>, number> = {
   photos: 40,
   tidy: 150,
   list: 15,
@@ -20,6 +20,12 @@ export const PHOTO_SLOTS = [
 ] as const
 
 export type PhotoSlot = (typeof PHOTO_SLOTS)[number]['key']
+
+// Search is open to everyone, so it gets one site-wide daily budget instead of a per-person one.
+export const AI_SEARCH_DAILY_CAP = 3000
+
+// Searches that read like a request ("grade 7 maths in Bemba", "used novels") get interpreted even when they match something.
+export const SEARCH_REQUEST_WORDS = /\b(grade|form|standard|in (bemba|nyanja|tonga|lozi|kaonde|lunda|luvale|english|french)|used|second[- ]?hand|zambian|for (kids|children|teens)|books? (on|about)|textbooks?)\b/i
 
 // Words sellers type into a title that belong elsewhere on the listing.
 export const TITLE_NOISE = /\b(hard\s?cover|hardback|paper\s?back|soft\s?cover|edition|by)\b/i

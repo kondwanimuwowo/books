@@ -16,6 +16,7 @@ const searchParams = z.object({
   language: z.string().optional(),
   sort: z.enum(['relevance', 'price', 'newest']).optional(),
   page: z.number().int().min(1).optional(),
+  exact: z.boolean().optional(),
 })
 
 type SearchState = z.infer<typeof searchParams>
@@ -44,12 +45,12 @@ const CONDITION_OPTIONS = [
 
 function useSetSearch() {
   const navigate = useNavigate({ from: '/search' })
-  return (patch: Partial<SearchState>) => navigate({ search: (prev) => ({ ...prev, ...patch, page: undefined }) })
+  return (patch: Partial<SearchState>) => navigate({ search: (prev) => ({ ...prev, ...patch, page: undefined, exact: undefined }) })
 }
 
 function SearchPage() {
   const search = Route.useSearch()
-  const { results, total, page, categories } = Route.useLoaderData()
+  const { results, total, page, categories, interpreted } = Route.useLoaderData()
   const category = categories.find((c) => c.slug === search.category)
   const title = search.q ? `“${search.q}”` : (category?.name ?? (search.zambian ? 'Zambian authors' : 'All books'))
   const pages = Math.ceil(total / 24)
@@ -67,6 +68,8 @@ function SearchPage() {
         <SortSelect value={search.sort} />
       </header>
 
+      {interpreted && search.q && <Interpreted applied={interpreted} typed={search.q} categories={categories} />}
+
       {/* Phones: one scrolling row of chips. Desktop: a rail beside the results. */}
       <MobileFilters search={search} categories={categories} />
 
@@ -82,6 +85,26 @@ function SearchPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+/** Says how the search was read, and offers the exact words instead. */
+function Interpreted({ applied, typed, categories }: { applied: NonNullable<Data['interpreted']>; typed: string; categories: Data['categories'] }) {
+  const navigate = useNavigate({ from: '/search' })
+  const filters = [
+    applied.category && categories.find((c) => c.slug === applied.category)?.name,
+    applied.language && `in ${LANGUAGES.find((l) => l.code === applied.language)?.name ?? applied.language}`,
+    applied.condition,
+    applied.zambian && 'Zambian authors',
+  ].filter(Boolean)
+  return (
+    <p className="mt-3 text-sm text-muted">
+      Showing {applied.q ? <span className="font-medium text-ink">{applied.q}</span> : 'books'}
+      {filters.length > 0 && ` · ${filters.join(' · ')}`}.{' '}
+      <button type="button" className="font-medium text-accent-ink" onClick={() => void navigate({ search: (prev) => ({ ...prev, exact: true, page: undefined }) })}>
+        Search for “{typed}” instead
+      </button>
+    </p>
   )
 }
 

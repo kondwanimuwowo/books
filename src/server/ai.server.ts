@@ -6,7 +6,7 @@ import { and, count, eq, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '#/db/client.server'
 import { aiRequests } from '#/db/schema'
-import { AI_DAILY_LIMITS, AI_MODELS } from '#/data/ai'
+import { AI_DAILY_LIMITS, AI_MODELS, AI_SEARCH_DAILY_CAP } from '#/data/ai'
 import type { AiKind } from '#/data/ai'
 import { CONDITIONS } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
@@ -169,6 +169,58 @@ export async function readBookList(db: Db, userId: string, input: { photos: { by
   if (input.text) content.push({ type: 'text', text: `The list as typed:\n${input.text}` })
   content.push({ type: 'text', text: 'Read the books on this list.' })
   return ask(db, { kind: 'list', userId, model: AI_MODELS.reader, system: LIST_SYSTEM, content, schema: bookList, maxTokens: 6000 })
+}
+
+const searchReading = z.object({
+  query: z.string().describe('Keywords to match against titles and author names: spelling corrected, with filter words (language, condition, section, "Zambian") removed. Empty string if nothing is left.'),
+  section: z.string().nullable().describe('One of the section slugs given, or null.'),
+  language: z
+    .string()
+    .nullable()
+    .describe(`Only when the reader asks for books in a language: one of ${LANGUAGES.map((l) => `${l.code} (${l.name})`).join(', ')}.`),
+  condition: z.enum(['new', 'used']).nullable(),
+  zambian: z.boolean().describe('True only when the reader asks for Zambian authors or Zambian books.'),
+})
+
+export type SearchReading = z.infer<typeof searchReading>
+
+// Searches repeat a lot; each isolate remembers recent answers so the same words never cost twice.
+const searchMemory = new Map<string, SearchReading | null>()
+const SEARCH_MEMORY_SIZE = 500
+
+/** Turns a free-text search into corrected keywords and filters. Null when AI is off, over budget or unsure. */
+export async function interpretSearch(db: Db, query: string, sections: { slug: string; name: string }[]) {
+  const key = query.trim().toLowerCase()
+  if (searchMemory.has(key)) return searchMemory.get(key) ?? null
+  const since = new Date(Date.now() - 24 * 60 * 60_000)
+  const [used] = await db
+    .select({ n: count() })
+    .from(aiRequests)
+    .where(and(eq(aiRequests.kind, 'search'), gt(aiRequests.createdAt, since)))
+  if ((used?.n ?? 0) >= AI_SEARCH_DAILY_CAP) return null
+
+  const reading = await ask(db, {
+    kind: 'search',
+    userId: null,
+    model: AI_MODELS.light,
+    system: `You turn what someone typed into a Zambian bookshop's search box into keywords and filters. Correct obvious misspellings of titles and author names you recognise; never swap in a different book. Keep local names and words in Zambian languages as typed.
+
+Keywords must be words a book title or author name would contain: write "mathematics" for "maths". Leave out words that only name a kind of book a section already covers, such as "novels" when you choose fiction.
+
+Sections (slug: name): ${sections.map((s) => `${s.slug}: ${s.name}`).join('; ')}`,
+    content: [{ type: 'text', text: query }],
+    schema: searchReading,
+    maxTokens: 500,
+  })
+  // Anything outside the known sections and languages is dropped rather than trusted.
+  const valid = reading && {
+    ...reading,
+    section: sections.some((s) => s.slug === reading.section) ? reading.section : null,
+    language: LANGUAGES.some((l) => l.code === reading.language) ? reading.language : null,
+  }
+  if (searchMemory.size >= SEARCH_MEMORY_SIZE) searchMemory.delete(searchMemory.keys().next().value ?? '')
+  searchMemory.set(key, valid)
+  return valid
 }
 
 function toBase64(bytes: Uint8Array) {
