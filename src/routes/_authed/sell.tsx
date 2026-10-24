@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid'
+import { ArrowLeftIcon, CameraIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
@@ -7,6 +7,10 @@ import { browseCatalogue, createListing, findBookForSale, getMySeller, getPriceG
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-input'
+import { PhotoReader } from '#/components/photo-reader'
+import { suggestTidyName } from '#/functions/ai.functions'
+import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
+import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
@@ -28,10 +32,22 @@ export const Route = createFileRoute('/_authed/sell')({
 type Found = Awaited<ReturnType<typeof findBookForSale>>
 type Candidate = Found['external'][number]
 
-type Selection =
+// What Claude read from the seller's photos, applied to the form as suggestions.
+type PhotoSuggestions = Omit<PhotoResult, 'book'>
+
+type Selection = (
   | { kind: 'existing'; id: string; title: string; authorNames: string | null; coverUrl: string | null; isbn13: string | null; hasDescription: boolean }
   | { kind: 'external'; candidate: Candidate }
-  | { kind: 'manual' }
+  | { kind: 'manual'; prefill?: PhotoPrefill }
+) & { photos?: PhotoSuggestions }
+
+function fromPhotos({ book, ...photos }: PhotoResult): Selection {
+  if (book.kind === 'existing') {
+    const b = book.book
+    return { kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl, isbn13: b.isbn13, hasDescription: b.hasDescription, photos }
+  }
+  return book.kind === 'external' ? { kind: 'external', candidate: book.candidate, photos } : { kind: 'manual', prefill: book.prefill, photos }
+}
 
 const optionCard = (selected: boolean) =>
   cn(
@@ -101,6 +117,7 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
   const [all, setAll] = useState<CatalogueBook[] | null>(null)
   const [found, setFound] = useState<{ query: string; result: Found } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [photos, setPhotos] = useState(false)
   const term = query.trim()
   const searching = term.length >= 2
 
@@ -203,6 +220,17 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
         )}
       </div>
       <p className="mt-2 text-xs text-subtle">The ISBN is printed by the barcode.</p>
+
+      <div className="mt-8 border-t border-line pt-6">
+        {photos ? (
+          <PhotoReader onRead={(result) => onSelect(fromPhotos(result))} />
+        ) : (
+          <button type="button" className="btn btn-secondary" onClick={() => setPhotos(true)}>
+            <CameraIcon className="size-4" aria-hidden />
+            {PHOTO_COPY.open}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -246,21 +274,22 @@ const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher:
 function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; onBack: () => void; onSwitch: (s: Selection) => void }) {
   const { categories } = Route.useLoaderData()
   const navigate = useNavigate()
-  const [manual, setManual] = useState(emptyManual)
+  const photos = selection.photos
+  const [manual, setManual] = useState(selection.kind === 'manual' && selection.prefill ? { ...emptyManual, ...selection.prefill } : emptyManual)
   const [categorySlug, setCategorySlug] = useState('')
   const [zambianAuthor, setZambianAuthor] = useState(false)
   const [format, setFormat] = useState<Format>('paperback')
-  const [condition, setCondition] = useState<Condition>('new')
+  const [condition, setCondition] = useState<Condition>(photos?.condition ?? 'new')
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('1')
-  const [notes, setNotes] = useState('')
+  const [notes, setNotes] = useState(photos?.conditionNotes ?? '')
   const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({ open: false, floor: '' })
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(photos?.description ?? '')
   // Books saved without a description (or found online without one) get a chance to gain one here.
   const missingDescription =
     selection.kind === 'existing' ? (selection.hasDescription ? null : selection.isbn13) : selection.kind === 'external' && !selection.candidate.description ? selection.candidate.isbn13 : undefined
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
-  const [cover, setCover] = useState<{ key: string; preview: string } | null>(null)
+  const [cover, setCover] = useState<{ key: string; preview: string } | null>(photos?.cover ? { key: photos.cover.key, preview: photos.cover.url } : null)
   const [coverBusy, setCoverBusy] = useState(false)
 
   useEffect(() => {
@@ -304,6 +333,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         notes: notes || undefined,
         ...offerSettingsData(offerSettings),
         description: missingDescription !== undefined ? description.trim() || undefined : undefined,
+        summary: photos?.summary ?? undefined,
         coverKey: cover?.key,
       },
     })
@@ -344,6 +374,8 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
           <ArrowLeftIcon className="size-3.5" aria-hidden /> Another book
         </button>
 
+        {photos && <Alert tone="info">{PHOTO_COPY.filled}</Alert>}
+
         {selection.kind === 'manual' && (
           <section className="space-y-4" aria-labelledby="book-heading">
             <h2 id="book-heading" className="text-xl">
@@ -363,6 +395,11 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
               <Field label="Author" hint="Separate several with commas">
                 <SuggestInput required commaList value={manual.authors} onChange={setValue('authors')} load={loadAuthors} />
               </Field>
+              <TidySuggestion
+                title={manual.title}
+                authors={manual.authors}
+                onApply={(tidy) => setManual((m) => ({ ...m, title: tidy.title, subtitle: m.subtitle || tidy.subtitle || '', authors: tidy.authors }))}
+              />
               <Field label="ISBN (optional)">
                 <input className="input" inputMode="numeric" value={manual.isbn} onChange={setM('isbn')} />
               </Field>
@@ -400,8 +437,8 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
             <h2 id="cover-heading" className="text-xl">
               Cover
             </h2>
-            <p className="mt-1 mb-4 text-sm text-subtle">No cover online. A clear photo of the front sells faster.</p>
-            <CoverUpload onChange={setCover} onBusy={setCoverBusy} />
+            <p className="mt-1 mb-4 text-sm text-subtle">{photos?.cover ? 'Your front cover photo. Tap to change it.' : 'No cover online. A clear photo of the front sells faster.'}</p>
+            <CoverUpload onChange={setCover} onBusy={setCoverBusy} current={photos?.cover?.url} />
           </section>
         )}
 
@@ -502,6 +539,58 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         </div>
       </div>
     </form>
+  )
+}
+
+const TIDY_DELAY_MS = 900
+
+// Shouting capitals, or format and author words typed into the title.
+function looksUntidy(title: string, authors: string) {
+  const letters = (value: string) => value.replace(/[^a-zA-Z]/g, '')
+  const shouting = (value: string) => letters(value).length >= 4 && value === value.toUpperCase()
+  return shouting(title) || shouting(authors) || TITLE_NOISE.test(title)
+}
+
+type Tidy = NonNullable<Awaited<ReturnType<typeof suggestTidyName>>>
+
+/** Offers a cleaned-up title and author line; the seller decides. */
+function TidySuggestion({ title, authors, onApply }: { title: string; authors: string; onApply: (tidy: Tidy) => void }) {
+  const [tidy, setTidy] = useState<{ for: string; value: Tidy } | null>(null)
+  const typed = `${title.trim()}
+${authors.trim()}`
+  const untidy = title.trim().length >= 2 && looksUntidy(title, authors)
+
+  useEffect(() => {
+    if (!untidy) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      suggestTidyName({ data: { title: title.trim(), authors: authors.trim() } })
+        .then((value) => !cancelled && value && setTidy({ for: typed, value }))
+        .catch(() => undefined)
+    }, TIDY_DELAY_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+    // typed captures title and authors.
+  }, [typed, untidy])
+
+  if (!untidy || tidy?.for !== typed) return null
+  const { value } = tidy
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sunken px-4 py-3 text-sm sm:col-span-2">
+      <p className="flex min-w-0 items-center gap-2">
+        <SparklesIcon className="size-4 shrink-0 text-accent-ink" aria-hidden />
+        <span className="min-w-0">
+          <span className="font-medium">{value.title}</span>
+          {value.subtitle && `: ${value.subtitle}`}
+          {value.authors && <span className="text-muted"> by {value.authors}</span>}
+        </span>
+      </p>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={() => onApply(value)}>
+        Use this
+      </button>
+    </div>
   )
 }
 

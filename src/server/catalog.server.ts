@@ -454,6 +454,8 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
   return book
 }
 
+export type CatalogueMatch = Awaited<ReturnType<typeof findCatalogueMatches>>[number]
+
 /** Books a seller can list: matches for a query, or the whole catalogue A–Z when there's none yet. */
 export async function findCatalogueMatches(db: Db, query: string | null, limit = 8) {
   const isbn = query ? toIsbn13(query) : null

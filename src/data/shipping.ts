@@ -1,7 +1,10 @@
-import { COURIER_TOWNS, sameTown } from './zambia'
+import { YANGO_TOWNS, sameTown } from './zambia'
 
-export type ShippingMethod = 'courier' | 'bus_parcel' | 'zampost' | 'collect'
-export const SHIPPING_METHODS: readonly ShippingMethod[] = ['courier', 'bus_parcel', 'zampost', 'collect']
+// 'courier' and 'zampost' only appear on past orders.
+export type ShippingMethod = 'yango' | 'platinum' | 'mercury' | 'bus_parcel' | 'collect' | 'courier' | 'zampost'
+export type ActiveShippingMethod = Exclude<ShippingMethod, 'courier' | 'zampost'>
+/** What sellers can offer today, cheapest first within each kind of trip. */
+export const SHIPPING_METHODS: readonly ActiveShippingMethod[] = ['yango', 'platinum', 'mercury', 'bus_parcel', 'collect']
 
 // Priced by how far a parcel travels, not by town: fares move too often to keep a price per town.
 export type DeliveryBand = 'same_town' | 'same_province' | 'other_province'
@@ -30,7 +33,7 @@ export interface SellerDelivery {
 }
 
 export interface ShippingOption {
-  method: ShippingMethod
+  method: ActiveShippingMethod
   label: string
   description: string
   totalNgwee: number
@@ -44,12 +47,15 @@ interface Place {
   province: string
 }
 
-const METHODS: Record<ShippingMethod, { label: string; describe: (from: Place) => string }> = {
-  courier: { label: 'Courier to your door', describe: (from) => `Delivery within ${from.town}` },
-  collect: { label: 'Collect from seller', describe: (from) => `Agree a meeting point in ${from.town}` },
+const METHODS: Record<ActiveShippingMethod, { label: string; describe: (from: Place) => string }> = {
+  yango: { label: 'Yango Delivery', describe: (from) => `By motorbike, to your door in ${from.town}` },
+  platinum: { label: 'Platinum Courier', describe: () => 'To you anywhere in Zambia. Drop-off queues can add a day.' },
+  mercury: { label: 'Mercury Tigmoo', describe: () => 'Premium courier, tracked to your door' },
   bus_parcel: { label: 'Bus parcel', describe: () => 'Collect at your bus station with your order number' },
-  zampost: { label: 'Zampost', describe: () => 'Collect at your nearest post office' },
+  collect: { label: 'Collect from seller', describe: (from) => `Agree a meeting point in ${from.town}` },
 }
+
+const isActive = (method: ShippingMethod): method is ActiveShippingMethod => (SHIPPING_METHODS as readonly string[]).includes(method)
 
 export function deliveryBand(from: Place, to: Place): DeliveryBand {
   if (from.province === to.province && sameTown(from.town, to.town)) return 'same_town'
@@ -66,8 +72,8 @@ export function shippingOptions(
   const band = deliveryBand(from, to)
   const free = seller.freeDeliveryOverNgwee !== null && order.subtotalNgwee >= seller.freeDeliveryOverNgwee
   return rates
-    .filter((r) => r.band === band && seller.deliveryMethods.includes(r.method))
-    .filter((r) => r.method !== 'courier' || COURIER_TOWNS.some((t) => sameTown(t, from.town)))
+    .filter((r): r is DeliveryRate & { method: ActiveShippingMethod } => r.band === band && isActive(r.method) && seller.deliveryMethods.includes(r.method))
+    .filter((r) => r.method !== 'yango' || YANGO_TOWNS.some((t) => sameTown(t, from.town)))
     .map((r) => {
       const fee = r.feeNgwee + Math.max(0, order.itemCount - 1) * r.extraItemNgwee
       return {
@@ -83,10 +89,13 @@ export function shippingOptions(
 }
 
 const SHIPPING_LABELS: Record<ShippingMethod, string> = {
-  courier: 'Courier',
+  yango: 'Yango Delivery',
+  platinum: 'Platinum Courier',
+  mercury: 'Mercury Tigmoo',
   bus_parcel: 'Bus parcel',
-  zampost: 'Zampost',
   collect: 'Collect from seller',
+  courier: 'Courier',
+  zampost: 'Zampost',
 }
 
 export function shippingLabel(method: ShippingMethod) {

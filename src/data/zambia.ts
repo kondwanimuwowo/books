@@ -27,8 +27,8 @@ export const TOWNS: Record<Province, string[]> = {
   Western: ['Mongu', 'Kaoma', 'Senanga', 'Sesheke', 'Kalabo', 'Lukulu', 'Limulunga', 'Shang’ombo', 'Sioma', 'Mulobezi'],
 }
 
-// Where couriers deliver door to door within the town.
-export const COURIER_TOWNS: readonly string[] = ['Lusaka', 'Ndola', 'Kitwe', 'Chingola', 'Livingstone', 'Kabwe']
+// Yango Delivery's bikes only work inside these towns, never between them.
+export const YANGO_TOWNS: readonly string[] = ['Lusaka', 'Kitwe', 'Ndola', 'Livingstone']
 
 export const sameTown = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 

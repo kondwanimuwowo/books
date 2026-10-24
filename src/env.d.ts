@@ -13,6 +13,7 @@ declare namespace Cloudflare {
     LENCO_WEBHOOK_HASH_KEY?: string
     LENCO_PAYOUT_ACCOUNT_ID?: string
     GOOGLE_BOOKS_API_KEY?: string
+    ANTHROPIC_API_KEY?: string
     RESEND_API_KEY?: string
     EMAIL_FROM: string
   }

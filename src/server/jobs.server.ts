@@ -3,6 +3,7 @@ import type { Db } from '#/db/client.server'
 import { authors, bookAuthors, books, listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
 import { findCoverUrls, googleCoverUrl, googleVolumeId } from './book-sources.server'
 import { mirrorCover } from './covers.server'
+import { summariseDescription } from './ai.server'
 import { getTransferStatus } from './lenco.server'
 import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
 import { notifyLapsed } from './offers.server'
@@ -152,7 +153,23 @@ async function mirrorCovers(db: Db) {
   })
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart, mirrorCovers }
+const SUMMARY_BATCH = 5
+
+// The one-line summary beside the price, condensed by Claude from the description we already hold.
+async function summariseBooks(db: Db) {
+  const due = await db
+    .select({ id: books.id, description: books.description })
+    .from(books)
+    .where(and(isNull(books.summary), isNotNull(books.description)))
+    .orderBy(sql`random()`)
+    .limit(SUMMARY_BATCH)
+  return each(due, 'summariseBooks', async (book) => {
+    const summary = book.description ? await summariseDescription(db, book.description) : null
+    if (summary) await db.update(books).set({ summary }).where(and(eq(books.id, book.id), isNull(books.summary)))
+  })
+}
+
+const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

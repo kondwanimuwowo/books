@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { books, categories, listings, profiles, sellerOrders, sellers } from '#/db/schema'
 import { PROVINCES } from '#/data/zambia'
+import { SHIPPING_METHODS } from '#/data/shipping'
 import { normalizeLocalPhone } from '#/lib/phone'
 import { toNgwee } from '#/lib/money'
 import { randomCode, slugify } from '#/lib/utils'
@@ -84,7 +85,7 @@ export const saveDeliverySettings = createServerFn({ method: 'POST' })
   .middleware([requireSellerMiddleware])
   .validator(
     z.object({
-      methods: z.array(z.enum(['courier', 'bus_parcel', 'zampost', 'collect'])).min(1, 'Choose at least one way to send books'),
+      methods: z.array(z.enum(SHIPPING_METHODS)).min(1, 'Choose at least one way to send books'),
       freeOverKwacha: z.number().min(0).max(100000).nullable(),
     }),
   )
@@ -122,6 +123,12 @@ export const getBookDescription = createServerFn({ method: 'GET' })
 async function fillMissingDescription(db: ReturnType<typeof getDb>, bookId: string, description: string | undefined) {
   if (!description) return
   await db.update(books).set({ description }).where(and(eq(books.id, bookId), isNull(books.description)))
+}
+
+// Summaries come from Claude reading the seller's back cover; the cron writes the rest.
+async function fillMissingSummary(db: ReturnType<typeof getDb>, bookId: string, summary: string | undefined) {
+  if (!summary) return
+  await db.update(books).set({ summary }).where(and(eq(books.id, bookId), isNull(books.summary)))
 }
 
 const descriptionField = z.string().trim().max(8000).optional()
@@ -182,6 +189,7 @@ export const createListing = createServerFn({ method: 'POST' })
       notes: z.string().trim().max(500).optional(),
       ...offerFields,
       description: descriptionField,
+      summary: z.string().trim().max(400).optional(),
       // A photo the seller uploaded through uploadCover.
       coverKey: z.string().max(64).optional(),
     }),
@@ -224,6 +232,7 @@ export const createListing = createServerFn({ method: 'POST' })
     }
 
     await fillMissingDescription(db, bookId, data.description)
+    await fillMissingSummary(db, bookId, data.summary)
     // Fills a missing cover only; replacing an existing one is for the book's verified author.
     if (uploadedCover) {
       await db.update(books).set({ coverUrl: uploadedCover }).where(and(eq(books.id, bookId), isNull(books.coverUrl)))

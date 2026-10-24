@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
 import { books, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
 import { PROVINCES } from '#/data/zambia'
@@ -59,7 +60,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         phone: z.string().transform((v, ctx) => normalizeLocalPhone(v) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a Zambian mobile number' }), z.NEVER)),
         address: z.string().trim().min(3).max(300),
       }),
-      methods: z.record(z.string(), z.enum(['courier', 'bus_parcel', 'zampost', 'collect'])),
+      methods: z.record(z.string(), z.enum(SHIPPING_METHODS)),
     }),
   )
   .handler(async ({ data, context }) => {

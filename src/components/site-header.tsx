@@ -60,6 +60,8 @@ function SearchBox() {
       className="relative w-full"
       onSubmit={(e) => {
         e.preventDefault()
+        // Closes the phone keyboard and lets the header tuck away again while reading results.
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         void navigate({ to: '/search', search: q.trim() ? { q: q.trim() } : {} })
       }}
     >

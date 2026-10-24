@@ -4,6 +4,7 @@ import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
+import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
 import { authors, bookAuthors, books, deliveryRates, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
 import { formatMoney, toNgwee } from '#/lib/money'
@@ -238,7 +239,7 @@ export const saveDeliveryRate = createServerFn({ method: 'POST' })
   .validator(
     z
       .object({
-        method: z.enum(['courier', 'bus_parcel', 'zampost', 'collect']),
+        method: z.enum(SHIPPING_METHODS),
         band: z.enum(['same_town', 'same_province', 'other_province']),
         feeKwacha: z.number().min(0).max(5000),
         extraItemKwacha: z.number().min(0).max(1000),

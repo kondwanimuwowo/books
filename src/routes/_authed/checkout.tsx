@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react'
 import { getCheckoutDefaults, placeOrder } from '#/functions/orders.functions'
 import { CheckoutSteps } from '#/components/checkout-steps'
 import { Alert, Field, useAction } from '#/components/form'
-import { Price, useBag } from '#/components/providers'
+import { Price, useBag, useCurrency } from '#/components/providers'
 import { useBagQuote } from '#/components/use-bag-quote'
 import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
-import type { ShippingMethod } from '#/data/shipping'
+import type { ActiveShippingMethod, ShippingOption } from '#/data/shipping'
 import { TownField } from '#/components/town-field'
-import { cn } from '#/lib/utils'
+import { ShieldCheckIcon } from '@heroicons/react/20/solid'
+import { SAFETY } from '#/data/safety'
 
 export const Route = createFileRoute('/_authed/checkout')({
   loader: () => getCheckoutDefaults(),
@@ -26,6 +27,26 @@ function etaLabel([min, max]: [number, number]) {
   return min === max ? `${max} days` : `${Math.max(min, 1)}–${max} days`
 }
 
+
+/** One dropdown per parcel: courier, price and days on each line, the chosen one explained underneath. */
+function DeliveryChoice({ options, value, onChange }: { options: ShippingOption[]; value: ActiveShippingMethod | undefined; onChange: (method: ActiveShippingMethod) => void }) {
+  const { format } = useCurrency()
+  const chosen = options.find((o) => o.method === value)
+  if (!options.length) return <p className="mt-2 text-sm text-danger">This shop doesn’t deliver to your town yet.</p>
+  return (
+    <div className="mt-2">
+      <select className="input" aria-label="Delivery" value={value ?? ''} onChange={(e) => onChange(e.target.value as ActiveShippingMethod)}>
+        {options.map((o) => (
+          <option key={o.method} value={o.method}>
+            {`${o.label} · ${o.totalNgwee ? format(o.totalNgwee) : 'Free'} · ${etaLabel(o.etaDays)}`}
+          </option>
+        ))}
+      </select>
+      {chosen && <p className="mt-2 text-sm text-muted">{chosen.description}</p>}
+    </div>
+  )
+}
+
 function Checkout() {
   const defaults = Route.useLoaderData()
   const navigate = useNavigate()
@@ -37,7 +58,7 @@ function Checkout() {
     town: defaults.town ?? '',
     province: isProvince(defaults.province) ? defaults.province : ('' as const),
   })
-  const [methods, setMethods] = useState<Record<string, ShippingMethod>>({})
+  const [methods, setMethods] = useState<Record<string, ActiveShippingMethod>>({})
 
   // Only re-quote once the destination is complete.
   const destination = form.town.trim().length >= 2 && form.province ? { town: form.town.trim(), province: form.province } : null
@@ -47,7 +68,7 @@ function Checkout() {
   useEffect(() => {
     if (!quote) return
     setMethods((prev) => {
-      const next: Record<string, ShippingMethod> = {}
+      const next: Record<string, ActiveShippingMethod> = {}
       for (const g of quote.groups) {
         const keep = g.options.find((o) => o.method === prev[g.seller.id])
         if (g.options.length) next[g.seller.id] = keep ? keep.method : g.options[0].method
@@ -133,30 +154,13 @@ function Checkout() {
                       <span className="font-medium">{g.seller.storeName}</span>
                       <span className="text-subtle"> · from {g.seller.town}</span>
                     </legend>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      {g.options.map((o) => {
-                        const selected = methods[g.seller.id] === o.method
-                        return (
-                          <label
-                            key={o.method}
-                            className={cn(
-                              'flex cursor-pointer flex-col rounded-lg p-3.5 transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
-                              selected ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
-                            )}
-                          >
-                            <input type="radio" className="sr-only" name={`ship-${g.seller.id}`} checked={selected} onChange={() => setMethods({ ...methods, [g.seller.id]: o.method })} />
-                            <span className="flex items-baseline justify-between gap-2">
-                              <span className="font-medium">{o.label}</span>
-                              {o.totalNgwee ? <Price ngwee={o.totalNgwee} className="font-medium tabular-nums" /> : <span className="font-medium text-success">Free</span>}
-                            </span>
-                            <span className="mt-0.5 text-sm text-muted">{o.description}</span>
-                            <span className="mt-1 text-xs text-subtle">{etaLabel(o.etaDays)}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
+                    <DeliveryChoice options={g.options} value={methods[g.seller.id]} onChange={(method) => setMethods({ ...methods, [g.seller.id]: method })} />
                   </fieldset>
                 ))}
+                <p className="flex gap-2 text-sm text-muted">
+                  <ShieldCheckIcon className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+                  {SAFETY.checkout}
+                </p>
               </div>
             )}
           </section>

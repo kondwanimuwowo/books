@@ -225,6 +225,13 @@ function comparable(value: string) {
 
 const surname = (name: string) => comparable(name).split(' ').pop() ?? ''
 
+/** Same main title and a shared author surname: close enough to call two records the same book. */
+export function sameBook(a: { title: string; authors: string[] }, b: { title: string; authors: string[] }) {
+  if (comparable(a.title) !== comparable(b.title)) return false
+  if (!a.authors.length || !b.authors.length) return true
+  return a.authors.some((x) => b.authors.some((y) => surname(x) === surname(y)))
+}
+
 /** A Google cover for the same title by the same author, used when Google doesn't know the ISBN. */
 async function googleCoverByTitle(title: string, author: string | null) {
   // A plain query: Google's intitle:/inauthor: filters have been returning nothing.

@@ -9,6 +9,7 @@ import { PaymentPanel } from '#/components/payment-panel'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
+import { SAFETY } from '#/data/safety'
 import { cn, formatDate } from '#/lib/utils'
 import { PageShapes, ParcelShapes, Placeholder } from '#/components/placeholder'
 
@@ -195,10 +196,13 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
         <div className="space-y-3 border-t border-line p-4 text-sm">
           {part.trackingNote && <p className="text-muted">{part.trackingNote}</p>}
           {part.seller.phone && (
-            <a href={`tel:${part.seller.phone}`} className="inline-flex items-center gap-1.5 text-muted">
-              <PhoneIcon className="size-3.5" aria-hidden />
-              {part.seller.phone}
-            </a>
+            <div>
+              <a href={`tel:${part.seller.phone}`} className="inline-flex items-center gap-1.5 text-muted">
+                <PhoneIcon className="size-3.5" aria-hidden />
+                {part.seller.phone}
+              </a>
+              <p className="mt-1 text-xs text-subtle">{SAFETY.buyerContact}</p>
+            </div>
           )}
           {part.status === 'delivered' && (
             <p className="flex items-center gap-1.5 text-success">

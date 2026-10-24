@@ -64,6 +64,27 @@
       "when": 1792831999575,
       "tag": "0008_publishers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792850889216,
+      "tag": "0009_ai",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792852157406,
+      "tag": "0010_couriers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792852164543,
+      "tag": "0011_courier_rates",
+      "breakpoints": true
     }
   ]
 }

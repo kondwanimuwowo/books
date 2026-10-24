@@ -5,6 +5,7 @@ import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
+import { SAFETY } from '#/data/safety'
 import { PAYOUT_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
@@ -131,6 +132,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
             <a href={`tel:${sale.order.shipPhone}`} className="mt-1 block font-medium tabular-nums">
               {sale.order.shipPhone}
             </a>
+            <span className="mt-2 block text-xs text-subtle">{SAFETY.sellerContact}</span>
           </address>
           <div className="flex flex-col gap-2">
             <label htmlFor={noteId} className="field-label mb-0">

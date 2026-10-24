@@ -12,9 +12,9 @@ async function encode(canvas: HTMLCanvasElement, type: string, quality: number) 
 }
 
 /** Shrink and re-encode on the phone before upload: WebP where supported, JPEG otherwise. */
-async function compress(file: File): Promise<Blob> {
+export async function compress(file: File, maxEdge = MAX_EDGE): Promise<Blob> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)

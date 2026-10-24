@@ -5,8 +5,8 @@ import { Empty, PageHeader } from '#/components/admin'
 import { Alert, useAction } from '#/components/form'
 import { Placeholder, RowShapes } from '#/components/placeholder'
 import { BAND_LABELS, DELIVERY_BANDS, SHIPPING_METHODS, shippingLabel } from '#/data/shipping'
-import type { DeliveryRate } from '#/data/shipping'
-import { COURIER_TOWNS } from '#/data/zambia'
+import type { ActiveShippingMethod, DeliveryRate } from '#/data/shipping'
+import { YANGO_TOWNS } from '#/data/zambia'
 
 export const Route = createFileRoute('/admin/_shell/delivery')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading delivery prices" shapes={<RowShapes cover={false} />} />,
@@ -20,11 +20,13 @@ function Delivery() {
     <div className="space-y-8">
       <PageHeader
         title="Delivery"
-        description={`Prices buyers pay, by how far the parcel travels. Sellers can switch methods off or deliver free, never charge more. Couriers run in ${COURIER_TOWNS.join(', ')}.`}
+        description={`Prices buyers pay, by how far the parcel travels. Sellers can switch methods off or deliver free, never charge more. Yango runs only within ${YANGO_TOWNS.join(', ')}.`}
       />
       {rates.length ? (
         DELIVERY_BANDS.map((band) => {
-          const rows = rates.filter((r) => r.band === band).sort((a, b) => SHIPPING_METHODS.indexOf(a.method) - SHIPPING_METHODS.indexOf(b.method))
+          const rows = rates
+            .filter((r): r is DeliveryRate & { method: ActiveShippingMethod } => r.band === band && (SHIPPING_METHODS as readonly string[]).includes(r.method))
+            .sort((a, b) => SHIPPING_METHODS.indexOf(a.method) - SHIPPING_METHODS.indexOf(b.method))
           return (
             rows.length > 0 && (
               <section key={band} aria-labelledby={`band-${band}`}>
@@ -47,7 +49,7 @@ function Delivery() {
   )
 }
 
-function RateRow({ rate }: { rate: DeliveryRate }) {
+function RateRow({ rate }: { rate: DeliveryRate & { method: ActiveShippingMethod } }) {
   const router = useRouter()
   const initial = {
     fee: String(rate.feeNgwee / 100),

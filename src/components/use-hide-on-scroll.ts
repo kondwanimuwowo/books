@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 const HIDE_AFTER_Y = 200
 const HIDE_AFTER_RUN = 80
 
-/** True while the header should be tucked away. Ignores scroll while focus is inside `ref` (typing a search). */
+/** True while the header should be tucked away. Ignores scroll while someone is typing in it (a search). */
 export function useHideOnScroll<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const [hidden, setHidden] = useState(false)
@@ -17,7 +17,9 @@ export function useHideOnScroll<T extends HTMLElement>() {
     const update = () => {
       frame = 0
       const y = window.scrollY
-      const focusedInside = !!ref.current?.contains(document.activeElement)
+      // Only a text field counts: phones leave focus on whatever link or button was tapped, which would pin the header.
+      const active = document.activeElement
+      const focusedInside = !!ref.current?.contains(active) && active instanceof HTMLInputElement
       if (y < last) {
         runStart = y
         setHidden(false)

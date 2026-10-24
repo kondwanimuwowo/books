@@ -10,6 +10,7 @@ import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { Price, useBag } from '#/components/providers'
 import { OFFER_REPLY_HOURS, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
+import { SAFETY } from '#/data/safety'
 import { cn } from '#/lib/utils'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 
@@ -20,7 +21,7 @@ export const Route = createFileRoute('/books/$slug')({
     meta: loaderData
       ? [
           { title: `${loaderData.title} | Kuwala Books` },
-          { name: 'description', content: loaderData.description?.slice(0, 160) ?? `Buy ${loaderData.title} in Zambia` },
+          { name: 'description', content: (loaderData.summary ?? loaderData.description)?.slice(0, 160) ?? `Buy ${loaderData.title} in Zambia` },
           { property: 'og:image', content: loaderData.coverUrl ?? '' },
         ]
       : [],
@@ -104,6 +105,7 @@ function BookPage() {
             </div>
           )}
 
+          {book.summary && <p className="mt-6 max-w-prose text-lg leading-relaxed">{book.summary}</p>}
           {book.description && <Description text={book.description} />}
 
           <Specs book={book} />
@@ -349,6 +351,7 @@ function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; n
       <label className="block">
         <span className="field-label">Note to the seller (optional)</span>
         <textarea className="input" rows={2} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)} />
+        <span className="mt-1 block text-xs text-subtle">{SAFETY.offer}</span>
       </label>
       <div className="flex gap-2">
         <button type="submit" className="btn btn-secondary flex-1" disabled={send.pending}>

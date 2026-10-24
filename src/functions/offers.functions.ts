@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, desc, eq, gt, gte, inArray, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { SAFETY, containsPhoneNumber } from '#/data/safety'
 import { getDb } from '#/db/client.server'
 import type { Db } from '#/db/client.server'
 import { books, listings, offers, profiles, sellers } from '#/db/schema'
@@ -32,7 +33,12 @@ export const makeOffer = createServerFn({ method: 'POST' })
     z.object({
       listingId: z.string().uuid(),
       amountKwacha: z.number().min(5).max(100000),
-      message: z.string().trim().max(300).optional(),
+      message: z
+        .string()
+        .trim()
+        .max(300)
+        .refine((m) => !containsPhoneNumber(m), SAFETY.phoneInMessage)
+        .optional(),
     }),
   )
   .handler(async ({ data, context }) => {

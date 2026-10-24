@@ -199,9 +199,7 @@
   /* The site header: deep burgundy in both themes, frosted so content reads as it slides under. */
   .header-bar {
     @apply text-on-accent;
-    background-color: color-mix(in srgb, var(--color-deep) 94%, transparent);
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    background-color: var(--color-deep);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-accent) 8%, transparent);
     transition: transform 280ms var(--ease-drawer);
   }

@@ -6,7 +6,7 @@ import type { SellerKind } from '#/data/listing-options'
 import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
 import { SHIPPING_METHODS, shippingLabel } from '#/data/shipping'
-import type { ShippingMethod } from '#/data/shipping'
+import type { ActiveShippingMethod, ShippingMethod } from '#/data/shipping'
 import { getBookDescription, saveDeliverySettings } from '#/functions/sell.functions'
 import { TownField } from './town-field'
 import { detectOperator, OPERATOR_LABELS } from '#/lib/phone'
@@ -170,16 +170,17 @@ export function PayoutForm({ current, primary = true }: { current: { phone: stri
   )
 }
 
-const METHOD_NOTES: Record<ShippingMethod, string> = {
-  courier: 'Door to door, within your town',
-  collect: 'Buyers in your town meet you',
+const METHOD_NOTES: Record<ActiveShippingMethod, string> = {
+  yango: 'Bike delivery in Lusaka, Kitwe, Ndola and Livingstone',
+  platinum: 'You drop it at Platinum; reaches all of Zambia',
+  mercury: 'Premium courier, in town and between towns',
   bus_parcel: 'You drop it at the bus station',
-  zampost: 'You post it at the post office',
+  collect: 'Buyers in your town meet you',
 }
 
 export function DeliveryForm({ current }: { current: { deliveryMethods: ShippingMethod[]; freeDeliveryOverNgwee: number | null } }) {
   const router = useRouter()
-  const [methods, setMethods] = useState<ShippingMethod[]>(current.deliveryMethods)
+  const [methods, setMethods] = useState<ActiveShippingMethod[]>(current.deliveryMethods.filter((m): m is ActiveShippingMethod => (SHIPPING_METHODS as readonly ShippingMethod[]).includes(m)))
   const [free, setFree] = useState(current.freeDeliveryOverNgwee !== null)
   const [over, setOver] = useState(current.freeDeliveryOverNgwee !== null ? String(current.freeDeliveryOverNgwee / 100) : '300')
   const [saved, setSaved] = useState(false)
@@ -188,7 +189,7 @@ export function DeliveryForm({ current }: { current: { deliveryMethods: Shipping
     setSaved(true)
     await router.invalidate()
   })
-  const toggle = (m: ShippingMethod) => {
+  const toggle = (m: ActiveShippingMethod) => {
     setSaved(false)
     setMethods(methods.includes(m) ? methods.filter((x) => x !== m) : [...methods, m])
   }
@@ -275,9 +276,11 @@ export function offerSettingsData(value: OfferSettingsValue) {
  * The server only ever fills an empty description with this.
  */
 export function MissingDescription({ isbn, value, onChange }: { isbn: string | null; value: string; onChange: (value: string) => void }) {
-  const [state, setState] = useState<'looking' | 'found' | 'none'>(isbn ? 'looking' : 'none')
+  // A description read from the seller's back-cover photo is already the book's own; no need to look online.
+  const [fromPhoto] = useState(value !== '')
+  const [state, setState] = useState<'looking' | 'found' | 'none'>(isbn && !fromPhoto ? 'looking' : 'none')
   useEffect(() => {
-    if (!isbn) return
+    if (!isbn || fromPhoto) return
     let cancelled = false
     getBookDescription({ data: { isbn } })
       .then(({ description }) => {
@@ -294,7 +297,12 @@ export function MissingDescription({ isbn, value, onChange }: { isbn: string | n
 
   if (state === 'looking') return <p className="text-sm text-subtle">Looking for a description…</p>
   return (
-    <Field label="Description" hint={state === 'found' ? 'Found online. Shown on the book’s page; edit it if needed.' : 'This book has none yet. Yours will show on its page.'}>
+    <Field
+      label="Description"
+      hint={
+        fromPhoto ? 'Read from your back cover. Check it matches.' : state === 'found' ? 'Found online. Shown on the book’s page; edit it if needed.' : 'This book has none yet. Yours will show on its page.'
+      }
+    >
       <textarea className="input" rows={5} maxLength={8000} value={value} onChange={(e) => onChange(e.target.value)} />
     </Field>
   )

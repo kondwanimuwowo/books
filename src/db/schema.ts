@@ -70,11 +70,15 @@ export const sellerOrderStatus = pgEnum('seller_order_status', [
   'disputed',
   'refunded',
 ])
+// 'courier' and 'zampost' are retired; they stay in the enum for past orders.
 export const shippingMethod = pgEnum('shipping_method', [
   'courier',
   'bus_parcel',
   'zampost',
   'collect',
+  'yango',
+  'platinum',
+  'mercury',
 ])
 export const deliveryBand = pgEnum('delivery_band', [
   'same_town',
@@ -150,7 +154,7 @@ export const sellers = pgTable(
     deliveryMethods: shippingMethod('delivery_methods')
       .array()
       .notNull()
-      .default(sql`'{courier,bus_parcel,zampost,collect}'`),
+      .default(sql`'{yango,platinum,mercury,bus_parcel,collect}'`),
     // Orders at or above this subtotal ship free (the seller covers it). Null: never.
     freeDeliveryOverNgwee: integer('free_delivery_over_ngwee'),
     createdAt: createdAt(),
@@ -236,6 +240,8 @@ export const books = pgTable(
     title: text('title').notNull(),
     subtitle: text('subtitle'),
     description: text('description'),
+    // One or two sentences condensed from the description, shown beside the price.
+    summary: text('summary'),
     coverUrl: text('cover_url'),
     // Set once the cron has copied the best cover it could find into R2 (or found none).
     coverCheckedAt: timestamp('cover_checked_at', { withTimezone: true }),
@@ -529,4 +535,21 @@ export const fxRates = pgTable(
       .defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.day] })],
+).enableRLS()
+
+// Every call to Claude: daily limits per person, and what AI costs to run.
+export const aiRequests = pgTable(
+  'ai_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // Null for the platform's own jobs (cron).
+    userId: uuid('user_id').references(() => profiles.id, { onDelete: 'set null' }),
+    kind: text('kind').notNull(),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    ok: boolean('ok').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ai_requests_user_kind_idx').on(t.userId, t.kind, t.createdAt)],
 ).enableRLS()
