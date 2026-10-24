@@ -305,7 +305,7 @@ export const updateAuthor = createServerFn({ method: 'POST' })
       await db
         .update(books)
         .set({
-          isZambian: sql`exists (select 1 from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id where ba.book_id = ${books.id} and a.is_zambian)`,
+          isZambian: sql`exists (select 1 from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id where ba.book_id = ${books}.id and a.is_zambian)`,
         })
         .where(inArray(books.id, db.select({ id: bookAuthors.bookId }).from(bookAuthors).where(eq(bookAuthors.authorId, data.authorId))))
     }

@@ -20,7 +20,7 @@ export interface BookCard {
 const authorNamesSql = sql<string | null>`(
   select string_agg(a.name, ', ' order by ba.position)
   from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id
-  where ba.book_id = ${books.id}
+  where ba.book_id = ${books}.id
 )`
 
 // Copies held for buyers whose offers were accepted aren't for sale to anyone else.
@@ -245,7 +245,7 @@ export async function refreshSearchText(db: Db, bookId: string) {
       searchText: sql`concat_ws(' ', ${books.title}, ${books.subtitle}, (
         select string_agg(a.name, ' ' order by ba.position)
         from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id
-        where ba.book_id = ${books.id}
+        where ba.book_id = ${books}.id
       ), ${books.isbn13}, ${books.isbn10})`,
     })
     .where(eq(books.id, bookId))
