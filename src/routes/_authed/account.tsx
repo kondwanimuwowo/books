@@ -1,4 +1,4 @@
-import { Link, Outlet, createFileRoute, useLoaderData, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { signOut } from '#/functions/auth.functions'
 import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
 import { SIGN_OUT_ICON, accountNav } from '#/data/navigation'
@@ -13,13 +13,11 @@ const sideItem = 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] no-
 
 function AccountLayout() {
   const { user } = useLoaderData({ from: '__root__' })
-  const router = useRouter()
-  const navigate = useNavigate()
   const nav = accountNav(!!user?.sellerSlug, !!user?.isAuthor)
   const leave = async () => {
     await signOut()
-    await router.invalidate()
-    await navigate({ to: '/' })
+    // A fresh page load, so nothing from the signed-in session (the header's name, cached account data) survives.
+    window.location.assign('/')
   }
 
   return (

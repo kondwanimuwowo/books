@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { ArrowRightStartOnRectangleIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import type { ReactNode } from 'react'
 import { signOut } from '#/functions/auth.functions'
@@ -16,12 +16,10 @@ function Wordmark() {
 }
 
 function useSignOut() {
-  const router = useRouter()
-  const navigate = useNavigate()
   return async () => {
     await signOut()
-    await router.invalidate()
-    await navigate({ to: '/admin/login' })
+    // A fresh page load, so nothing from the signed-in session survives.
+    window.location.assign('/admin/login')
   }
 }
 
