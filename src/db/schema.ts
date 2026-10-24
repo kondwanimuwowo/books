@@ -89,6 +89,7 @@ export const offerStatus = pgEnum('offer_status', [
   'withdrawn',
   'purchased',
 ])
+export const offerParty = pgEnum('offer_party', ['buyer', 'seller'])
 export const paymentMethod = pgEnum('payment_method', ['mobile_money', 'card'])
 export const paymentStatus = pgEnum('payment_status', [
   'pending',
@@ -382,8 +383,9 @@ export const orderItems = pgTable(
   (t) => [index('order_items_seller_order_idx').on(t.sellerOrderId)],
 ).enableRLS()
 
-// One copy at the buyer's price. Pending: the seller has until expiresAt to answer.
-// Accepted: the copy is held for the buyer until expiresAt.
+// One copy, haggled over. Pending: `turn` has until expiresAt to accept, decline or counter
+// (one counter each, so counters runs 0..2 and the seller's answer after the buyer's counter is final).
+// Accepted: the copy is held for the buyer at agreedNgwee until expiresAt.
 export const offers = pgTable(
   'offers',
   {
@@ -397,9 +399,14 @@ export const offers = pgTable(
     sellerId: uuid('seller_id')
       .notNull()
       .references(() => sellers.id, { onDelete: 'cascade' }),
+    // The buyer's latest offer and the seller's latest counter.
     amountNgwee: integer('amount_ngwee').notNull(),
+    counterNgwee: integer('counter_ngwee'),
+    agreedNgwee: integer('agreed_ngwee'),
     message: text('message'),
     status: offerStatus('status').notNull().default('pending'),
+    turn: offerParty('turn').notNull().default('seller'),
+    counters: integer('counters').notNull().default(0),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     respondedAt: timestamp('responded_at', { withTimezone: true }),
     createdAt: createdAt(),

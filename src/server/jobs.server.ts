@@ -3,6 +3,7 @@ import type { Db } from '#/db/client.server'
 import { listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
 import { getTransferStatus } from './lenco.server'
 import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
+import { notifyLapsed } from './offers.server'
 
 // Runs from the Worker's cron trigger (see src/server.ts and wrangler.jsonc).
 const BATCH = 50
@@ -88,18 +89,23 @@ async function retryPayouts(db: Db) {
   })
 }
 
-// Unanswered offers lapse, held copies go back on sale, and offers on copies taken down close.
+// Silence declines an offer, unpaid holds go back on sale, and offers on copies taken down close.
 async function expireOffers(db: Db) {
+  const now = new Date()
   const rows = await db
     .update(offers)
     .set({ status: 'expired' })
     .where(
       and(
         inArray(offers.status, ['pending', 'accepted']),
-        or(lte(offers.expiresAt, new Date()), sql`exists (select 1 from ${listings} l where l.id = ${offers.listingId} and l.status <> 'active')`),
+        or(lte(offers.expiresAt, now), sql`exists (select 1 from ${listings} l where l.id = ${offers.listingId} and l.status <> 'active')`),
       ),
     )
-    .returning({ id: offers.id })
+    .returning({ id: offers.id, turn: offers.turn, agreedNgwee: offers.agreedNgwee, expiresAt: offers.expiresAt })
+  await notifyLapsed(
+    db,
+    rows.filter((r) => r.expiresAt <= now),
+  )
   return rows.length
 }
 

@@ -34,7 +34,10 @@ export type SellerKind = (typeof SELLER_KINDS)[number]['value']
 
 export const COMMISSION_RATE = 0.1
 
-export const OFFER_REPLY_HOURS = 48
+// Each side gets this long to answer; silence declines.
+export const OFFER_REPLY_HOURS = 24
 export const OFFER_HOLD_HOURS = 24
+// One counter each: after the buyer's counter the seller can only accept or decline.
+export const MAX_COUNTERS = 2
 // Declined or withdrawn offers a buyer can make on one copy in a week, so sellers aren't worn down.
 export const OFFERS_PER_COPY_PER_WEEK = 3

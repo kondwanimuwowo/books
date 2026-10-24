@@ -30,12 +30,12 @@ export const PAYOUT_STATUS: Record<PayoutStatus, { label: string; tone: string }
   refunded: { label: 'Refunded to buyer', tone: NEUTRAL },
 }
 
-// Same states, worded for whoever is reading: the buyer who made the offer or the seller who got it.
+// Same states, worded for whoever is reading. Pending offers are labelled by whose turn it is instead (see the offers page).
 export const OFFER_STATUS: Record<OfferStatus, { buyer: string; seller: string; tone: string }> = {
-  pending: { buyer: 'Waiting for the seller', seller: 'Needs your answer', tone: WARN },
-  accepted: { buyer: 'Accepted', seller: 'Accepted, waiting for payment', tone: GOOD },
+  pending: { buyer: 'Waiting for the seller', seller: 'Your turn', tone: WARN },
+  accepted: { buyer: 'Agreed', seller: 'Agreed, waiting for payment', tone: GOOD },
   declined: { buyer: 'Declined', seller: 'Declined', tone: NEUTRAL },
-  expired: { buyer: 'Lapsed', seller: 'Lapsed', tone: NEUTRAL },
+  expired: { buyer: 'No reply', seller: 'No reply', tone: NEUTRAL },
   withdrawn: { buyer: 'Withdrawn', seller: 'Withdrawn by the buyer', tone: NEUTRAL },
   purchased: { buyer: 'Bought', seller: 'Sold', tone: ACTIVE },
 }

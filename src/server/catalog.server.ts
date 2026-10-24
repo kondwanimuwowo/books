@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authors, bookAuthors, books, categories, listings, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, categories, listings, offers, sellers } from '#/db/schema'
 import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
 import type { BookCandidate } from './book-sources.server'
@@ -22,6 +22,9 @@ const authorNamesSql = sql<string | null>`(
   from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id
   where ba.book_id = ${books.id}
 )`
+
+// Copies held for buyers whose offers were accepted aren't for sale to anyone else.
+const heldCopies = sql<number>`(select count(*)::int from ${offers} o where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now())`
 
 function offersSubquery(db: Db, condition?: string) {
   const where = [eq(listings.status, 'active'), gt(listings.quantity, 0)]
@@ -157,7 +160,7 @@ export async function getBookBySlug(db: Db, slug: string) {
         format: listings.format,
         condition: listings.condition,
         priceNgwee: listings.priceNgwee,
-        quantity: listings.quantity,
+        quantity: sql<number>`(${listings.quantity} - ${heldCopies})::int`,
         notes: listings.notes,
         acceptsOffers: listings.acceptsOffers,
         seller: {
@@ -172,7 +175,7 @@ export async function getBookBySlug(db: Db, slug: string) {
       })
       .from(listings)
       .innerJoin(sellers, eq(sellers.id, listings.sellerId))
-      .where(and(eq(listings.bookId, book.book.id), eq(listings.status, 'active'), gt(listings.quantity, 0)))
+      .where(and(eq(listings.bookId, book.book.id), eq(listings.status, 'active'), sql`${listings.quantity} > ${heldCopies}`))
       .orderBy(asc(listings.priceNgwee)),
   ])
 

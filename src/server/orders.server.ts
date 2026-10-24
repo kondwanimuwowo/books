@@ -8,6 +8,7 @@ import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getCollectionStatus, initiateMobileMoneyTransfer, isPendingStatus } from './lenco.server'
 import { sendEmail } from './email.server'
+import { notifySoldElsewhere } from './offers.server'
 
 export interface CartLine {
   listingId: string
@@ -39,7 +40,7 @@ export async function loadCartListings(db: Db, lines: CartLine[], buyerId: strin
         where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now() and o.buyer_id is distinct from ${buyerId}::uuid
       )`,
       offer: sql<{ id: string; amountNgwee: number } | null>`(
-        select json_build_object('id', o.id, 'amountNgwee', o.amount_ngwee) from ${offers} o
+        select json_build_object('id', o.id, 'amountNgwee', o.agreed_ngwee) from ${offers} o
         where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now() and o.buyer_id = ${buyerId}::uuid
         limit 1
       )`,
@@ -204,20 +205,21 @@ export async function settlePayment(db: Db, reference: string): Promise<SettleRe
     return { status: 'failed', reason: 'Payment amount did not match the order' }
   }
 
-  const newlyPaid = await db.transaction(async (tx) => {
+  // Null when another call already settled it; otherwise the other buyers' offers this sale closed.
+  const settled = await db.transaction(async (tx) => {
     const [claimed] = await tx
       .update(payments)
       .set({ status: 'successful', lencoReference: collection.lencoReference, raw: collection })
       .where(and(eq(payments.id, payment.id), eq(payments.status, 'pending')))
       .returning({ id: payments.id })
-    if (!claimed) return false
+    if (!claimed) return null
 
     const [order] = await tx
       .update(orders)
       .set({ status: 'paid', paidAt: new Date() })
       .where(and(eq(orders.id, payment.orderId), eq(orders.status, 'pending_payment')))
       .returning({ id: orders.id })
-    if (!order) return false
+    if (!order) return null
 
     await tx.update(sellerOrders).set({ status: 'to_ship' }).where(eq(sellerOrders.orderId, order.id))
     const items = await tx
@@ -237,10 +239,27 @@ export async function settlePayment(db: Db, reference: string): Promise<SettleRe
     }
     const offerIds = items.flatMap((i) => (i.offerId ? [i.offerId] : []))
     if (offerIds.length) await tx.update(offers).set({ status: 'purchased' }).where(inArray(offers.id, offerIds))
-    return true
+
+    const listingIds = items.flatMap((i) => (i.listingId ? [i.listingId] : []))
+    if (!listingIds.length) return []
+    const closed = await tx
+      .update(offers)
+      .set({ status: 'declined', respondedAt: new Date() })
+      .where(
+        and(
+          inArray(offers.listingId, listingIds),
+          inArray(offers.status, ['pending', 'accepted']),
+          sql`exists (select 1 from ${listings} l where l.id = ${offers.listingId} and l.status = 'sold_out')`,
+        ),
+      )
+      .returning({ id: offers.id })
+    return closed.map((c) => c.id)
   })
 
-  if (newlyPaid) await sendPaidEmails(db, payment.orderId)
+  if (settled) {
+    await sendPaidEmails(db, payment.orderId)
+    await notifySoldElsewhere(db, settled)
+  }
   return { status: 'successful' }
 }
 

@@ -4,10 +4,11 @@ import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import type { Db } from '#/db/client.server'
 import { books, listings, offers, profiles, sellers } from '#/db/schema'
-import { OFFER_HOLD_HOURS, OFFER_REPLY_HOURS, OFFERS_PER_COPY_PER_WEEK } from '#/data/listing-options'
+import { MAX_COUNTERS, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS, OFFERS_PER_COPY_PER_WEEK } from '#/data/listing-options'
 import { formatMoney, toNgwee } from '#/lib/money'
-import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
+import { requireUserMiddleware } from '#/server/auth'
 import { escapeHtml, sendEmail } from '#/server/email.server'
+import { loadOfferParties } from '#/server/offers.server'
 
 const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
 
@@ -88,7 +89,7 @@ export const makeOffer = createServerFn({ method: 'POST' })
         subject: `Offer of ${formatMoney(amountNgwee)} for ${listing.title}`,
         lines: [
           `A buyer has offered ${formatMoney(amountNgwee)} for ${escapeHtml(listing.title)}, which you listed at ${formatMoney(listing.priceNgwee)}.`,
-          `Accept or decline within ${OFFER_REPLY_HOURS} hours, or the offer lapses.`,
+          `Accept, decline or counter within ${OFFER_REPLY_HOURS} hours, or it’s declined for you.`,
         ],
         action: { label: 'Answer the offer', path: '/account/offers' },
       })
@@ -96,64 +97,131 @@ export const makeOffer = createServerFn({ method: 'POST' })
     return { status: tooLow ? ('declined' as const) : ('pending' as const) }
   })
 
-export const respondToOffer = createServerFn({ method: 'POST' })
-  .middleware([requireSellerMiddleware])
-  .validator(z.object({ offerId: z.string().uuid(), accept: z.boolean() }))
+type Move = 'accept' | 'decline' | 'counter'
+type Party = 'buyer' | 'seller'
+
+/** Whoever's turn it is accepts, declines or counters. One counter each; the seller's answer to the buyer's counter is final. */
+export const answerOffer = createServerFn({ method: 'POST' })
+  .middleware([requireUserMiddleware])
+  .validator(
+    z.object({
+      offerId: z.string().uuid(),
+      move: z.enum(['accept', 'decline', 'counter']),
+      counterKwacha: z.number().min(5).max(100000).optional(),
+    }),
+  )
   .handler(async ({ data, context }) => {
     const db = getDb()
-    const result = await db.transaction(async (tx) => {
-      const [offer] = await tx
-        .select({ id: offers.id, listingId: offers.listingId, buyerId: offers.buyerId, status: offers.status, expiresAt: offers.expiresAt })
-        .from(offers)
-        .where(and(eq(offers.id, data.offerId), eq(offers.sellerId, context.seller.id)))
-        .limit(1)
-      if (!offer || offer.status !== 'pending' || offer.expiresAt <= new Date()) throw new Error('This offer is no longer open')
+    const { side, amountNgwee } = await db.transaction(async (tx) => {
+      const [offer] = await tx.select().from(offers).where(eq(offers.id, data.offerId)).for('update')
+      const [seller] = offer ? await tx.select({ profileId: sellers.profileId }).from(sellers).where(eq(sellers.id, offer.sellerId)) : []
+      const side: Party | null = offer?.buyerId === context.user.id ? 'buyer' : seller?.profileId === context.user.id ? 'seller' : null
+      if (!offer || !side || offer.status !== 'pending' || offer.expiresAt <= new Date()) throw new Error('This offer is no longer open')
+      if (offer.turn !== side) throw new Error('Waiting for the other side to answer')
+      const now = new Date()
 
-      if (!data.accept) {
-        await tx.update(offers).set({ status: 'declined', respondedAt: new Date() }).where(eq(offers.id, offer.id))
-        return offer
+      if (data.move === 'decline') {
+        await tx.update(offers).set({ status: 'declined', respondedAt: now }).where(eq(offers.id, offer.id))
+        return { side, amountNgwee: side === 'seller' ? offer.amountNgwee : (offer.counterNgwee ?? offer.amountNgwee) }
       }
 
+      if (data.move === 'counter') {
+        if (offer.counters >= MAX_COUNTERS) throw new Error('This is the final offer. Accept or decline it')
+        if (data.counterKwacha === undefined) throw new Error('Enter your counter-offer')
+        const amount = toNgwee(data.counterKwacha)
+        if (side === 'seller') {
+          const [listing] = await tx.select({ priceNgwee: listings.priceNgwee }).from(listings).where(eq(listings.id, offer.listingId))
+          if (amount <= offer.amountNgwee || amount >= listing.priceNgwee) {
+            throw new Error(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(listing.priceNgwee)}`)
+          }
+          await tx
+            .update(offers)
+            .set({ counterNgwee: amount, turn: 'buyer', counters: offer.counters + 1, respondedAt: now, expiresAt: hoursFromNow(OFFER_REPLY_HOURS) })
+            .where(eq(offers.id, offer.id))
+        } else {
+          const ceiling = offer.counterNgwee ?? 0
+          if (amount <= offer.amountNgwee || amount >= ceiling) throw new Error(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(ceiling)}`)
+          await tx
+            .update(offers)
+            .set({ amountNgwee: amount, turn: 'seller', counters: offer.counters + 1, respondedAt: now, expiresAt: hoursFromNow(OFFER_REPLY_HOURS) })
+            .where(eq(offers.id, offer.id))
+        }
+        return { side, amountNgwee: amount }
+      }
+
+      const agreedNgwee = side === 'seller' ? offer.amountNgwee : offer.counterNgwee
+      if (agreedNgwee === null) throw new Error('There’s no counter-offer to accept')
       // Locking the listing makes two accepts on its last copy queue up instead of both succeeding.
       const [listing] = await tx
         .select({ status: listings.status, quantity: listings.quantity })
         .from(listings)
         .where(eq(listings.id, offer.listingId))
         .for('update')
-      if (!listing || listing.status !== 'active') throw new Error('This listing isn’t live. Resume it first')
-      if (listing.quantity - (await heldCopies(tx, offer.listingId, offer.id)) < 1) throw new Error('Every copy is already held for an accepted offer')
-
-      await tx.update(offers).set({ status: 'accepted', respondedAt: new Date(), expiresAt: hoursFromNow(OFFER_HOLD_HOURS) }).where(eq(offers.id, offer.id))
-      return offer
+      if (!listing || listing.status !== 'active') throw new Error('This copy isn’t on sale right now')
+      if (listing.quantity - (await heldCopies(tx, offer.listingId, offer.id)) < 1) {
+        throw new Error(side === 'seller' ? 'Every copy is already held for an accepted offer' : 'The copy is held for another buyer. Try again later')
+      }
+      await tx
+        .update(offers)
+        .set({ status: 'accepted', agreedNgwee, respondedAt: now, expiresAt: hoursFromNow(OFFER_HOLD_HOURS) })
+        .where(eq(offers.id, offer.id))
+      return { side, amountNgwee: agreedNgwee }
     })
 
-    const [row] = await db
-      .select({ email: profiles.email, title: books.title, amountNgwee: offers.amountNgwee })
-      .from(offers)
-      .innerJoin(profiles, eq(profiles.id, offers.buyerId))
-      .innerJoin(listings, eq(listings.id, offers.listingId))
-      .innerJoin(books, eq(books.id, listings.bookId))
-      .where(eq(offers.id, result.id))
-    await sendEmail(
-      data.accept
-        ? {
-            to: row.email,
-            subject: `Offer accepted: ${row.title}`,
-            lines: [
-              `${escapeHtml(context.seller.storeName)} accepted your offer of ${formatMoney(row.amountNgwee)} for ${escapeHtml(row.title)}.`,
-              `The copy is held for you for ${OFFER_HOLD_HOURS} hours. Pay before then to keep it.`,
-            ],
-            action: { label: 'Buy it now', path: '/account/offers' },
-          }
-        : {
-            to: row.email,
-            subject: `Offer declined: ${row.title}`,
-            lines: [`${escapeHtml(context.seller.storeName)} declined your offer of ${formatMoney(row.amountNgwee)} for ${escapeHtml(row.title)}.`],
-            action: { label: 'See the book', path: '/account/offers' },
-          },
-    )
+    const [o] = await loadOfferParties(db, [data.offerId])
+    if (o) await sendEmail(moveEmail(data.move, side, amountNgwee, o))
     return { ok: true }
   })
+
+function moveEmail(move: Move, by: Party, amountNgwee: number, o: Awaited<ReturnType<typeof loadOfferParties>>[number]) {
+  const price = formatMoney(amountNgwee)
+  const title = escapeHtml(o.title)
+  const store = escapeHtml(o.storeName)
+  const answer = { label: 'Answer the offer', path: '/account/offers' }
+  if (by === 'seller') {
+    if (move === 'accept') {
+      return {
+        to: o.buyerEmail,
+        subject: `Offer accepted: ${o.title}`,
+        lines: [`${store} accepted your offer of ${price} for ${title}.`, `The copy is held for you for ${OFFER_HOLD_HOURS} hours. Pay before then to keep it.`],
+        action: { label: 'Buy it now', path: '/account/offers' },
+      }
+    }
+    if (move === 'counter') {
+      return {
+        to: o.buyerEmail,
+        subject: `Counter-offer: ${o.title}`,
+        lines: [
+          `${store} came back with ${price} for ${title}. You offered ${formatMoney(o.amountNgwee)}.`,
+          `Accept, decline or make one last counter within ${OFFER_REPLY_HOURS} hours.`,
+        ],
+        action: answer,
+      }
+    }
+    return {
+      to: o.buyerEmail,
+      subject: `Offer declined: ${o.title}`,
+      lines: [`${store} declined your offer of ${price} for ${title}.`],
+      action: { label: 'See your offers', path: '/account/offers' },
+    }
+  }
+  if (move === 'accept') {
+    return {
+      to: o.sellerEmail,
+      subject: `Counter-offer accepted: ${o.title}`,
+      lines: [`The buyer accepted your counter of ${price} for ${title}.`, `The copy is held for them for ${OFFER_HOLD_HOURS} hours while they pay.`],
+    }
+  }
+  if (move === 'counter') {
+    return {
+      to: o.sellerEmail,
+      subject: `Final offer: ${o.title}`,
+      lines: [`The buyer came back with ${price} for ${title}. This is their final offer: accept or decline within ${OFFER_REPLY_HOURS} hours.`],
+      action: answer,
+    }
+  }
+  return { to: o.sellerEmail, subject: `Counter-offer declined: ${o.title}`, lines: [`The buyer declined your counter of ${price} for ${title}.`] }
+}
 
 export const withdrawOffer = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])
@@ -172,6 +240,10 @@ const offerColumns = {
   id: offers.id,
   listingId: offers.listingId,
   amountNgwee: offers.amountNgwee,
+  counterNgwee: offers.counterNgwee,
+  agreedNgwee: offers.agreedNgwee,
+  turn: offers.turn,
+  counters: offers.counters,
   message: offers.message,
   // The cron catches up every 15 minutes; until then an overdue offer still reads as lapsed.
   status: sql<(typeof offers.status.enumValues)[number]>`case when ${offers.status} in ('pending', 'accepted') and ${offers.expiresAt} <= now() then 'expired' else ${offers.status} end`,
@@ -195,7 +267,7 @@ export const getMyOffers = createServerFn({ method: 'GET' })
         .innerJoin(books, eq(books.id, listings.bookId))
         .innerJoin(sellers, eq(sellers.id, offers.sellerId))
         .where(eq(offers.buyerId, context.user.id))
-        .orderBy(desc(offers.createdAt))
+        .orderBy(desc(offers.updatedAt))
         .limit(100),
       seller
         ? db
@@ -206,7 +278,7 @@ export const getMyOffers = createServerFn({ method: 'GET' })
             .innerJoin(profiles, eq(profiles.id, offers.buyerId))
             // Offers the floor turned away never reach the seller; makeOffer stamps them respondedAt = expiresAt.
             .where(and(eq(offers.sellerId, seller.id), sql`${offers.respondedAt} is distinct from ${offers.expiresAt}`))
-            .orderBy(desc(offers.createdAt))
+            .orderBy(desc(offers.updatedAt))
             .limit(100)
         : [],
     ])
