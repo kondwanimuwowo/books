@@ -16,6 +16,7 @@ import { Route as BagRouteImport } from './routes/bag'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SchoolListRouteImport } from './routes/school-list'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -45,6 +46,7 @@ import { Route as AdminShellIndexRouteImport } from './routes/admin/_shell/index
 import { Route as AdminShellAuthorsRouteImport } from './routes/admin/_shell/authors'
 import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/delivery'
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
+import { Route as AdminShellPublishersRouteImport } from './routes/admin/_shell/publishers'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
 
@@ -80,6 +82,11 @@ const LoginRoute = LoginRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchoolListRoute = SchoolListRouteImport.update({
+  id: '/school-list',
+  path: '/school-list',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -226,6 +233,11 @@ const AdminShellOrdersRoute = AdminShellOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const AdminShellPublishersRoute = AdminShellPublishersRouteImport.update({
+  id: '/publishers',
+  path: '/publishers',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 const AdminShellSellersRoute = AdminShellSellersRouteImport.update({
   id: '/sellers',
   path: '/sellers',
@@ -244,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
@@ -270,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/orders': typeof AdminShellOrdersRoute
+  '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
@@ -282,6 +296,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
@@ -307,6 +322,7 @@ export interface FileRoutesByTo {
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/orders': typeof AdminShellOrdersRoute
+  '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
@@ -320,6 +336,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
@@ -347,6 +364,7 @@ export interface FileRoutesById {
   '/admin/_shell/authors': typeof AdminShellAuthorsRoute
   '/admin/_shell/delivery': typeof AdminShellDeliveryRoute
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
+  '/admin/_shell/publishers': typeof AdminShellPublishersRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
@@ -361,6 +379,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
+    | '/school-list'
     | '/search'
     | '/signup'
     | '/terms'
@@ -387,6 +406,7 @@ export interface FileRouteTypes {
     | '/admin/authors'
     | '/admin/delivery'
     | '/admin/orders'
+    | '/admin/publishers'
     | '/admin/sellers'
     | '/api/webhooks/lenco'
     | '/account/'
@@ -399,6 +419,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
+    | '/school-list'
     | '/search'
     | '/signup'
     | '/terms'
@@ -424,6 +445,7 @@ export interface FileRouteTypes {
     | '/admin/authors'
     | '/admin/delivery'
     | '/admin/orders'
+    | '/admin/publishers'
     | '/admin/sellers'
     | '/api/webhooks/lenco'
     | '/account'
@@ -436,6 +458,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
+    | '/school-list'
     | '/search'
     | '/signup'
     | '/terms'
@@ -463,6 +486,7 @@ export interface FileRouteTypes {
     | '/admin/_shell/authors'
     | '/admin/_shell/delivery'
     | '/admin/_shell/orders'
+    | '/admin/_shell/publishers'
     | '/admin/_shell/sellers'
     | '/api/webhooks/lenco'
     | '/_authed/account/'
@@ -477,6 +501,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  SchoolListRoute: typeof SchoolListRoute
   SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
@@ -541,6 +566,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/school-list': {
+      id: '/school-list'
+      path: '/school-list'
+      fullPath: '/school-list'
+      preLoaderRoute: typeof SchoolListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -746,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellOrdersRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/admin/_shell/publishers': {
+      id: '/admin/_shell/publishers'
+      path: '/publishers'
+      fullPath: '/admin/publishers'
+      preLoaderRoute: typeof AdminShellPublishersRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
     '/admin/_shell/sellers': {
       id: '/admin/_shell/sellers'
       path: '/sellers'
@@ -808,6 +847,7 @@ interface AdminShellRouteChildren {
   AdminShellAuthorsRoute: typeof AdminShellAuthorsRoute
   AdminShellDeliveryRoute: typeof AdminShellDeliveryRoute
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
+  AdminShellPublishersRoute: typeof AdminShellPublishersRoute
   AdminShellSellersRoute: typeof AdminShellSellersRoute
   AdminShellIndexRoute: typeof AdminShellIndexRoute
 }
@@ -816,6 +856,7 @@ const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellAuthorsRoute: AdminShellAuthorsRoute,
   AdminShellDeliveryRoute: AdminShellDeliveryRoute,
   AdminShellOrdersRoute: AdminShellOrdersRoute,
+  AdminShellPublishersRoute: AdminShellPublishersRoute,
   AdminShellSellersRoute: AdminShellSellersRoute,
   AdminShellIndexRoute: AdminShellIndexRoute,
 }
@@ -844,6 +885,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  SchoolListRoute: SchoolListRoute,
   SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,

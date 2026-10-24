@@ -102,5 +102,19 @@ export function shippingLabel(method: ShippingMethod) {
   return SHIPPING_LABELS[method]
 }
 
+export function etaLabel([min, max]: [number, number]) {
+  if (max === 0) return 'Today'
+  if (min === 0 && max === 1) return 'Today or tomorrow'
+  const from = Math.max(min, 1)
+  if (from === max) return max === 1 ? '1 day' : `${max} days`
+  return `${from}–${max} days`
+}
+
+/** The cheapest way a copy can reach a place (fastest on a tie), or null if the seller doesn't deliver there. */
+export function cheapestDelivery(from: Place, to: Place, rates: DeliveryRate[], seller: SellerDelivery, priceNgwee: number) {
+  const options = shippingOptions(from, to, rates, seller, { itemCount: 1, subtotalNgwee: priceNgwee })
+  return options.sort((a, b) => a.totalNgwee - b.totalNgwee || a.etaDays[1] - b.etaDays[1])[0] ?? null
+}
+
 // After "shipped", the buyer has this long to confirm or dispute before escrow releases by itself.
 export const AUTO_RELEASE_DAYS = 7

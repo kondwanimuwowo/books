@@ -7,6 +7,7 @@ import { Price, useBag, useCurrency } from '#/components/providers'
 import { useBagQuote } from '#/components/use-bag-quote'
 import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
+import { etaLabel } from '#/data/shipping'
 import type { ActiveShippingMethod, ShippingOption } from '#/data/shipping'
 import { TownField } from '#/components/town-field'
 import { ShieldCheckIcon } from '@heroicons/react/20/solid'
@@ -22,13 +23,6 @@ function isProvince(value: string | null): value is Province {
   return PROVINCES.includes(value as Province)
 }
 
-function etaLabel([min, max]: [number, number]) {
-  if (max === 0) return 'Today'
-  if (min === 0 && max === 1) return 'Today or tomorrow'
-  const from = Math.max(min, 1)
-  if (from === max) return max === 1 ? '1 day' : `${max} days`
-  return `${from}–${max} days`
-}
 
 
 /** One dropdown per parcel: courier, price and days on each line, the chosen one explained underneath. */

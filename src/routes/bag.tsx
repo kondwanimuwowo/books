@@ -5,6 +5,7 @@ import { BookCover } from '#/components/book'
 import { Alert } from '#/components/form'
 import { Price, useBag } from '#/components/providers'
 import { useBagQuote } from '#/components/use-bag-quote'
+import { RecentlyViewed } from '#/components/recently-viewed'
 import { EmptyMessage, ParcelShapes, Placeholder } from '#/components/placeholder'
 import { conditionLabel } from '#/data/listing-options'
 
@@ -39,6 +40,7 @@ function BagPage() {
             }
           />
         </Placeholder>
+        {quote && <RecentlyViewed />}
       </div>
     )
   }

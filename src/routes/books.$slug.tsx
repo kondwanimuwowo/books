@@ -10,9 +10,12 @@ import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { Price, useBag } from '#/components/providers'
 import { OFFER_REPLY_HOURS, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
+import { cheapestDelivery, etaLabel } from '#/data/shipping'
+import type { DeliveryRate } from '#/data/shipping'
 import { SAFETY } from '#/data/safety'
 import { SHARE_COPY } from '#/data/share'
 import { ShareOnWhatsApp } from '#/components/share'
+import { RecentlyViewed, useRecordView } from '#/components/recently-viewed'
 import { cn } from '#/lib/utils'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 
@@ -41,6 +44,15 @@ function BookPage() {
   // The page is cached publicly, so who may edit is worked out here rather than on the server.
   const isAuthor = !!user?.sellerSlug && book.authors.some((a) => a.shopSlug === user.sellerSlug)
   const { add, lines } = useBag()
+  useRecordView({
+    slug: book.slug,
+    title: book.title,
+    coverUrl: book.coverUrl,
+    isZambian: book.isZambian,
+    authorNames: book.authors.map((a) => a.name).join(', ') || null,
+    fromPriceNgwee: book.offers.length ? Math.min(...book.offers.map((o) => o.priceNgwee)) : null,
+    offerCount: book.offers.length,
+  })
   const [filter, setFilter] = useState<Filter>('all')
   const offers = useMemo(
     () =>
@@ -153,7 +165,14 @@ function BookPage() {
                 <fieldset className="mt-4 space-y-2">
                   <legend className="sr-only">Choose a copy</legend>
                   {offers.map((o) => (
-                    <CopyOption key={o.id} offer={o} mine={!!user?.sellerSlug && o.seller.slug === user.sellerSlug} checked={selected?.id === o.id} onPick={() => setPickedId(o.id)} />
+                    <CopyOption
+                      key={o.id}
+                      offer={o}
+                      mine={!!user?.sellerSlug && o.seller.slug === user.sellerSlug}
+                      delivery={user?.place ? { to: user.place, rates: book.deliveryRates } : null}
+                      checked={selected?.id === o.id}
+                      onPick={() => setPickedId(o.id)}
+                    />
                   ))}
                 </fieldset>
                 {/* Desktop keeps the action beside the list; phones get the bar pinned under the thumb. */}
@@ -177,6 +196,7 @@ function BookPage() {
       </div>
 
       <Shelf title={`More in ${book.category?.name ?? 'this section'}`} books={book.related} />
+      <RecentlyViewed exclude={book.slug} />
 
       {selected && (
         <div className="glass-bar fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
@@ -272,7 +292,20 @@ function ConditionToggle({ value, onChange }: { value: Filter; onChange: (f: Fil
   )
 }
 
-function CopyOption({ offer, mine, checked, onPick }: { offer: Offer; mine: boolean; checked: boolean; onPick: () => void }) {
+function CopyOption({
+  offer,
+  mine,
+  delivery,
+  checked,
+  onPick,
+}: {
+  offer: Offer
+  mine: boolean
+  delivery: { to: { town: string; province: string }; rates: DeliveryRate[] } | null
+  checked: boolean
+  onPick: () => void
+}) {
+  const cheapest = delivery && !mine ? cheapestDelivery(offer.seller, delivery.to, delivery.rates, offer.seller, offer.priceNgwee) : undefined
   return (
     <label
       className={cn(
@@ -301,6 +334,17 @@ function CopyOption({ offer, mine, checked, onPick }: { offer: Offer; mine: bool
         {offer.quantity > 1 && offer.quantity <= 5 && <span>· {offer.quantity} left</span>}
         {offer.acceptsOffers && <span>· Open to offers</span>}
       </span>
+      {delivery && cheapest !== undefined && (
+        <span className="mt-1 block text-xs text-muted">
+          {cheapest ? (
+            <>
+              To {delivery.to.town}: {cheapest.totalNgwee ? <Price ngwee={cheapest.totalNgwee} className="tabular-nums" /> : 'free'} delivery, {etaLabel(cheapest.etaDays).toLowerCase()}
+            </>
+          ) : (
+            `Doesn’t deliver to ${delivery.to.town} yet`
+          )}
+        </span>
+      )}
     </label>
   )
 }

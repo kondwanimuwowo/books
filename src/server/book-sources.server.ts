@@ -225,6 +225,11 @@ function comparable(value: string) {
 
 const surname = (name: string) => comparable(name).split(' ').pop() ?? ''
 
+/** True when a comma-separated author line includes someone with this surname. */
+export function sameSurname(authorNames: string | null, author: string) {
+  return !!authorNames && authorNames.split(',').some((name) => surname(name) === surname(author))
+}
+
 /** Same main title and a shared author surname: close enough to call two records the same book. */
 export function sameBook(a: { title: string; authors: string[] }, b: { title: string; authors: string[] }) {
   if (comparable(a.title) !== comparable(b.title)) return false

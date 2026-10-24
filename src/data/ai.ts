@@ -4,12 +4,13 @@ export const AI_MODELS = {
   light: 'claude-haiku-5-5',
 } as const
 
-export type AiKind = 'photos' | 'tidy' | 'summary'
+export type AiKind = 'photos' | 'tidy' | 'summary' | 'list'
 
 // Per person per day. Generous for a real seller, a hard stop for a script.
 export const AI_DAILY_LIMITS: Record<Exclude<AiKind, 'summary'>, number> = {
   photos: 40,
   tidy: 150,
+  list: 15,
 }
 
 export const PHOTO_SLOTS = [

@@ -2,15 +2,16 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { PHOTO_SLOTS } from '#/data/ai'
+import { MAX_LIST_PHOTOS } from '#/data/school-list'
 import type { PhotoSlot } from '#/data/ai'
 import { CONDITIONS } from '#/data/listing-options'
 import type { Condition } from '#/data/listing-options'
 import { toIsbn13 } from '#/lib/isbn'
-import { checkAiLimit, readBookPhotos, tidyBookName } from '#/server/ai.server'
-import { requireSellerMiddleware } from '#/server/auth'
-import { lookupIsbn, sameBook } from '#/server/book-sources.server'
+import { checkAiLimit, readBookList, readBookPhotos, tidyBookName } from '#/server/ai.server'
+import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
+import { lookupIsbn, sameBook, sameSurname } from '#/server/book-sources.server'
 import type { BookCandidate } from '#/server/book-sources.server'
-import { findCatalogueMatches } from '#/server/catalog.server'
+import { cheapestCopies, findCatalogueMatches } from '#/server/catalog.server'
 import type { CatalogueMatch } from '#/server/catalog.server'
 import { detectImage, storeCover } from '#/server/covers.server'
 
@@ -127,4 +128,81 @@ export const suggestTidyName = createServerFn({ method: 'POST' })
     const authors = tidy.authors.join(', ')
     if (tidy.title === data.title && authors === data.authors) return null
     return { title: tidy.title, subtitle: tidy.subtitle, authors }
+  })
+
+const MAX_LIST_TEXT = 4000
+
+export type ListLine = {
+  title: string
+  author: string | null
+  subject: string | null
+  book: { slug: string; title: string; authorNames: string | null; coverUrl: string | null } | null
+  /** The cheapest copy for sale now; null when the book is on Kuwala but sold out. */
+  copy: { listingId: string; priceNgwee: number; condition: Condition } | null
+}
+
+// Words school lists add that catalogue titles leave out. Every search word must match, so fewer is safer.
+const LIST_NOISE = /\b(pupils?['’]?s?|learners?['’]?s?|teachers?['’]?s?|book|new|revised|edition|ed)\b|[()\[\].,:;-]/gi
+
+function listQuery(text: string, item: { author: string | null; publisher: string | null }) {
+  let query = text
+  for (const name of [item.author, item.publisher]) if (name) query = query.split(name).join(' ')
+  return query.replace(LIST_NOISE, ' ').replace(/\s+/g, ' ').trim()
+}
+
+/** Reads a school book list (photos and/or typed text) and finds each book on Kuwala with its cheapest copy. */
+export const readSchoolList = createServerFn({ method: 'POST' })
+  .middleware([requireUserMiddleware])
+  .validator((data: unknown) => {
+    if (!(data instanceof FormData)) throw new Error('Expected a list')
+    const photos = data.getAll('photo').filter((f): f is File => f instanceof File)
+    const text = String(data.get('text') ?? '').trim().slice(0, MAX_LIST_TEXT) || null
+    if (!photos.length && !text) throw new Error('Add a photo of the list, or type it in')
+    if (photos.length > MAX_LIST_PHOTOS) throw new Error(`Up to ${MAX_LIST_PHOTOS} photos`)
+    if (photos.some((p) => p.size > MAX_PHOTO_BYTES)) throw new Error('That photo is too large')
+    return { photos, text }
+  })
+  .handler(async ({ data, context }) => {
+    const db = getDb()
+    await checkAiLimit(db, context.user.id, 'list')
+    const photos = await Promise.all(
+      data.photos.map(async (file) => {
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        const type = detectImage(bytes)
+        if (!type) throw new Error('Use JPEG, WebP or PNG photos')
+        return { bytes, mediaType: MEDIA_TYPES[type] }
+      }),
+    )
+    const reading = await readBookList(db, context.user.id, { photos, text: data.text })
+    if (!reading) throw new Error('Couldn’t read the list just now. Try again in a moment.')
+    if (!reading.isList || !reading.items.length) throw new Error('We couldn’t find any books on that list. Try a sharper photo.')
+
+    const found = await Promise.all(
+      reading.items.map(async (item) => {
+        let matches: Awaited<ReturnType<typeof findCatalogueMatches>> = []
+        for (const query of new Set([listQuery(item.searchTitle, item), listQuery(item.title, item)])) {
+          if (query.length >= 2) matches = await findCatalogueMatches(db, query, 5)
+          if (matches.length) break
+        }
+        // Prefer the same author when the list names one; school lists often shorten titles.
+        const author = item.author
+        return (author && matches.find((m) => sameSurname(m.authorNames, author))) || matches[0] || null
+      }),
+    )
+    const copies = await cheapestCopies(
+      db,
+      found.flatMap((b) => (b ? [b.id] : [])),
+    )
+    const lines: ListLine[] = reading.items.map((item, i) => {
+      const book = found[i]
+      const copy = book ? copies.find((c) => c.bookId === book.id && c.sellerProfileId !== context.user.id) : undefined
+      return {
+        title: item.title,
+        author: item.author,
+        subject: item.subject,
+        book: book ? { slug: book.slug, title: book.title, authorNames: book.authorNames, coverUrl: book.coverUrl } : null,
+        copy: copy ? { listingId: copy.listingId, priceNgwee: copy.priceNgwee, condition: copy.condition as Condition } : null,
+      }
+    })
+    return { school: reading.school, grade: reading.grade, lines }
   })

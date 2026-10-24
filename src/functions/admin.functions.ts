@@ -6,7 +6,8 @@ import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
-import { authors, bookAuthors, books, deliveryRates, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, deliveryRates, orderItems, orders, payments, profiles, publishers, sellerOrders, sellers } from '#/db/schema'
+import { slugify } from '#/lib/utils'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
 import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
@@ -311,6 +312,90 @@ export const updateAuthor = createServerFn({ method: 'POST' })
         .where(inArray(books.id, db.select({ id: bookAuthors.bookId }).from(bookAuthors).where(eq(bookAuthors.authorId, data.authorId))))
     }
     return { ok: true }
+  })
+
+export const listPublishers = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .validator(searchInput)
+  .handler(async ({ data }) => {
+    return getDb()
+      .select({
+        id: publishers.id,
+        slug: publishers.slug,
+        name: publishers.name,
+        bio: publishers.bio,
+        website: publishers.website,
+        isZambian: publishers.isZambian,
+        books: sql<number>`(select count(*)::int from ${books} b where b.publisher_id = ${publishers}.id)`,
+        verifiedSeller: sql<{ slug: string; storeName: string } | null>`case when ${sellers.id} is null then null
+          else json_build_object('slug', ${sellers.slug}, 'storeName', ${sellers.storeName}) end`,
+      })
+      .from(publishers)
+      .leftJoin(sellers, eq(sellers.id, publishers.verifiedSellerId))
+      .where(data.q ? ilike(publishers.name, `%${data.q}%`) : undefined)
+      .orderBy(desc(publishers.isZambian), asc(publishers.name))
+      .limit(100)
+  })
+
+async function sellerIdForSlug(db: ReturnType<typeof getDb>, slug: string | null) {
+  if (!slug) return null
+  const [seller] = await db.select({ id: sellers.id }).from(sellers).where(eq(sellers.slug, slug)).limit(1)
+  if (!seller) throw new Error(`No shop with the address "${slug}"`)
+  return seller.id
+}
+
+export const updatePublisher = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(
+    z.object({
+      publisherId: z.string().uuid(),
+      details: z
+        .object({
+          name: z.string().trim().min(1, 'Add a name').max(200),
+          bio: z.string().trim().max(4000),
+          website: z.union([z.literal(''), z.string().trim().url('Use a full address, e.g. https://example.com').max(300)]),
+        })
+        .optional(),
+      isZambian: z.boolean().optional(),
+      // A seller's shop slug, or null to remove the verified link.
+      verifiedSellerSlug: z.string().trim().max(80).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const db = getDb()
+    if (data.details) {
+      const { name, bio, website } = data.details
+      const slug = slugify(name)
+      const [taken] = await db
+        .select({ id: publishers.id })
+        .from(publishers)
+        .where(and(eq(publishers.slug, slug), ne(publishers.id, data.publisherId)))
+        .limit(1)
+      if (taken) throw new Error(`"${name}" is already a publisher. Merge the two instead`)
+      await db.update(publishers).set({ name, slug, bio: bio || null, website: website || null }).where(eq(publishers.id, data.publisherId))
+      // Books show the publisher's name as printed; keep it in step with the corrected name.
+      await db.update(books).set({ publisher: name }).where(eq(books.publisherId, data.publisherId))
+    }
+    if (data.isZambian !== undefined) await db.update(publishers).set({ isZambian: data.isZambian }).where(eq(publishers.id, data.publisherId))
+    if (data.verifiedSellerSlug !== undefined) {
+      await db.update(publishers).set({ verifiedSellerId: await sellerIdForSlug(db, data.verifiedSellerSlug) }).where(eq(publishers.id, data.publisherId))
+    }
+    return { ok: true }
+  })
+
+/** Folds a duplicate (e.g. "Penguin" into "Penguin Books"): its books move over and the duplicate is deleted. */
+export const mergePublishers = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(z.object({ fromId: z.string().uuid(), intoSlug: z.string().trim().min(1).max(120) }))
+  .handler(async ({ data }) => {
+    return getDb().transaction(async (tx) => {
+      const [into] = await tx.select({ id: publishers.id, name: publishers.name }).from(publishers).where(eq(publishers.slug, data.intoSlug)).limit(1)
+      if (!into) throw new Error(`No publisher with the address "${data.intoSlug}"`)
+      if (into.id === data.fromId) throw new Error('That’s the same publisher')
+      await tx.update(books).set({ publisherId: into.id, publisher: into.name }).where(eq(books.publisherId, data.fromId))
+      await tx.delete(publishers).where(eq(publishers.id, data.fromId))
+      return { ok: true }
+    })
   })
 
 export const listRecentOrders = createServerFn({ method: 'GET' })

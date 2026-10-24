@@ -140,6 +140,37 @@ export async function summariseDescription(db: Db, description: string) {
   return result?.summary.trim() || null
 }
 
+const bookList = z.object({
+  isList: z.boolean().describe('False if this is not a list of books.'),
+  school: nullableText.describe('School name if printed.'),
+  grade: nullableText.describe('Grade or form the list is for, e.g. "Grade 7", if printed.'),
+  items: z.array(
+    z.object({
+      title: z.string().describe('Book title as written on the list.'),
+      searchTitle: z.string().describe('The shortest form of the title that still identifies it, for searching a catalogue: drop words like "Pupil’s Book", "New Edition" or the grade if it is not part of the title.'),
+      author: nullableText,
+      publisher: nullableText,
+      subject: nullableText.describe('Subject if the list gives one, e.g. "Mathematics".'),
+    }),
+  ),
+})
+
+export type BookListReading = z.infer<typeof bookList>
+
+const LIST_SYSTEM = `You read a Zambian school's book list (a photo of a printed or handwritten list, or text a parent typed) so a parent can find the books on Kuwala Books.
+
+List each book once, in the order it appears. Copy titles, authors and publishers as written; never add books that are not on the list. Skip stationery and uniform items such as exercise books, pens, rulers or calculators.`
+
+export async function readBookList(db: Db, userId: string, input: { photos: { bytes: Uint8Array; mediaType: 'image/jpeg' | 'image/webp' | 'image/png' }[]; text: string | null }) {
+  const content: BetaContentBlockParam[] = input.photos.map((photo) => ({
+    type: 'image' as const,
+    source: { type: 'base64' as const, media_type: photo.mediaType, data: toBase64(photo.bytes) },
+  }))
+  if (input.text) content.push({ type: 'text', text: `The list as typed:\n${input.text}` })
+  content.push({ type: 'text', text: 'Read the books on this list.' })
+  return ask(db, { kind: 'list', userId, model: AI_MODELS.reader, system: LIST_SYSTEM, content, schema: bookList, maxTokens: 6000 })
+}
+
 function toBase64(bytes: Uint8Array) {
   let binary = ''
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))

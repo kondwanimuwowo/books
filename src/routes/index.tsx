@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { getHomeData } from '#/functions/catalog.functions'
 import { SectionShelf, Shelf } from '#/components/book'
+import { RecentlyViewed } from '#/components/recently-viewed'
 import { MIN_WALL_COVERS, QUICK_SEARCHES } from '#/data/home'
 import { EmptyMessage, PageShapes, Placeholder, ShelfShapes } from '#/components/placeholder'
 
@@ -50,6 +51,7 @@ function Home() {
         <Shelf title="New from Zambian authors" books={zambian} more={<MoreLink search={{ zambian: true }} />} />
         <Shelf title="Just listed" books={recent} more={<MoreLink search={{ sort: 'newest' }} />} />
         <Shelf title="Used, under K100" books={bargains} more={<MoreLink search={{ condition: 'used', sort: 'price' }} />} />
+        <RecentlyViewed />
 
         {categories.length > 0 && (
           <section className="py-10" aria-labelledby="sections-heading">
@@ -59,6 +61,16 @@ function Home() {
             <SectionShelf sections={categories} />
           </section>
         )}
+
+        <section className="mt-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
+          <div>
+            <h2 className="text-xl sm:text-2xl">Got the school book list?</h2>
+            <p className="mt-1 text-muted">Take a photo. We find every book on it.</p>
+          </div>
+          <Link to="/school-list" className="btn btn-secondary">
+            Find the books
+          </Link>
+        </section>
 
         <section className="my-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
           <div>

@@ -173,6 +173,8 @@ export async function getBookBySlug(db: Db, slug: string) {
           town: sellers.town,
           province: sellers.province,
           verified: sql<boolean>`${sellers.verifiedAt} is not null`,
+          deliveryMethods: sellers.deliveryMethods,
+          freeDeliveryOverNgwee: sellers.freeDeliveryOverNgwee,
         },
       })
       .from(listings)
@@ -455,6 +457,23 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
 }
 
 export type CatalogueMatch = Awaited<ReturnType<typeof findCatalogueMatches>>[number]
+
+/** The cheapest copy of each book that can be bought now. */
+export async function cheapestCopies(db: Db, bookIds: string[]) {
+  if (!bookIds.length) return []
+  return db
+    .selectDistinctOn([listings.bookId], {
+      bookId: listings.bookId,
+      listingId: listings.id,
+      priceNgwee: listings.priceNgwee,
+      condition: listings.condition,
+      sellerProfileId: sellers.profileId,
+    })
+    .from(listings)
+    .innerJoin(sellers, eq(sellers.id, listings.sellerId))
+    .where(and(inArray(listings.bookId, bookIds), eq(listings.status, 'active'), sql`${listings.quantity} > ${heldCopies}`))
+    .orderBy(listings.bookId, asc(listings.priceNgwee))
+}
 
 /** Books a seller can list: matches for a query, or the whole catalogue A–Z when there's none yet. */
 export async function findCatalogueMatches(db: Db, query: string | null, limit = 8) {

@@ -9,6 +9,7 @@ import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
 import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
+import { loadDeliveryRates } from '#/server/orders.server'
 import { loadChart } from '#/server/chart.server'
 
 // Only the data a browser fetches for a page is shared and cacheable. During a full page load these functions
@@ -31,6 +32,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         displayName: profiles.displayName,
         isAdmin: profiles.isAdmin,
         sellerSlug: sellers.slug,
+        town: profiles.town,
+        province: profiles.province,
         isAuthor: sql<boolean>`exists (select 1 from ${authors} where ${authors.verifiedSellerId} = ${sellers.id})`,
       })
       .from(profiles)
@@ -46,6 +49,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         // Admin runs on its own host with its own sign-in.
         adminUrl: row?.isAdmin ? (env.ADMIN_ORIGIN ?? '/admin') : null,
         sellerSlug: row?.sellerSlug ?? null,
+        // Where they usually receive books, for delivery estimates on book pages.
+        place: row?.town && row.province ? { town: row.town, province: row.province } : null,
         isAuthor: row?.isAuthor ?? false,
       },
       fx,
@@ -103,10 +108,12 @@ export const searchBooksFn = createServerFn({ method: 'GET' })
 export const getBook = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().max(120) }))
   .handler(async ({ data }) => {
-    const book = await getBookBySlug(getDb(), data.slug)
+    const db = getDb()
+    const [book, deliveryRates] = await Promise.all([getBookBySlug(db, data.slug), loadDeliveryRates(db)])
     if (!book) throw notFound()
     publicCache(30)
-    return book
+    // Each reader's own town is only known in the browser, which works out the delivery line from these.
+    return { ...book, deliveryRates }
   })
 
 export const getAuthor = createServerFn({ method: 'GET' })

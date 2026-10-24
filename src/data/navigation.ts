@@ -19,6 +19,7 @@ export const FOOTER_NAV = [
       { label: 'Publishers', to: '/publishers' },
       { label: 'Used books', to: '/search', search: { condition: 'used' } },
       { label: 'School textbooks', to: '/search', search: { category: 'textbooks' } },
+      { label: 'School book list', to: '/school-list' },
     ],
   },
   {
