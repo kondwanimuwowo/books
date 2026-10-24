@@ -284,7 +284,7 @@ function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; n
 
   if (!signedIn) {
     return (
-      <Link to="/login" search={{ next }} className="btn btn-ghost mt-3 w-full">
+      <Link to="/login" search={{ next }} className="btn btn-secondary mt-3 w-full">
         Make an offer
       </Link>
     )
@@ -303,7 +303,7 @@ function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; n
   }
   if (!open) {
     return (
-      <button type="button" className="btn btn-ghost mt-3 w-full" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn-secondary mt-3 w-full" onClick={() => setOpen(true)}>
         Make an offer
       </button>
     )

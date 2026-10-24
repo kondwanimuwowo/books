@@ -55,7 +55,13 @@
 }
 
 /* Hover effects only for a real pointer; taps on phones fire false hovers. */
-@custom-variant hover (@media (hover: hover) and (pointer: fine) { &:hover });
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -157,8 +163,9 @@
   .btn-secondary {
     @apply bg-transparent text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-sunken hover:text-ink;
   }
+  /* Minor actions beside a visible button (Cancel, Decline); readable at rest, never grey like a disabled one. */
   .btn-ghost {
-    @apply text-muted hover:bg-sunken hover:text-ink;
+    @apply text-ink hover:bg-sunken;
   }
   .btn-sm {
     @apply h-9 px-4 text-sm;

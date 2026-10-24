@@ -113,7 +113,7 @@ export function PayoutForm({ current, primary = true }: { current: { phone: stri
           <p className="mt-6 text-xl font-bold tracking-[-0.02em] uppercase">{saved.name}</p>
           <p className="mt-1 text-sm text-on-deep-muted tabular-nums">{saved.phone}</p>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm -ml-2" onClick={() => setEditing(true)}>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(true)}>
           Change number
         </button>
       </div>

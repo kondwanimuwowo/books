@@ -233,7 +233,7 @@ function NoResults({ query, filtered }: { query?: string; filtered: boolean }) {
         ) : null}
         {/* An empty search is a gap in the catalogue: invite the copy in. */}
         {query && (
-          <Link to="/sell" className="btn btn-ghost">
+          <Link to="/sell" className="btn btn-secondary">
             Have one? Sell it
           </Link>
         )}

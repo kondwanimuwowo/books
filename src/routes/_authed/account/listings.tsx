@@ -127,8 +127,8 @@ function ListingItem({ listing }: { listing: Listing }) {
         )}
 
         {mode === 'view' && listing.status !== 'removed' && (
-          <div className="mt-2 -ml-2 flex flex-wrap">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('edit')}>
+          <div className="mt-2 flex flex-wrap gap-1">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMode('edit')}>
               Edit
             </button>
             {listing.status === 'active' && (
