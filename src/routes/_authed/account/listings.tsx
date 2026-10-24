@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { getMyListings, updateListing } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { Alert, useAction } from '#/components/form'
-import { OfferSettings, offerSettingsData } from '#/components/seller-forms'
+import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
@@ -59,8 +59,11 @@ function ListingItem({ listing }: { listing: Listing }) {
     open: listing.acceptsOffers,
     floor: listing.offerFloorNgwee !== null ? String(listing.offerFloorNgwee / 100) : '',
   })
+  const [description, setDescription] = useState('')
   const save = useAction(async (status: Status) => {
-    await updateListing({ data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status, ...offerSettingsData(offerSettings) } })
+    await updateListing({
+      data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status, ...offerSettingsData(offerSettings), description: description.trim() || undefined },
+    })
     setMode('view')
     await router.invalidate()
   })
@@ -106,6 +109,11 @@ function ListingItem({ listing }: { listing: Listing }) {
             <div className="w-full">
               <OfferSettings value={offerSettings} onChange={setOfferSettings} />
             </div>
+            {!listing.book.hasDescription && (
+              <div className="w-full">
+                <MissingDescription isbn={listing.book.isbn13} value={description} onChange={setDescription} />
+              </div>
+            )}
             <button type="button" className="btn btn-primary btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
               Save
             </button>

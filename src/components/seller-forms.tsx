@@ -1,5 +1,5 @@
 import { useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { savePayoutDetails, saveSellerProfile } from '#/functions/sell.functions'
 import { SELLER_KINDS } from '#/data/listing-options'
 import type { SellerKind } from '#/data/listing-options'
@@ -7,7 +7,7 @@ import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
 import { SHIPPING_METHODS, shippingLabel } from '#/data/shipping'
 import type { ShippingMethod } from '#/data/shipping'
-import { saveDeliverySettings } from '#/functions/sell.functions'
+import { getBookDescription, saveDeliverySettings } from '#/functions/sell.functions'
 import { TownField } from './town-field'
 import { detectOperator, OPERATOR_LABELS } from '#/lib/phone'
 import type { Operator } from '#/lib/phone'
@@ -268,4 +268,34 @@ export function OfferSettings({ value, onChange }: { value: OfferSettingsValue; 
 
 export function offerSettingsData(value: OfferSettingsValue) {
   return { acceptsOffers: value.open, offerFloorKwacha: value.open && value.floor ? Number(value.floor) : null }
+}
+
+/**
+ * For a book saved without a description: looks one up online, and lets the seller edit it or write one.
+ * The server only ever fills an empty description with this.
+ */
+export function MissingDescription({ isbn, value, onChange }: { isbn: string | null; value: string; onChange: (value: string) => void }) {
+  const [state, setState] = useState<'looking' | 'found' | 'none'>(isbn ? 'looking' : 'none')
+  useEffect(() => {
+    if (!isbn) return
+    let cancelled = false
+    getBookDescription({ data: { isbn } })
+      .then(({ description }) => {
+        if (cancelled) return
+        if (description) onChange(description)
+        setState(description ? 'found' : 'none')
+      })
+      .catch(() => !cancelled && setState('none'))
+    return () => {
+      cancelled = true
+    }
+    // Looked up once per book; onChange is a state setter.
+  }, [isbn])
+
+  if (state === 'looking') return <p className="text-sm text-subtle">Looking for a description…</p>
+  return (
+    <Field label="Description" hint={state === 'found' ? 'Found online. Shown on the book’s page; edit it if needed.' : 'This book has none yet. Yours will show on its page.'}>
+      <textarea className="input" rows={5} maxLength={8000} value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
+  )
 }

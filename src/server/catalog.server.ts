@@ -385,9 +385,14 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
   return book
 }
 
-export async function findCatalogueMatches(db: Db, query: string) {
-  const isbn = toIsbn13(query)
-  const where = isbn ? eq(books.isbn13, isbn) : or(sql`${books.searchVector} @@ websearch_to_tsquery('simple', ${query})`, ilike(books.title, `%${query}%`))
+/** Books a seller can list: matches for a query, or the whole catalogue A–Z when there's none yet. */
+export async function findCatalogueMatches(db: Db, query: string | null, limit = 8) {
+  const isbn = query ? toIsbn13(query) : null
+  const where = !query
+    ? undefined
+    : isbn
+      ? eq(books.isbn13, isbn)
+      : or(sql`${books.searchVector} @@ websearch_to_tsquery('simple', ${query})`, ilike(books.title, `%${query}%`))
   return db
     .select({
       id: books.id,
@@ -397,8 +402,10 @@ export async function findCatalogueMatches(db: Db, query: string) {
       isbn13: books.isbn13,
       publishedYear: books.publishedYear,
       authorNames: authorNamesSql,
+      hasDescription: sql<boolean>`${books.description} is not null`,
     })
     .from(books)
     .where(where)
-    .limit(8)
+    .orderBy(asc(books.title))
+    .limit(limit)
 }

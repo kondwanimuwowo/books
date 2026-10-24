@@ -8,7 +8,7 @@ import { normalizeLocalPhone } from '#/lib/phone'
 import { toNgwee } from '#/lib/money'
 import { randomCode, slugify } from '#/lib/utils'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
-import { lookupIsbn, searchExternal } from '#/server/book-sources.server'
+import { findDescription, lookupIsbn, searchExternal } from '#/server/book-sources.server'
 import { findCatalogueMatches, findOrCreateBook } from '#/server/catalog.server'
 import { attemptPayout } from '#/server/orders.server'
 import { createMobileMoneyRecipient, resolveMobileMoney } from '#/server/lenco.server'
@@ -99,6 +99,23 @@ export const saveDeliverySettings = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+export const browseCatalogue = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .handler(async () => findCatalogueMatches(getDb(), null, 60))
+
+export const getBookDescription = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .validator(z.object({ isbn: z.string().max(20) }))
+  .handler(async ({ data }) => ({ description: await findDescription(data.isbn) }))
+
+/** Sellers may add a description only where a book has none; changing one stays with its verified author. */
+async function fillMissingDescription(db: ReturnType<typeof getDb>, bookId: string, description: string | undefined) {
+  if (!description) return
+  await db.update(books).set({ description }).where(and(eq(books.id, bookId), isNull(books.description)))
+}
+
+const descriptionField = z.string().trim().max(8000).optional()
+
 export const findBookForSale = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
   .validator(z.object({ query: z.string().trim().min(2).max(200) }))
@@ -154,6 +171,7 @@ export const createListing = createServerFn({ method: 'POST' })
       quantity: z.number().int().min(1).max(10000),
       notes: z.string().trim().max(500).optional(),
       ...offerFields,
+      description: descriptionField,
       // A photo the seller uploaded through uploadCover.
       coverKey: z.string().max(64).optional(),
     }),
@@ -176,7 +194,7 @@ export const createListing = createServerFn({ method: 'POST' })
       const isbn13 = candidate.isbn13 ? toIsbn13(candidate.isbn13) : null
       if (candidate.isbn13 && !isbn13) throw new Error('That ISBN doesn’t look right')
       const book = await findOrCreateBook(db, {
-        candidate: { ...candidate, isbn13, source: data.book.kind === 'manual' ? 'manual' : data.book.source },
+        candidate: { ...candidate, isbn13, description: candidate.description ?? data.description ?? null, source: data.book.kind === 'manual' ? 'manual' : data.book.source },
         categoryId: category?.id ?? null,
         markZambian: data.zambianAuthor,
         createdBy: context.user.id,
@@ -184,6 +202,7 @@ export const createListing = createServerFn({ method: 'POST' })
       ;({ id: bookId, slug } = book)
     }
 
+    await fillMissingDescription(db, bookId, data.description)
     // Fills a missing cover only; replacing an existing one is for the book's verified author.
     if (uploadedCover) {
       await db.update(books).set({ coverUrl: uploadedCover }).where(and(eq(books.id, bookId), isNull(books.coverUrl)))
@@ -230,7 +249,7 @@ export const getMyListings = createServerFn({ method: 'GET' })
         acceptsOffers: listings.acceptsOffers,
         offerFloorNgwee: listings.offerFloorNgwee,
         createdAt: listings.createdAt,
-        book: { slug: books.slug, title: books.title, coverUrl: books.coverUrl },
+        book: { slug: books.slug, title: books.title, coverUrl: books.coverUrl, isbn13: books.isbn13, hasDescription: sql<boolean>`${books.description} is not null` },
       })
       .from(listings)
       .innerJoin(books, eq(books.id, listings.bookId))
@@ -247,16 +266,19 @@ export const updateListing = createServerFn({ method: 'POST' })
       quantity: z.number().int().min(0).max(10000),
       status: z.enum(['active', 'paused', 'removed']),
       ...offerFields,
+      description: descriptionField,
     }),
   )
   .handler(async ({ data, context }) => {
+    const db = getDb()
     const status = data.status === 'active' && data.quantity === 0 ? 'sold_out' : data.status
-    const [updated] = await getDb()
+    const [updated] = await db
       .update(listings)
       .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status, ...offerValues(data) })
       .where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id)))
-      .returning({ id: listings.id })
+      .returning({ bookId: listings.bookId })
     if (!updated) throw new Error('Listing not found')
+    await fillMissingDescription(db, updated.bookId, data.description)
     return { ok: true }
   })
 

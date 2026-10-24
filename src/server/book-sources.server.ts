@@ -2,7 +2,12 @@ import { env } from 'cloudflare:workers'
 import { cleanIsbn, toIsbn13 } from '#/lib/isbn'
 
 // Lookup cascade for book metadata: our own catalogue first (see catalog.server.ts),
-// then Google Books (best descriptions), then Open Library (no key, good covers).
+// then Google Books (best descriptions), then Open Library (no key, good covers, and
+// descriptions on its work records). Google has refused requests for long stretches,
+// so every path also works on Open Library alone.
+
+// Open Library asks callers to identify themselves.
+const OPEN_LIBRARY = { headers: { 'User-Agent': 'KuwalaBooks/1.0 (https://kuwalabooks.com)' } }
 
 export interface BookCandidate {
   isbn13: string | null
@@ -96,7 +101,7 @@ interface OpenLibraryBook {
 
 async function openLibraryByIsbn(isbn13: string): Promise<BookCandidate | null> {
   try {
-    const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&format=json&jscmd=data`)
+    const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&format=json&jscmd=data`, OPEN_LIBRARY)
     if (!response.ok) return null
     const json = (await response.json()) as Record<string, OpenLibraryBook | undefined>
     const book = json[`ISBN:${isbn13}`]
@@ -123,11 +128,42 @@ async function openLibraryByIsbn(isbn13: string): Promise<BookCandidate | null> 
 async function openLibraryCover(isbn13: string) {
   const url = `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`
   try {
-    const response = await fetch(`${url}?default=false`, { method: 'HEAD' })
+    const response = await fetch(`${url}?default=false`, { method: 'HEAD', ...OPEN_LIBRARY })
     return response.ok ? url : null
   } catch {
     return null
   }
+}
+
+type OpenLibraryText = string | { value?: string } | undefined
+
+function olText(value: OpenLibraryText) {
+  const text = typeof value === 'string' ? value : value?.value
+  return text?.trim() || null
+}
+
+/** The edition's own description, or else its work's (where Open Library usually keeps it). */
+async function openLibraryDescription(isbn13: string) {
+  try {
+    const edition = await fetch(`https://openlibrary.org/isbn/${isbn13}.json`, OPEN_LIBRARY)
+    if (!edition.ok) return null
+    const book = (await edition.json()) as { description?: OpenLibraryText; works?: { key: string }[] }
+    const own = olText(book.description)
+    if (own || !book.works?.[0]) return own
+    const work = await fetch(`https://openlibrary.org${book.works[0].key}.json`, OPEN_LIBRARY)
+    if (!work.ok) return null
+    return olText(((await work.json()) as { description?: OpenLibraryText }).description)
+  } catch {
+    return null
+  }
+}
+
+/** For a book saved without one: Google's blurb if it answers, otherwise Open Library's. */
+export async function findDescription(input: string) {
+  const isbn13 = toIsbn13(input)
+  if (!isbn13) return null
+  const [google] = await googleQuery(`isbn:${cleanIsbn(input)}`, 1)
+  return google?.description ?? (await openLibraryDescription(isbn13))
 }
 
 /** Google first for metadata; Open Library fills gaps, and usually has the sharper cover. */
@@ -135,19 +171,68 @@ export async function lookupIsbn(input: string): Promise<BookCandidate | null> {
   const isbn13 = toIsbn13(input)
   if (!isbn13) return null
   const [google] = await googleQuery(`isbn:${cleanIsbn(input)}`, 1)
-  const [openLibrary, olCover] = await Promise.all([google?.description ? Promise.resolve(null) : openLibraryByIsbn(isbn13), openLibraryCover(isbn13)])
+  const [openLibrary, olCover, olDescription] = await Promise.all([
+    google ? Promise.resolve(null) : openLibraryByIsbn(isbn13),
+    openLibraryCover(isbn13),
+    google?.description ? Promise.resolve(null) : openLibraryDescription(isbn13),
+  ])
   const base = google ?? openLibrary
   if (!base) return null
   return {
     ...base,
     isbn13,
-    description: base.description ?? openLibrary?.description ?? null,
+    description: base.description ?? olDescription,
     coverUrl: olCover ?? base.coverUrl ?? openLibrary?.coverUrl ?? null,
   }
 }
 
+interface OpenLibraryDoc {
+  title?: string
+  subtitle?: string
+  author_name?: string[]
+  first_publish_year?: number
+  number_of_pages_median?: number
+  editions?: { docs?: { title?: string; isbn?: string[]; publisher?: string[]; cover_i?: number; number_of_pages?: number; publish_date?: string[] }[] }
+}
+
+// Each result is a work; `lang=en` makes Open Library pick its best English edition, whose ISBN we list.
+async function openLibrarySearch(query: string, limit: number): Promise<BookCandidate[]> {
+  const fields = 'title,subtitle,author_name,first_publish_year,number_of_pages_median,editions,editions.title,editions.isbn,editions.publisher,editions.cover_i,editions.number_of_pages,editions.publish_date'
+  const params = new URLSearchParams({ q: query, limit: String(limit), lang: 'en', fields })
+  try {
+    const response = await fetch(`https://openlibrary.org/search.json?${params}`, OPEN_LIBRARY)
+    if (!response.ok) return []
+    const json = (await response.json()) as { docs?: OpenLibraryDoc[] }
+    return (json.docs ?? []).flatMap((doc): BookCandidate[] => {
+      const edition = doc.editions?.docs?.[0]
+      const isbn13 = edition?.isbn?.map((i) => toIsbn13(i)).find((i) => i !== null) ?? null
+      const title = edition?.title ?? doc.title
+      if (!title || !isbn13) return []
+      return [
+        {
+          isbn13,
+          isbn10: edition?.isbn?.find((i) => i.length === 10) ?? null,
+          title,
+          subtitle: doc.subtitle ?? null,
+          authors: doc.author_name ?? [],
+          // Fetched once the seller picks it, so a search costs one request.
+          description: null,
+          coverUrl: edition?.cover_i ? `https://covers.openlibrary.org/b/id/${edition.cover_i}-L.jpg` : null,
+          publisher: edition?.publisher?.[0] ?? null,
+          publishedYear: year(edition?.publish_date?.[0]) ?? doc.first_publish_year ?? null,
+          pageCount: edition?.number_of_pages ?? doc.number_of_pages_median ?? null,
+          language: 'en',
+          source: 'openlibrary',
+        },
+      ]
+    })
+  } catch {
+    return []
+  }
+}
+
 export async function searchExternal(query: string): Promise<BookCandidate[]> {
-  const results = await googleQuery(query, 12)
   // Only offer results we can identify by ISBN; anything else should go through manual entry.
-  return results.filter((r) => r.isbn13)
+  const google = (await googleQuery(query, 12)).filter((r) => r.isbn13)
+  return google.length ? google : openLibrarySearch(query, 12)
 }

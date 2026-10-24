@@ -3,11 +3,11 @@ import { ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
-import { createListing, findBookForSale, getMySeller, getPriceGuide } from '#/functions/sell.functions'
+import { browseCatalogue, createListing, findBookForSale, getMySeller, getPriceGuide } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
-import { Alert, Field, useAction } from '#/components/form'
-import { OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
+import { Alert, Field, errorMessage, useAction } from '#/components/form'
+import { MissingDescription, OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
 import type { Condition, Format } from '#/data/listing-options'
@@ -28,7 +28,7 @@ type Found = Awaited<ReturnType<typeof findBookForSale>>
 type Candidate = Found['external'][number]
 
 type Selection =
-  | { kind: 'existing'; id: string; title: string; authorNames: string | null; coverUrl: string | null }
+  | { kind: 'existing'; id: string; title: string; authorNames: string | null; coverUrl: string | null; isbn13: string | null; hasDescription: boolean }
   | { kind: 'external'; candidate: Candidate }
   | { kind: 'manual' }
 
@@ -67,99 +67,172 @@ function SellPage() {
   )
 }
 
+type CatalogueBook = Found['catalogue'][number]
+type Option = { id: string; title: string; meta: string; coverUrl: string | null; pick: Selection }
+
+const SEARCH_DELAY_MS = 350
+
+function existingOption(b: CatalogueBook): Option {
+  return {
+    id: `k-${b.id}`,
+    title: b.title,
+    meta: [b.authorNames, b.publishedYear].filter(Boolean).join(' · '),
+    coverUrl: b.coverUrl,
+    pick: { kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl, isbn13: b.isbn13, hasDescription: b.hasDescription },
+  }
+}
+
+function externalOption(b: Candidate): Option {
+  return {
+    id: `x-${b.isbn13 ?? b.title}`,
+    title: b.title,
+    meta: [b.authors.join(', '), b.publishedYear, b.isbn13].filter(Boolean).join(' · '),
+    coverUrl: b.coverUrl,
+    pick: { kind: 'external', candidate: b },
+  }
+}
+
+/** A combobox: focus shows what's already on Kuwala A–Z; typing searches Kuwala and the web as you go. */
 function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
   const [query, setQuery] = useState('')
-  const [found, setFound] = useState<Found | null>(null)
-  const search = useAction(async () => setFound(await findBookForSale({ data: { query } })))
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const [all, setAll] = useState<CatalogueBook[] | null>(null)
+  const [found, setFound] = useState<{ query: string; result: Found } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const term = query.trim()
+  const searching = term.length >= 2
+
+  useEffect(() => {
+    if (!open || all) return
+    void browseCatalogue()
+      .then(setAll)
+      .catch(() => setAll([]))
+  }, [open, all])
+
+  useEffect(() => {
+    if (!searching) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      findBookForSale({ data: { query: term } })
+        .then((result) => !cancelled && (setFound({ query: term, result }), setError(null)))
+        .catch((e: unknown) => !cancelled && setError(errorMessage(e)))
+    }, SEARCH_DELAY_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [term, searching])
+
+  const current = searching && found?.query === term ? found.result : null
+  const loading = searching ? !current && !error : !all
+  const kuwala = (searching ? (current?.catalogue ?? []) : (all ?? [])).map(existingOption)
+  const online = (current?.external ?? []).map(externalOption)
+  const options = [...kuwala, ...online]
+  const choose = (o: Option) => onSelect(o.pick)
 
   return (
     <div className="rise">
       <h2 className="text-xl">Which book?</h2>
-      <form
-        className="mt-4 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (query.trim().length >= 2) void search.run()
+      <div
+        className="relative mt-4"
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
         }}
       >
-        <div className="relative flex-1">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
-          <input className="input pl-10" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ISBN, title or author" aria-label="ISBN, title or author" autoFocus />
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={search.pending}>
-          {search.pending ? 'Searching…' : 'Search'}
-        </button>
-      </form>
-      <p className="mt-2 text-xs text-subtle">The ISBN is printed by the barcode.</p>
+        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
+        <input
+          className="input pl-10"
+          role="combobox"
+          aria-label="ISBN, title or author"
+          aria-expanded={open}
+          aria-controls="book-options"
+          aria-autocomplete="list"
+          aria-activedescendant={open && options[active] ? options[active].id : undefined}
+          placeholder="ISBN, title or author"
+          autoComplete="off"
+          value={query}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setActive(0)
+            setOpen(true)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setOpen(true)
+              setActive((i) => Math.min(i + 1, options.length - 1))
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setActive((i) => Math.max(i - 1, 0))
+            } else if (e.key === 'Enter' && open && options[active]) {
+              e.preventDefault()
+              choose(options[active])
+            } else if (e.key === 'Escape') {
+              setOpen(false)
+            }
+          }}
+        />
 
-      {search.error && (
-        <div className="mt-4">
-          <Alert>{search.error}</Alert>
-        </div>
-      )}
-
-      {found && (
-        <div className="rise mt-8 space-y-6">
-          {found.catalogue.length > 0 && (
-            <ResultList title="On Kuwala">
-              {found.catalogue.map((b) => (
-                <ResultRow
-                  key={b.id}
-                  title={b.title}
-                  meta={[b.authorNames, b.publishedYear].filter(Boolean).join(' · ')}
-                  coverUrl={b.coverUrl}
-                  onClick={() => onSelect({ kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl })}
-                />
+        {open && (
+          <div className="card absolute inset-x-0 top-full z-20 mt-2 max-h-[min(60vh,28rem)] overflow-y-auto">
+            <ul id="book-options" role="listbox" aria-label="Books">
+              {kuwala.length > 0 && <GroupLabel>{searching ? 'On Kuwala' : 'On Kuwala, A–Z'}</GroupLabel>}
+              {kuwala.map((o, i) => (
+                <OptionRow key={o.id} option={o} active={i === active} onHover={() => setActive(i)} onPick={() => choose(o)} />
               ))}
-            </ResultList>
-          )}
-          {found.external.length > 0 && (
-            <ResultList title={found.catalogue.length ? 'Other editions' : 'Found'}>
-              {found.external.map((b) => (
-                <ResultRow
-                  key={b.isbn13 ?? b.title}
-                  title={b.title}
-                  meta={[b.authors.join(', '), b.publishedYear, b.isbn13].filter(Boolean).join(' · ')}
-                  coverUrl={b.coverUrl}
-                  onClick={() => onSelect({ kind: 'external', candidate: b })}
-                />
+              {online.length > 0 && <GroupLabel>{current?.catalogue.length ? 'Other editions online' : 'Found online'}</GroupLabel>}
+              {online.map((o, i) => (
+                <OptionRow key={o.id} option={o} active={kuwala.length + i === active} onHover={() => setActive(kuwala.length + i)} onPick={() => choose(o)} />
               ))}
-            </ResultList>
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-sunken p-4">
-            <p className="font-medium">{!found.catalogue.length && !found.external.length ? 'Not found online' : 'Not here?'}</p>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
-              Add it yourself
-            </button>
+            </ul>
+            {loading && <p className="px-4 py-3 text-sm text-subtle">{searching ? 'Searching…' : 'Loading…'}</p>}
+            {error && <p className="px-4 py-3 text-sm text-danger">{error}</p>}
+            {!loading && !options.length && !error && (
+              <p className="px-4 py-3 text-sm text-subtle">{searching ? 'Nothing found. Try the ISBN by the barcode.' : 'Type a title, author or ISBN'}</p>
+            )}
+            <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3">
+              <p className="text-sm text-muted">Not here?</p>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
+                Add it yourself
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <p className="mt-2 text-xs text-subtle">The ISBN is printed by the barcode.</p>
     </div>
   )
 }
 
-function ResultList({ title, children }: { title: string; children: ReactNode }) {
+function GroupLabel({ children }: { children: ReactNode }) {
   return (
-    <section>
-      <h3 className="eyebrow mb-2">{title}</h3>
-      <ul className="card divide-y divide-line overflow-hidden">{children}</ul>
-    </section>
+    <li role="presentation" className="eyebrow px-4 pt-3 pb-1">
+      {children}
+    </li>
   )
 }
 
-function ResultRow({ title, meta, coverUrl, onClick }: { title: string; meta: string; coverUrl: string | null; onClick: () => void }) {
+function OptionRow({ option, active, onHover, onPick }: { option: Option; active: boolean; onHover: () => void; onPick: () => void }) {
   return (
-    <li>
-      <button type="button" onClick={onClick} className="group flex w-full items-center gap-4 p-3 text-left transition-colors hover:bg-sunken">
-        <div className="w-11 shrink-0">
-          <BookCover src={coverUrl} title={title} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-1 font-medium">{title}</p>
-          <p className="line-clamp-1 text-sm text-subtle">{meta}</p>
-        </div>
-        <span className="text-sm font-medium text-accent-ink transition-transform group-hover:translate-x-0.5">Sell this</span>
-      </button>
+    <li
+      id={option.id}
+      role="option"
+      aria-selected={active}
+      // Keeps focus in the input so the list doesn't close before the click lands.
+      onMouseDown={(e) => e.preventDefault()}
+      onMouseEnter={onHover}
+      onClick={onPick}
+      className={cn('flex cursor-pointer items-center gap-3 px-4 py-2', active && 'bg-sunken')}
+    >
+      <div className="w-9 shrink-0">
+        <BookCover src={option.coverUrl} title={option.title} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-1 text-[15px] font-medium">{option.title}</p>
+        <p className="line-clamp-1 text-sm text-subtle">{option.meta}</p>
+      </div>
     </li>
   )
 }
@@ -178,6 +251,10 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState('')
   const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({ open: false, floor: '' })
+  const [description, setDescription] = useState('')
+  // Books saved without a description (or found online without one) get a chance to gain one here.
+  const missingDescription =
+    selection.kind === 'existing' ? (selection.hasDescription ? null : selection.isbn13) : selection.kind === 'external' && !selection.candidate.description ? selection.candidate.isbn13 : undefined
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
   const [cover, setCover] = useState<{ key: string; preview: string } | null>(null)
   const [coverBusy, setCoverBusy] = useState(false)
@@ -222,6 +299,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
         quantity: Number(quantity),
         notes: notes || undefined,
         ...offerSettingsData(offerSettings),
+        description: missingDescription !== undefined ? description.trim() || undefined : undefined,
         coverKey: cover?.key,
       },
     })
@@ -302,6 +380,8 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
             </div>
           </section>
         )}
+
+        {missingDescription !== undefined && <MissingDescription isbn={missingDescription} value={description} onChange={setDescription} />}
 
         {!heading.coverUrl && (
           <section aria-labelledby="cover-heading">
