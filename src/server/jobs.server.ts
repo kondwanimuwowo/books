@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { books, listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
 import { findCoverUrls, googleCoverUrl, googleVolumeId } from './book-sources.server'
 import { mirrorCover } from './covers.server'
 import { getTransferStatus } from './lenco.server'
@@ -113,13 +113,19 @@ async function expireOffers(db: Db) {
 }
 
 // Each book can take several fetches (Google's retries plus the image), so batches stay small.
-const COVER_BATCH = 4
+const COVER_BATCH = 3
 
 // Copies each book's best cover into R2: Google's 800px image where it has one, else the cover we saved.
 async function mirrorCovers(db: Db) {
   // Random order, so books waiting on Google don't hold up the rest.
   const due = await db
-    .select({ id: books.id, isbn13: books.isbn13, coverUrl: books.coverUrl })
+    .select({
+      id: books.id,
+      isbn13: books.isbn13,
+      title: books.title,
+      coverUrl: books.coverUrl,
+      author: sql<string | null>`(select a.name from ${bookAuthors} ba join ${authors} a on a.id = ba.author_id where ba.book_id = ${books}.id order by ba.position limit 1)`,
+    })
     .from(books)
     .where(isNull(books.coverCheckedAt))
     .orderBy(sql`random()`)
@@ -129,7 +135,7 @@ async function mirrorCovers(db: Db) {
     let urls: string[] = []
     if (!saved?.startsWith('/covers/')) {
       const volumeId = googleVolumeId(saved)
-      const found = volumeId ? [googleCoverUrl(volumeId)] : book.isbn13 ? await findCoverUrls(book.isbn13) : []
+      const found = volumeId ? [googleCoverUrl(volumeId)] : await findCoverUrls(book)
       if (!found) return
       urls = [...new Set([...found, ...(saved ? [saved] : [])])]
     }

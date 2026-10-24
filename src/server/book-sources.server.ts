@@ -212,15 +212,42 @@ export async function lookupIsbn(input: string): Promise<BookCandidate | null> {
   }
 }
 
+// Main title only, without accents, case or punctuation: "Atomic Habits: An Easy…" -> "atomic habits".
+function comparable(value: string) {
+  return value
+    .split(':')[0]
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+const surname = (name: string) => comparable(name).split(' ').pop() ?? ''
+
+/** A Google cover for the same title by the same author, used when Google doesn't know the ISBN. */
+async function googleCoverByTitle(title: string, author: string | null) {
+  // A plain query: Google's intitle:/inauthor: filters have been returning nothing.
+  const results = await googleSearch([title.split(':')[0].trim(), author].filter(Boolean).join(' '), 10)
+  if (results === null) return undefined
+  const matches = results.filter(
+    (r) => r.coverUrl && comparable(r.title) === comparable(title) && (!author || r.authors.some((a) => surname(a) === surname(author))),
+  )
+  return (matches.find((r) => r.language === 'en') ?? matches[0])?.coverUrl ?? null
+}
+
 /**
- * The best cover we can find for an ISBN, best first. `undefined` means Google didn't answer, so the
+ * The best covers we can find for a book, best first: Google's by ISBN, Google's for the same title and
+ * author (often another edition), then Open Library's. `undefined` means Google didn't answer, so the
  * caller can try again later instead of settling for Open Library's smaller image.
  */
-export async function findCoverUrls(isbn13: string): Promise<string[] | undefined> {
-  const google = await googleSearch(`isbn:${isbn13}`, 1)
-  if (google === null) return undefined
-  const olCover = await openLibraryCover(isbn13)
-  return [google[0]?.coverUrl, olCover].filter((url): url is string => !!url)
+export async function findCoverUrls(book: { isbn13: string | null; title: string; author: string | null }): Promise<string[] | undefined> {
+  const byIsbn = book.isbn13 ? await googleSearch(`isbn:${book.isbn13}`, 1) : []
+  if (byIsbn === null) return undefined
+  const google = byIsbn[0]?.coverUrl ?? (await googleCoverByTitle(book.title, book.author))
+  if (google === undefined) return undefined
+  const olCover = book.isbn13 ? await openLibraryCover(book.isbn13) : null
+  return [google, olCover].filter((url): url is string => !!url)
 }
 
 interface OpenLibraryDoc {
