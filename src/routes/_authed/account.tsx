@@ -1,7 +1,7 @@
 import { Link, Outlet, createFileRoute, useLoaderData, useNavigate, useRouter } from '@tanstack/react-router'
 import { signOut } from '#/functions/auth.functions'
 import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
-import { accountNav } from '#/data/navigation'
+import { SIGN_OUT_ICON, accountNav } from '#/data/navigation'
 import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/_authed/account')({
@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_authed/account')({
   component: AccountLayout,
 })
 
-const sideItem = 'block rounded-lg px-3 py-2 text-[15px] no-underline transition-colors'
+const sideItem = 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] no-underline transition-colors'
 
 function AccountLayout() {
   const { user } = useLoaderData({ from: '__root__' })
@@ -55,12 +55,14 @@ function AccountLayout() {
                   activeProps={{ className: 'bg-accent-soft font-medium text-accent-soft-ink hover:text-accent-soft-ink' }}
                   inactiveProps={{ className: 'text-muted hover:bg-sunken hover:text-ink' }}
                 >
+                  <item.icon className="size-4 shrink-0 opacity-80" aria-hidden />
                   {item.label}
                 </Link>
               </li>
             ))}
           </ul>
           <button type="button" className={cn(sideItem, 'mt-6 w-full text-left text-subtle hover:bg-sunken hover:text-ink')} onClick={() => void leave()}>
+            <SIGN_OUT_ICON className="size-4 shrink-0 opacity-80" aria-hidden />
             Sign out
           </button>
         </nav>

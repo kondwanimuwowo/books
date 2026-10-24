@@ -1,3 +1,14 @@
+import {
+  ArchiveBoxIcon,
+  ArrowRightStartOnRectangleIcon,
+  BanknotesIcon,
+  BookOpenIcon,
+  BuildingStorefrontIcon,
+  KeyIcon,
+  PencilSquareIcon,
+  TagIcon,
+} from '@heroicons/react/16/solid'
+
 export const FOOTER_NAV = [
   {
     title: 'Shop',
@@ -21,16 +32,18 @@ export const FOOTER_NAV = [
 
 export function accountNav(isSeller: boolean, isAuthor: boolean) {
   return [
-    { to: '/account', label: 'Orders', exact: true },
-    { to: '/account/offers', label: 'Offers', exact: false },
+    { to: '/account', label: 'Orders', exact: true, icon: ArchiveBoxIcon },
+    { to: '/account/offers', label: 'Offers', exact: false, icon: TagIcon },
     ...(isSeller
       ? ([
-          { to: '/account/sales', label: 'Sales', exact: false },
-          { to: '/account/listings', label: 'Listings', exact: false },
+          { to: '/account/sales', label: 'Sales', exact: false, icon: BanknotesIcon },
+          { to: '/account/listings', label: 'Listings', exact: false, icon: BookOpenIcon },
         ] as const)
       : []),
-    ...(isAuthor ? ([{ to: '/account/author', label: 'Your books', exact: false }] as const) : []),
-    { to: '/account/shop', label: isSeller ? 'Shop and payouts' : 'Start selling', exact: false },
-    { to: '/account/password', label: 'Password', exact: false },
+    ...(isAuthor ? ([{ to: '/account/author', label: 'Your books', exact: false, icon: PencilSquareIcon }] as const) : []),
+    { to: '/account/shop', label: isSeller ? 'Shop and payouts' : 'Start selling', exact: false, icon: BuildingStorefrontIcon },
+    { to: '/account/password', label: 'Password', exact: false, icon: KeyIcon },
   ] as const
 }
+
+export const SIGN_OUT_ICON = ArrowRightStartOnRectangleIcon
