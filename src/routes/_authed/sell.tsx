@@ -3,9 +3,10 @@ import { ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
-import { browseCatalogue, createListing, findBookForSale, getMySeller, getPriceGuide } from '#/functions/sell.functions'
+import { browseCatalogue, createListing, findBookForSale, getMySeller, getPriceGuide, suggestTitles } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
+import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-input'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
@@ -62,7 +63,7 @@ function SellPage() {
     <div className={cn('page py-10 lg:py-14', selection ? 'max-w-5xl' : 'max-w-3xl')}>
       <p className="eyebrow">{seller.storeName}</p>
       <h1 className="mt-2 text-4xl sm:text-5xl">Sell a book</h1>
-      <div className="mt-8">{selection ? <DetailsStep selection={selection} onBack={() => setSelection(null)} /> : <FindStep onSelect={setSelection} />}</div>
+      <div className="mt-8">{selection ? <DetailsStep key={selection.kind === 'existing' ? selection.id : selection.kind} selection={selection} onBack={() => setSelection(null)} onSwitch={setSelection} /> : <FindStep onSelect={setSelection} />}</div>
     </div>
   )
 }
@@ -237,9 +238,12 @@ function OptionRow({ option, active, onHover, onPick }: { option: Option; active
   )
 }
 
+const loadTitles = async (query: string) =>
+  (await suggestTitles({ data: { query } })).map((b) => ({ ...b, key: b.id, label: b.title, meta: ['Already on Kuwala', b.authorNames, b.publishedYear].filter(Boolean).join(' · ') }))
+
 const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher: '', year: '', pages: '', language: 'en', description: '' }
 
-function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () => void }) {
+function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; onBack: () => void; onSwitch: (s: Selection) => void }) {
   const { categories } = Route.useLoaderData()
   const navigate = useNavigate()
   const [manual, setManual] = useState(emptyManual)
@@ -309,6 +313,7 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
   const priceNgwee = Math.round(Number(price) * 100) || 0
   const isNewToCatalogue = selection.kind !== 'existing'
   const setM = (key: keyof typeof manual) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setManual({ ...manual, [key]: e.target.value })
+  const setValue = (key: keyof typeof manual) => (value: string) => setManual((m) => ({ ...m, [key]: value }))
   const heading =
     selection.kind === 'existing'
       ? selection
@@ -346,16 +351,23 @@ function DetailsStep({ selection, onBack }: { selection: Selection; onBack: () =
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Title" className="sm:col-span-2">
-                <input className="input" required value={manual.title} onChange={setM('title')} />
+                <SuggestInput
+                  required
+                  value={manual.title}
+                  onChange={setValue('title')}
+                  load={loadTitles}
+                  heading="Already on Kuwala: list it instead"
+                  onPick={(b) => onSwitch({ kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl, isbn13: b.isbn13, hasDescription: b.hasDescription })}
+                />
               </Field>
               <Field label="Author" hint="Separate several with commas">
-                <input className="input" required value={manual.authors} onChange={setM('authors')} />
+                <SuggestInput required commaList value={manual.authors} onChange={setValue('authors')} load={loadAuthors} />
               </Field>
               <Field label="ISBN (optional)">
                 <input className="input" inputMode="numeric" value={manual.isbn} onChange={setM('isbn')} />
               </Field>
               <Field label="Publisher (optional)">
-                <input className="input" value={manual.publisher} onChange={setM('publisher')} />
+                <SuggestInput value={manual.publisher} onChange={setValue('publisher')} load={loadPublishers} />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Year">

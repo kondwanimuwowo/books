@@ -26,9 +26,12 @@ import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
 import { Route as AdminShellRouteImport } from './routes/admin/_shell'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthorsIndexRouteImport } from './routes/authors.index'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as BooksSlugRouteImport } from './routes/books.$slug'
 import { Route as CoversKeyRouteImport } from './routes/covers.$key'
+import { Route as PublishersIndexRouteImport } from './routes/publishers.index'
+import { Route as PublishersSlugRouteImport } from './routes/publishers.$slug'
 import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed/account/index'
 import { Route as AuthedAccountAuthorRouteImport } from './routes/_authed/account/author'
@@ -128,6 +131,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthorsIndexRoute = AuthorsIndexRouteImport.update({
+  id: '/authors/',
+  path: '/authors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthorsSlugRoute = AuthorsSlugRouteImport.update({
   id: '/authors/$slug',
   path: '/authors/$slug',
@@ -141,6 +149,16 @@ const BooksSlugRoute = BooksSlugRouteImport.update({
 const CoversKeyRoute = CoversKeyRouteImport.update({
   id: '/covers/$key',
   path: '/covers/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublishersIndexRoute = PublishersIndexRouteImport.update({
+  id: '/publishers/',
+  path: '/publishers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublishersSlugRoute = PublishersSlugRouteImport.update({
+  id: '/publishers/$slug',
+  path: '/publishers/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SellersSlugRoute = SellersSlugRouteImport.update({
@@ -238,7 +256,10 @@ export interface FileRoutesByFullPath {
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/authors/': typeof AuthorsIndexRoute
+  '/publishers/': typeof PublishersIndexRoute
   '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/offers': typeof AuthedAccountOffersRoute
@@ -272,7 +293,10 @@ export interface FileRoutesByTo {
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/authors': typeof AuthorsIndexRoute
+  '/publishers': typeof PublishersIndexRoute
   '/account/author': typeof AuthedAccountAuthorRoute
   '/account/listings': typeof AuthedAccountListingsRoute
   '/account/offers': typeof AuthedAccountOffersRoute
@@ -309,7 +333,10 @@ export interface FileRoutesById {
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
+  '/authors/': typeof AuthorsIndexRoute
+  '/publishers/': typeof PublishersIndexRoute
   '/_authed/account/author': typeof AuthedAccountAuthorRoute
   '/_authed/account/listings': typeof AuthedAccountListingsRoute
   '/_authed/account/offers': typeof AuthedAccountOffersRoute
@@ -346,7 +373,10 @@ export interface FileRouteTypes {
     | '/authors/$slug'
     | '/books/$slug'
     | '/covers/$key'
+    | '/publishers/$slug'
     | '/sellers/$slug'
+    | '/authors/'
+    | '/publishers/'
     | '/account/author'
     | '/account/listings'
     | '/account/offers'
@@ -380,7 +410,10 @@ export interface FileRouteTypes {
     | '/authors/$slug'
     | '/books/$slug'
     | '/covers/$key'
+    | '/publishers/$slug'
     | '/sellers/$slug'
+    | '/authors'
+    | '/publishers'
     | '/account/author'
     | '/account/listings'
     | '/account/offers'
@@ -416,7 +449,10 @@ export interface FileRouteTypes {
     | '/authors/$slug'
     | '/books/$slug'
     | '/covers/$key'
+    | '/publishers/$slug'
     | '/sellers/$slug'
+    | '/authors/'
+    | '/publishers/'
     | '/_authed/account/author'
     | '/_authed/account/listings'
     | '/_authed/account/offers'
@@ -449,7 +485,10 @@ export interface RootRouteChildren {
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
   CoversKeyRoute: typeof CoversKeyRoute
+  PublishersSlugRoute: typeof PublishersSlugRoute
   SellersSlugRoute: typeof SellersSlugRoute
+  AuthorsIndexRoute: typeof AuthorsIndexRoute
+  PublishersIndexRoute: typeof PublishersIndexRoute
   ApiWebhooksLencoRoute: typeof ApiWebhooksLencoRoute
 }
 
@@ -574,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/authors/': {
+      id: '/authors/'
+      path: '/authors'
+      fullPath: '/authors/'
+      preLoaderRoute: typeof AuthorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/authors/$slug': {
       id: '/authors/$slug'
       path: '/authors/$slug'
@@ -593,6 +639,20 @@ declare module '@tanstack/react-router' {
       path: '/covers/$key'
       fullPath: '/covers/$key'
       preLoaderRoute: typeof CoversKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publishers/': {
+      id: '/publishers/'
+      path: '/publishers'
+      fullPath: '/publishers/'
+      preLoaderRoute: typeof PublishersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publishers/$slug': {
+      id: '/publishers/$slug'
+      path: '/publishers/$slug'
+      fullPath: '/publishers/$slug'
+      preLoaderRoute: typeof PublishersSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sellers/$slug': {
@@ -792,7 +852,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,
   CoversKeyRoute: CoversKeyRoute,
+  PublishersSlugRoute: PublishersSlugRoute,
   SellersSlugRoute: SellersSlugRoute,
+  AuthorsIndexRoute: AuthorsIndexRoute,
+  PublishersIndexRoute: PublishersIndexRoute,
   ApiWebhooksLencoRoute: ApiWebhooksLencoRoute,
 }
 export const routeTree = rootRouteImport

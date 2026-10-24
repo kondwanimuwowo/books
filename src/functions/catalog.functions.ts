@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
-import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getSellerBySlug, searchBooks, shelf } from '#/server/catalog.server'
+import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
 import { loadChart } from '#/server/chart.server'
 
@@ -113,6 +113,27 @@ export const getAuthor = createServerFn({ method: 'GET' })
     if (!author) throw notFound()
     publicCache(60)
     return author
+  })
+
+export const getPublisher = createServerFn({ method: 'GET' })
+  .validator(z.object({ slug: z.string().max(120) }))
+  .handler(async ({ data }) => {
+    const publisher = await getPublisherBySlug(getDb(), data.slug)
+    if (!publisher) throw notFound()
+    publicCache(60)
+    return publisher
+  })
+
+export const directorySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  zambian: z.boolean().optional(),
+})
+
+export const getDirectory = createServerFn({ method: 'GET' })
+  .validator(directorySchema.extend({ kind: z.enum(['authors', 'publishers']) }))
+  .handler(async ({ data }) => {
+    publicCache(120)
+    return listDirectory(getDb(), data.kind, { query: data.q, zambian: data.zambian })
   })
 
 export const getSeller = createServerFn({ method: 'GET' })

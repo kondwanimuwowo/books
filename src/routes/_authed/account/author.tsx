@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getMyAuthorship, saveAuthorProfile, saveAuthoredBook } from '#/functions/author.functions'
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
+import { SuggestInput, loadPublishers } from '#/components/suggest-input'
 import { Alert, Field, useAction } from '#/components/form'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 import { LANGUAGES } from '#/data/zambia'
@@ -187,7 +188,7 @@ function BookEditor({ book, categories, onDone }: { book: Book; categories: Data
           <textarea className="input min-h-40 py-3" maxLength={8000} value={form.description} onChange={set('description')} />
         </Field>
         <Field label="Publisher">
-          <input className="input" maxLength={200} value={form.publisher} onChange={set('publisher')} />
+          <SuggestInput maxLength={200} value={form.publisher} onChange={(publisher) => setForm((f) => ({ ...f, publisher }))} load={loadPublishers} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Year">

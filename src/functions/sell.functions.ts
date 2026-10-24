@@ -9,7 +9,7 @@ import { toNgwee } from '#/lib/money'
 import { randomCode, slugify } from '#/lib/utils'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { findDescription, lookupIsbn, searchExternal } from '#/server/book-sources.server'
-import { findCatalogueMatches, findOrCreateBook } from '#/server/catalog.server'
+import { findCatalogueMatches, findOrCreateBook, suggestNames } from '#/server/catalog.server'
 import { attemptPayout } from '#/server/orders.server'
 import { createMobileMoneyRecipient, resolveMobileMoney } from '#/server/lenco.server'
 import { toIsbn13 } from '#/lib/isbn'
@@ -102,6 +102,16 @@ export const saveDeliverySettings = createServerFn({ method: 'POST' })
 export const browseCatalogue = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
   .handler(async () => findCatalogueMatches(getDb(), null, 60))
+
+export const suggestBookNames = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .validator(z.object({ kind: z.enum(['authors', 'publishers']), query: z.string().trim().min(1).max(100) }))
+  .handler(async ({ data }) => suggestNames(getDb(), data.kind, data.query))
+
+export const suggestTitles = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .validator(z.object({ query: z.string().trim().min(2).max(200) }))
+  .handler(async ({ data }) => findCatalogueMatches(getDb(), data.query, 5))
 
 export const getBookDescription = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])

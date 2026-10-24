@@ -6,7 +6,7 @@ import type { Db } from '#/db/client.server'
 import { authors, bookAuthors, books, categories } from '#/db/schema'
 import { LANGUAGES } from '#/data/zambia'
 import { requireSellerMiddleware } from '#/server/auth'
-import { refreshSearchText } from '#/server/catalog.server'
+import { refreshSearchText, upsertPublisher } from '#/server/catalog.server'
 import { ownedCoverUrl } from '#/server/covers.server'
 
 const LANGUAGE_CODES = LANGUAGES.map((l) => l.code) as [string, ...string[]]
@@ -109,6 +109,7 @@ export const saveAuthoredBook = createServerFn({ method: 'POST' })
         subtitle: data.subtitle || null,
         description: data.description || null,
         publisher: data.publisher || null,
+        publisherId: await upsertPublisher(db, data.publisher),
         publishedYear: data.publishedYear,
         pageCount: data.pageCount,
         language: data.language,

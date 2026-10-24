@@ -33,11 +33,11 @@ function TypeCover({ title, author }: { title: string; author?: string | null })
   )
 }
 
-export function ZambianMark({ className }: { className?: string }) {
+export function ZambianMark({ className, label = 'Zambian author' }: { className?: string; label?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1 rounded-full bg-zambia-soft px-2 py-0.5 text-xs font-medium text-zambia', className)}>
       <span className="h-1.5 w-1.5 rounded-full bg-zambia" aria-hidden />
-      Zambian author
+      {label}
     </span>
   )
 }

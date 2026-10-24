@@ -196,6 +196,25 @@ export const authors = pgTable(
   (t) => [uniqueIndex('authors_slug_key').on(t.slug)],
 ).enableRLS()
 
+export const publishers = pgTable(
+  'publishers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    bio: text('bio'),
+    website: text('website'),
+    isZambian: boolean('is_zambian').notNull().default(false),
+    // Set when a seller of kind 'publisher' has been verified as this publisher.
+    verifiedSellerId: uuid('verified_seller_id').references(() => sellers.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('publishers_slug_key').on(t.slug)],
+).enableRLS()
+
 export const categories = pgTable(
   'categories',
   {
@@ -220,7 +239,11 @@ export const books = pgTable(
     coverUrl: text('cover_url'),
     // Set once the cron has copied the best cover it could find into R2 (or found none).
     coverCheckedAt: timestamp('cover_checked_at', { withTimezone: true }),
+    // Display name as printed on the book; publisherId links it to the publisher's page.
     publisher: text('publisher'),
+    publisherId: uuid('publisher_id').references(() => publishers.id, {
+      onDelete: 'set null',
+    }),
     publishedYear: integer('published_year'),
     pageCount: integer('page_count'),
     // ISO 639 code, or a local-language code such as 'bem', 'nya', 'toi', 'loz', 'kqn', 'lun', 'lue'.
@@ -246,6 +269,7 @@ export const books = pgTable(
     uniqueIndex('books_slug_key').on(t.slug),
     uniqueIndex('books_isbn13_key').on(t.isbn13),
     index('books_category_idx').on(t.categoryId),
+    index('books_publisher_idx').on(t.publisherId),
     index('books_search_idx').using('gin', t.searchVector),
   ],
 ).enableRLS()

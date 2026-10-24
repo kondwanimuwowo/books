@@ -57,6 +57,13 @@
       "when": 1792829710798,
       "tag": "0007_cover_mirror",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792831999575,
+      "tag": "0008_publishers",
+      "breakpoints": true
     }
   ]
 }

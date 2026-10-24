@@ -2,6 +2,7 @@ import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { CheckIcon, MapPinIcon } from '@heroicons/react/16/solid'
 import { ShieldCheckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { getBook } from '#/functions/catalog.functions'
 import { makeOffer } from '#/functions/offers.functions'
 import { Alert, useAction } from '#/components/form'
@@ -203,11 +204,20 @@ function Description({ text }: { text: string }) {
 function Specs({ book }: { book: Book }) {
   const specs = [
     ['ISBN', book.isbn13],
-    ['Publisher', book.publisher],
+    [
+      'Publisher',
+      book.publisher && book.publisherSlug ? (
+        <Link to="/publishers/$slug" params={{ slug: book.publisherSlug }} className="text-accent-ink hover:underline">
+          {book.publisher}
+        </Link>
+      ) : (
+        book.publisher
+      ),
+    ],
     ['Published', book.publishedYear],
     ['Pages', book.pageCount],
     ['Language', languageName(book.language)],
-  ].filter(([, v]) => v)
+  ].filter(([, v]) => v) as [string, ReactNode][]
   if (!specs.length) return null
   return (
     <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-6 text-sm sm:grid-cols-3">

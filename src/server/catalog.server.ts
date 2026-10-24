@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, gt, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authors, bookAuthors, books, categories, listings, offers, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
+import type { DirectoryKind } from '#/data/directory'
 import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
 import type { BookCandidate } from './book-sources.server'
@@ -131,9 +132,10 @@ export async function searchBooks(db: Db, params: SearchParams) {
 
 export async function getBookBySlug(db: Db, slug: string) {
   const [book] = await db
-    .select({ book: books, category: { slug: categories.slug, name: categories.name } })
+    .select({ book: books, category: { slug: categories.slug, name: categories.name }, publisherSlug: publishers.slug })
     .from(books)
     .leftJoin(categories, eq(categories.id, books.categoryId))
+    .leftJoin(publishers, eq(publishers.id, books.publisherId))
     .where(eq(books.slug, slug))
     .limit(1)
   if (!book) return null
@@ -193,7 +195,7 @@ export async function getBookBySlug(db: Db, slug: string) {
 
   const authorShops = new Set(bookAuthorRows.map((a) => a.shopSlug).filter(Boolean))
   const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug) }))
-  return { ...book.book, category: book.category, authors: bookAuthorRows, offers, related }
+  return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related }
 }
 
 export async function getAuthorBySlug(db: Db, slug: string) {
@@ -228,6 +230,60 @@ export async function getAuthorBySlug(db: Db, slug: string) {
     direct: authorBooks.filter((b) => b.direct).map(({ direct: _direct, publishedYear: _year, ...card }) => card),
     years: yearSpan(authorBooks.map((b) => b.publishedYear)),
   }
+}
+
+export async function getPublisherBySlug(db: Db, slug: string) {
+  const [row] = await db
+    .select({ publisher: publishers, shop: { slug: sellers.slug, storeName: sellers.storeName, town: sellers.town } })
+    .from(publishers)
+    .leftJoin(sellers, eq(sellers.id, publishers.verifiedSellerId))
+    .where(eq(publishers.slug, slug))
+    .limit(1)
+  if (!row) return null
+  const offers = offersSubquery(db)
+  const publisherBooks = await db
+    .select({ ...cardColumns(offers), publishedYear: books.publishedYear })
+    .from(books)
+    .leftJoin(offers, eq(offers.bookId, books.id))
+    .where(eq(books.publisherId, row.publisher.id))
+    .orderBy(sql`${offers.bookId} is null`, desc(books.publishedYear))
+  const { verifiedSellerId: _seller, ...publicPublisher } = row.publisher
+  return {
+    ...publicPublisher,
+    shop: row.shop?.slug ? row.shop : null,
+    books: publisherBooks.map(({ publishedYear: _year, ...card }) => card),
+    years: yearSpan(publisherBooks.map((b) => b.publishedYear)),
+  }
+}
+
+const directoryTables = {
+  authors: { table: authors, bookCount: sql<number>`(select count(*)::int from ${bookAuthors} ba where ba.author_id = ${authors}.id)` },
+  publishers: { table: publishers, bookCount: sql<number>`(select count(*)::int from ${books} b where b.publisher_id = ${publishers}.id)` },
+}
+
+/** Authors or publishers with at least one book, A–Z; `query` matches any part of the name. */
+export async function listDirectory(db: Db, kind: DirectoryKind, params: { query?: string; zambian?: boolean; limit?: number }) {
+  const { table, bookCount } = directoryTables[kind]
+  const where = [sql`${bookCount} > 0`]
+  if (params.query) where.push(ilike(table.name, `%${params.query}%`))
+  if (params.zambian) where.push(eq(table.isZambian, true))
+  return db
+    .select({ slug: table.slug, name: table.name, isZambian: table.isZambian, verified: sql<boolean>`${table.verifiedSellerId} is not null`, bookCount })
+    .from(table)
+    .where(and(...where))
+    .orderBy(asc(sql`lower(${table.name})`))
+    .limit(params.limit ?? 500)
+}
+
+/** Names for the listing form as a seller types: names starting with the text first, then the best-stocked. */
+export async function suggestNames(db: Db, kind: DirectoryKind, query: string) {
+  const { table, bookCount } = directoryTables[kind]
+  return db
+    .select({ name: table.name, isZambian: table.isZambian, bookCount })
+    .from(table)
+    .where(ilike(table.name, `%${query}%`))
+    .orderBy(sql`${table.name} ilike ${`${query}%`} desc`, desc(bookCount), asc(table.name))
+    .limit(6)
 }
 
 function yearSpan(years: (number | null)[]) {
@@ -331,6 +387,17 @@ async function upsertAuthors(db: Db, names: string[], markZambian: boolean) {
   return ids
 }
 
+/** The publisher's id for a printed name, adding the publisher on first sight. Same slug, same publisher. */
+export async function upsertPublisher(db: Db, raw: string | null) {
+  const name = raw?.trim()
+  const slug = name ? slugify(name) : ''
+  if (!name || !slug) return null
+  const [created] = await db.insert(publishers).values({ slug, name }).onConflictDoNothing({ target: publishers.slug }).returning({ id: publishers.id })
+  if (created) return created.id
+  const [existing] = await db.select({ id: publishers.id }).from(publishers).where(eq(publishers.slug, slug)).limit(1)
+  return existing?.id ?? null
+}
+
 export interface NewBookInput {
   candidate: Omit<BookCandidate, 'source'> & { source: 'google' | 'openlibrary' | 'manual' }
   categoryId: string | null
@@ -354,6 +421,7 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
         .where(and(inArray(authors.id, authorIds), eq(authors.isZambian, true)))
     : []
 
+  const publisherId = await upsertPublisher(db, candidate.publisher)
   const slug = await uniqueSlug(db, books, slugify(`${candidate.title} ${candidate.authors[0] ?? ''}`))
   const searchText = [candidate.title, candidate.subtitle, ...candidate.authors, candidate.isbn13, candidate.isbn10].filter(Boolean).join(' ')
 
@@ -368,6 +436,7 @@ export async function findOrCreateBook(db: Db, input: NewBookInput) {
       description: candidate.description,
       coverUrl: candidate.coverUrl,
       publisher: candidate.publisher,
+      publisherId,
       publishedYear: candidate.publishedYear,
       pageCount: candidate.pageCount,
       language: candidate.language,
