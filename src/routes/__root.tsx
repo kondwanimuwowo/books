@@ -1,6 +1,6 @@
 import { HeadContent, Link, Outlet, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
@@ -84,8 +84,45 @@ function RootLayout() {
 function ServiceWorker() {
   useEffect(() => {
     if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+    // A tab opened before a deploy asks for code files the deploy replaced; load the new version instead of failing.
+    const onStale = (event: Event) => {
+      if (reloadForNewVersion()) event.preventDefault()
+    }
+    window.addEventListener('vite:preloadError', onStale)
+    return () => window.removeEventListener('vite:preloadError', onStale)
   }, [])
   return null
+}
+
+const STALE_MESSAGES = ['Failed to fetch dynamically imported module', 'error loading dynamically imported module', 'Importing a module script failed', 'Unable to preload']
+const RELOADED_AT = 'kb_reloaded_for_version'
+let reloadStarted = false
+
+function isStaleCode(error: unknown) {
+  return error instanceof Error && STALE_MESSAGES.some((m) => error.message.startsWith(m))
+}
+
+/** Reloads the page the reader was heading to. Returns false if it just did, so a real fault can't loop. */
+function reloadForNewVersion() {
+  if (reloadStarted) return true
+  try {
+    const last = Number(sessionStorage.getItem(RELOADED_AT) ?? 0)
+    if (Date.now() - last < 15_000) return false
+    sessionStorage.setItem(RELOADED_AT, String(Date.now()))
+  } catch {
+    // Storage blocked: reload anyway; the browser cache can't be stale twice in a row.
+  }
+  reloadStarted = true
+  window.location.reload()
+  return true
+}
+
+function Reloading() {
+  return (
+    <div className="flex justify-center py-32" role="status" aria-label="Loading">
+      <span aria-hidden className="block size-7 animate-spin rounded-full border-[3px] border-line border-t-accent-ink motion-reduce:animate-none" />
+    </div>
+  )
 }
 
 export function NotFound() {
@@ -104,6 +141,13 @@ export function NotFound() {
 }
 
 function RootError({ error, reset }: ErrorComponentProps) {
+  const stale = isStaleCode(error)
+  const [reloading, setReloading] = useState(stale)
+  useEffect(() => {
+    if (stale) setReloading(reloadForNewVersion())
+  }, [stale])
+  if (reloading) return <Reloading />
+
   // Only blame the connection when the browser says it's actually offline.
   const offline = typeof navigator !== 'undefined' && !navigator.onLine
   return (
