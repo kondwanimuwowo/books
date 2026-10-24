@@ -94,9 +94,15 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
   )
 }
 
-export function BookGrid({ books }: { books: BookCardData[] }) {
+const GRID_COLUMNS = {
+  full: 'lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7',
+  // Beside a filter panel: one column fewer at each size, so covers stay the same width.
+  beside: 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
+}
+
+export function BookGrid({ books, layout = 'full' }: { books: BookCardData[]; layout?: keyof typeof GRID_COLUMNS }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <div className={cn('grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4', GRID_COLUMNS[layout])}>
       {books.map((b) => (
         <BookCard key={b.slug} book={b} />
       ))}

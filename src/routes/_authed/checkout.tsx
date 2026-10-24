@@ -107,7 +107,7 @@ function Checkout() {
 
   return (
     <form
-      className="page py-8 pb-32 lg:pb-8"
+      className="page max-w-6xl py-8 pb-32 lg:pb-8"
       onSubmit={(e) => {
         e.preventDefault()
         void action.run()

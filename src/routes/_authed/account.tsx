@@ -21,7 +21,7 @@ function AccountLayout() {
   }
 
   return (
-    <div className="page py-8 lg:py-12">
+    <div className="page max-w-6xl py-8 lg:py-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-4xl sm:text-5xl">{user?.displayName.split(' ')[0] ?? 'Account'}</h1>

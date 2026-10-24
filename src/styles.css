@@ -152,8 +152,9 @@
 }
 
 @layer components {
+  /* Marketplace width, like the big stores: wide enough for 6–7 covers a row, capped so huge screens keep margins. */
   .page {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+    @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8;
   }
   /* Small uppercase labels; wide tracking keeps them legible at this size. */
   .eyebrow {
@@ -259,6 +260,21 @@
       transform 200ms var(--ease-out),
       visibility 0s;
   }
+  /* Phone filter sheet: rises from the bottom and leaves the same way. */
+  .sheet {
+    visibility: hidden;
+    transform: translateY(100%);
+    transition:
+      transform 300ms var(--ease-drawer),
+      visibility 0s linear 300ms;
+  }
+  .sheet[data-open='true'] {
+    visibility: visible;
+    transform: translateY(0);
+    transition:
+      transform 300ms var(--ease-drawer),
+      visibility 0s;
+  }
   .pill {
     @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
   }
@@ -319,6 +335,10 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* Gentler, not zero: things still fade in, they just don't move. */
+  .sheet,
+  .sheet[data-open='true'] {
+    transform: none;
+  }
   .rise {
     animation: fade-in 200ms ease both;
   }

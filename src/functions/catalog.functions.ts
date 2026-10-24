@@ -91,10 +91,12 @@ export const getCategories = createServerFn({ method: 'GET' }).handler(async () 
 
 export const searchSchema = z.object({
   q: z.string().max(200).optional(),
-  category: z.string().max(80).optional(),
+  category: z.string().max(400).optional(),
   zambian: z.boolean().optional(),
   condition: z.enum(['new', 'used']).optional(),
-  language: z.string().max(8).optional(),
+  language: z.string().max(80).optional(),
+  min: z.number().min(0).max(100000).optional(),
+  max: z.number().min(0).max(100000).optional(),
   sort: z.enum(['relevance', 'price', 'newest']).optional(),
   page: z.number().int().min(1).max(500).optional(),
   // Search for exactly what was typed, without AI's reading of it.

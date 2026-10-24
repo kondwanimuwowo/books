@@ -73,10 +73,15 @@ export async function shelf(db: Db, kind: 'zambian' | 'recent' | 'bargains', lim
 
 export interface SearchParams {
   q?: string
+  /** One section slug, or several separated by commas. */
   category?: string
   zambian?: boolean
   condition?: 'new' | 'used'
+  /** One language code, or several separated by commas. */
   language?: string
+  /** Kwacha bounds on a book's cheapest copy. */
+  min?: number
+  max?: number
   sort?: 'relevance' | 'price' | 'newest'
   page?: number
   /** Match misspellings by trigram similarity instead of exact words. */
@@ -90,6 +95,13 @@ export const PAGE_SIZE = 24
 const FUZZY_THRESHOLD = 0.45
 // pg_trgm lives in Supabase's extensions schema; named in full so it doesn't depend on the search path.
 const fuzzyScore = (q: string) => sql<number>`extensions.word_similarity(${q}, ${books.searchText})`
+
+export function listParam(value: string | undefined) {
+  return (value ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
 
 export async function searchBooks(db: Db, params: SearchParams) {
   const offers = offersSubquery(db, params.condition)
@@ -111,11 +123,15 @@ export async function searchBooks(db: Db, params: SearchParams) {
       rank = sql<number>`ts_rank(${books.searchVector}, ${tsQuery})`
     }
   }
-  if (params.category) {
-    where.push(sql`${books.categoryId} = (select id from ${categories} where slug = ${params.category})`)
+  const sections = listParam(params.category)
+  if (sections.length) {
+    where.push(inArray(books.categoryId, db.select({ id: categories.id }).from(categories).where(inArray(categories.slug, sections))))
   }
   if (params.zambian) where.push(eq(books.isZambian, true))
-  if (params.language) where.push(eq(books.language, params.language))
+  const languages = listParam(params.language)
+  if (languages.length) where.push(inArray(books.language, languages))
+  if (params.min !== undefined) where.push(sql`${offers.fromPrice} >= ${Math.round(params.min * 100)}`)
+  if (params.max !== undefined) where.push(sql`${offers.fromPrice} <= ${Math.round(params.max * 100)}`)
   // A condition filter only makes sense against books someone is actually selling.
   if (params.condition) where.push(sql`${offers.bookId} is not null`)
 

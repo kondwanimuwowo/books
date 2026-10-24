@@ -46,7 +46,7 @@ function OrderPage() {
   )
 
   return (
-    <div className="page py-8">
+    <div className="page max-w-5xl py-8">
       {pending && <CheckoutSteps current={2} />}
 
       <div className={cn('grid gap-8 lg:grid-cols-[1fr_360px] lg:gap-10', pending && 'mt-8')}>

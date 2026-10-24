@@ -1,9 +1,11 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ChevronDownIcon } from '@heroicons/react/16/solid'
+import { AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/react/16/solid'
+import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
 import { z } from 'zod'
 import { searchBooksFn } from '#/functions/catalog.functions'
 import { BookGrid } from '#/components/book'
+import { FilterPanel, FilterSheet, activeFilterCount } from '#/components/search-filters'
 import { LANGUAGES } from '#/data/zambia'
 import { cn } from '#/lib/utils'
 import { CoverGridShapes, PageShapes, Placeholder } from '#/components/placeholder'
@@ -14,6 +16,8 @@ const searchParams = z.object({
   zambian: z.boolean().optional(),
   condition: z.enum(['new', 'used']).optional(),
   language: z.string().optional(),
+  min: z.number().min(0).optional(),
+  max: z.number().min(0).optional(),
   sort: z.enum(['relevance', 'price', 'newest']).optional(),
   page: z.number().int().min(1).optional(),
   exact: z.boolean().optional(),
@@ -37,12 +41,6 @@ const SORTS = [
   { value: 'newest', label: 'Newest' },
 ] as const
 
-const CONDITION_OPTIONS = [
-  { value: undefined, label: 'Any' },
-  { value: 'new', label: 'New' },
-  { value: 'used', label: 'Used' },
-] as const
-
 function useSetSearch() {
   const navigate = useNavigate({ from: '/search' })
   return (patch: Partial<SearchState>) => navigate({ search: (prev) => ({ ...prev, ...patch, page: undefined, exact: undefined }) })
@@ -51,37 +49,55 @@ function useSetSearch() {
 function SearchPage() {
   const search = Route.useSearch()
   const { results, total, page, categories, interpreted, closeMatches } = Route.useLoaderData()
-  const category = categories.find((c) => c.slug === search.category)
-  const title = search.q ? `“${search.q}”` : (category?.name ?? (search.zambian ? 'Zambian authors' : 'All books'))
+  const set = useSetSearch()
+  // Desktop starts with filters showing; phones open them in a sheet.
+  const [panel, setPanel] = useState(true)
+  const [sheet, setSheet] = useState(false)
+  const closeSheet = useCallback(() => setSheet(false), [])
+  const sections = categories.filter((c) => c.count > 0)
+  const only = search.category && !search.category.includes(',') ? categories.find((c) => c.slug === search.category) : undefined
+  const title = search.q ? `“${search.q}”` : (only?.name ?? (search.zambian ? 'Zambian authors' : 'All books'))
   const pages = Math.ceil(total / 24)
-  const filtered = !!(search.zambian || search.condition || search.category || search.language)
+  const active = activeFilterCount(search)
+  const panelContent = <FilterPanel filters={search} sections={sections} onChange={set} />
 
   return (
     <div className="page py-8 lg:py-10">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           <h1 className="truncate text-3xl sm:text-4xl">{title}</h1>
           <p className="mt-1 text-sm text-subtle tabular-nums">
             {total} {total === 1 ? 'book' : 'books'}
           </p>
         </div>
-        <SortSelect value={search.sort} />
+        <div className="flex items-center gap-2">
+          <button type="button" className="btn btn-secondary btn-sm gap-1.5 lg:hidden" onClick={() => setSheet(true)}>
+            <AdjustmentsHorizontalIcon className="size-4" aria-hidden />
+            Filters{active > 0 && ` (${active})`}
+          </button>
+          <button type="button" className="btn btn-secondary btn-sm hidden gap-1.5 lg:inline-flex" aria-expanded={panel} onClick={() => setPanel(!panel)}>
+            <AdjustmentsHorizontalIcon className="size-4" aria-hidden />
+            {panel ? 'Hide filters' : `Filters${active > 0 ? ` (${active})` : ''}`}
+          </button>
+          <SortSelect value={search.sort} />
+        </div>
       </header>
 
       {interpreted && search.q && <Interpreted applied={interpreted} typed={search.q} categories={categories} />}
       {closeMatches && <p className="mt-3 text-sm text-muted">No exact match, so these are the closest spellings.</p>}
 
-      {/* Phones: one scrolling row of chips. Desktop: a rail beside the results. */}
-      <MobileFilters search={search} categories={categories} />
+      <FilterSheet open={sheet} onClose={closeSheet} total={total}>
+        {panelContent}
+      </FilterSheet>
 
-      <div className="mt-8 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-10">
-        <FilterRail search={search} categories={categories} />
+      <div className={cn('mt-8', panel && 'lg:grid lg:grid-cols-[15rem_1fr] lg:gap-10')}>
+        {panel && (
+          <aside className="hidden lg:block" aria-label="Filters">
+            <div className="sticky top-28 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 pb-6">{panelContent}</div>
+          </aside>
+        )}
         <div className="min-w-0">
-          {results.length ? (
-            <BookGrid books={results} />
-          ) : (
-            <NoResults query={search.q} filtered={filtered} />
-          )}
+          {results.length ? <BookGrid books={results} layout={panel ? 'beside' : 'full'} /> : <NoResults query={search.q} filtered={active > 0} />}
           {pages > 1 && <Pager search={search} page={page} pages={pages} />}
         </div>
       </div>
@@ -130,118 +146,6 @@ function SelectPill({ label, value, onChange, children }: { label: string; value
       </select>
       <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
     </span>
-  )
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn('pill shrink-0', active ? 'bg-accent-soft text-accent-soft-ink shadow-[inset_0_0_0_1px_var(--color-accent-ink)]' : 'bg-sunken text-ink hover:bg-sunken-strong')}
-    >
-      {children}
-    </button>
-  )
-}
-
-function MobileFilters({ search, categories }: { search: SearchState; categories: Data['categories'] }) {
-  const set = useSetSearch()
-  return (
-    <div className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6 lg:hidden">
-      <Chip active={!!search.zambian} onClick={() => set({ zambian: search.zambian ? undefined : true })}>
-        Zambian authors
-      </Chip>
-      <Chip active={search.condition === 'new'} onClick={() => set({ condition: search.condition === 'new' ? undefined : 'new' })}>
-        New
-      </Chip>
-      <Chip active={search.condition === 'used'} onClick={() => set({ condition: search.condition === 'used' ? undefined : 'used' })}>
-        Used
-      </Chip>
-      <SelectPill label="Section" value={search.category ?? ''} onChange={(v) => set({ category: v || undefined })}>
-        <option value="">All sections</option>
-        {categories.map((c) => (
-          <option key={c.slug} value={c.slug}>
-            {c.name}
-          </option>
-        ))}
-      </SelectPill>
-      <SelectPill label="Language" value={search.language ?? ''} onChange={(v) => set({ language: v || undefined })}>
-        <option value="">Any language</option>
-        {LANGUAGES.map((l) => (
-          <option key={l.code} value={l.code}>
-            {l.name}
-          </option>
-        ))}
-      </SelectPill>
-    </div>
-  )
-}
-
-function RailGroup({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <fieldset className="space-y-0.5">
-      <legend className="eyebrow mb-2">{title}</legend>
-      {children}
-    </fieldset>
-  )
-}
-
-function RailOption({ active, onClick, children, count }: { active: boolean; onClick: () => void; children: ReactNode; count?: number }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm transition-colors',
-        active ? 'bg-accent-soft font-medium text-accent-soft-ink' : 'text-muted hover:bg-sunken hover:text-ink',
-      )}
-    >
-      <span className="truncate">{children}</span>
-      {count ? <span className="text-xs text-subtle tabular-nums">{count}</span> : null}
-    </button>
-  )
-}
-
-function FilterRail({ search, categories }: { search: SearchState; categories: Data['categories'] }) {
-  const set = useSetSearch()
-  return (
-    <aside className="hidden space-y-8 lg:block" aria-label="Filters">
-      <RailGroup title="Show">
-        <RailOption active={!!search.zambian} onClick={() => set({ zambian: search.zambian ? undefined : true })}>
-          Zambian authors only
-        </RailOption>
-      </RailGroup>
-      <RailGroup title="Condition">
-        {CONDITION_OPTIONS.map((c) => (
-          <RailOption key={c.label} active={search.condition === c.value} onClick={() => set({ condition: c.value })}>
-            {c.label}
-          </RailOption>
-        ))}
-      </RailGroup>
-      <RailGroup title="Section">
-        <RailOption active={!search.category} onClick={() => set({ category: undefined })}>
-          All
-        </RailOption>
-        {categories.map((c) => (
-          <RailOption key={c.slug} active={search.category === c.slug} onClick={() => set({ category: c.slug })} count={c.count}>
-            {c.name}
-          </RailOption>
-        ))}
-      </RailGroup>
-      <RailGroup title="Language">
-        <RailOption active={!search.language} onClick={() => set({ language: undefined })}>
-          Any
-        </RailOption>
-        {LANGUAGES.slice(0, 8).map((l) => (
-          <RailOption key={l.code} active={search.language === l.code} onClick={() => set({ language: l.code })}>
-            {l.name}
-          </RailOption>
-        ))}
-      </RailGroup>
-    </aside>
   )
 }
 

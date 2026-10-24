@@ -23,7 +23,7 @@ function BagPage() {
   // Loading and empty share one placeholder, so an empty bag fades out of its own skeleton.
   if (!quote || !quote.groups.length) {
     return (
-      <div className="page py-8">
+      <div className="page max-w-6xl py-8">
         <h1 className="text-3xl sm:text-4xl">Your bag</h1>
         {quote && quote.problems.length > 0 && (
           <div className="mt-4 max-w-3xl">
@@ -48,7 +48,7 @@ function BagPage() {
   const subtotal = quote.groups.reduce((n, g) => n + g.subtotalNgwee, 0)
 
   return (
-    <div className="page grid gap-8 py-8 pb-28 lg:grid-cols-[1fr_340px] lg:gap-10 lg:pb-8">
+    <div className="page grid max-w-6xl gap-8 py-8 pb-28 lg:grid-cols-[1fr_340px] lg:gap-10 lg:pb-8">
       <div className="min-w-0">
         <h1 className="text-3xl sm:text-4xl">Your bag</h1>
         {quote.problems.length > 0 && (
