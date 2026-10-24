@@ -1,4 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { TrashIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 import { getMyListings, updateListing } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
@@ -127,7 +128,7 @@ function ListingItem({ listing }: { listing: Listing }) {
         )}
 
         {mode === 'view' && listing.status !== 'removed' && (
-          <div className="mt-2 flex flex-wrap gap-1">
+          <div className="mt-2 flex items-center gap-1">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMode('edit')}>
               Edit
             </button>
@@ -141,8 +142,15 @@ function ListingItem({ listing }: { listing: Listing }) {
                 Resume
               </button>
             )}
-            <button type="button" className="btn btn-ghost btn-sm hover:text-danger" onClick={() => setMode('confirm-remove')}>
-              Remove
+            {/* An icon, like the bag's, so three actions fit the narrow desktop card. */}
+            <button
+              type="button"
+              aria-label={`Remove ${listing.book.title}`}
+              title="Remove"
+              className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full text-subtle hover:bg-sunken hover:text-danger"
+              onClick={() => setMode('confirm-remove')}
+            >
+              <TrashIcon className="size-4" aria-hidden />
             </button>
           </div>
         )}
