@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { signIn, signOut } from '#/functions/auth.functions'
@@ -17,13 +17,12 @@ function AdminLogin() {
   const { admin } = Route.useRouteContext()
   const { next } = Route.useSearch()
   const router = useRouter()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const action = useAction(async () => {
     await signIn({ data: { email, password } })
-    await router.invalidate()
-    await navigate({ href: next ? safeNext(next) : '/admin' })
+    // A fresh page load, so the header and every page are built with the new session.
+    window.location.assign(next ? safeNext(next) : '/admin')
   })
   const leave = useAction(async () => {
     await signOut()

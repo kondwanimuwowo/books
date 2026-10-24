@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { EnvelopeIcon } from '@heroicons/react/20/solid'
 import { useState } from 'react'
 import { z } from 'zod'
@@ -15,8 +15,6 @@ export const Route = createFileRoute('/signup')({
 
 function SignupPage() {
   const { next } = Route.useSearch()
-  const router = useRouter()
-  const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [sentTo, setSentTo] = useState<string | null>(null)
   const action = useAction(async () => {
@@ -25,8 +23,8 @@ function SignupPage() {
       setSentTo(form.email)
       return
     }
-    await router.invalidate()
-    await navigate({ href: safeNext(next) })
+    // A fresh page load, so the header and every page are built with the new session.
+    window.location.assign(safeNext(next))
   })
 
   if (sentTo) {

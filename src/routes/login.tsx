@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { signIn } from '#/functions/auth.functions'
@@ -14,14 +14,12 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { next, error: linkError } = Route.useSearch()
-  const router = useRouter()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const action = useAction(async () => {
     await signIn({ data: { email, password } })
-    await router.invalidate()
-    await navigate({ href: safeNext(next) })
+    // A fresh page load, so the header and every page are built with the new session.
+    window.location.assign(safeNext(next))
   })
 
   return (
