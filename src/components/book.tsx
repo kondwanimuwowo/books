@@ -61,15 +61,20 @@ export interface BookCardData {
   offerCount: number
 }
 
-export function BookCard({ book }: { book: BookCardData }) {
+export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) {
   return (
-    <Link to="/books/$slug" params={{ slug: book.slug }} className="group block text-ink no-underline hover:text-ink">
+    <Link to="/books/$slug" params={{ slug: book.slug }} className="group relative block text-ink no-underline hover:text-ink">
       <BookCover
         src={book.coverUrl}
         title={book.title}
         author={book.authorNames}
         className="lift-cover transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-lg"
       />
+      {rank !== undefined && (
+        <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums shadow-md">
+          {rank}
+        </span>
+      )}
       <div className="mt-3 space-y-0.5">
         <p className="line-clamp-2 text-[15px] leading-snug font-medium">{book.title}</p>
         {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
@@ -99,7 +104,8 @@ export function BookGrid({ books }: { books: BookCardData[] }) {
   )
 }
 
-export function Shelf({ title, books, more }: { title: string; books: BookCardData[]; more?: React.ReactNode }) {
+/** `ranked` numbers the covers in order, for the chart. */
+export function Shelf({ title, books, more, ranked = false }: { title: string; books: BookCardData[]; more?: React.ReactNode; ranked?: boolean }) {
   if (!books.length) return null
   return (
     <section className="py-10">
@@ -109,9 +115,9 @@ export function Shelf({ title, books, more }: { title: string; books: BookCardDa
       </div>
       {/* Vertical padding keeps the cover shadows and hover lift from being clipped by the scroller. */}
       <ScrollRow className="-mx-4 -my-3 flex snap-x gap-5 px-4 py-3 sm:-mx-6 sm:px-6">
-        {books.map((b) => (
+        {books.map((b, i) => (
           <div key={b.slug} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
-            <BookCard book={b} />
+            <BookCard book={b} rank={ranked ? i + 1 : undefined} />
           </div>
         ))}
       </ScrollRow>

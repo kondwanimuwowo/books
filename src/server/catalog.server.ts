@@ -26,7 +26,7 @@ const authorNamesSql = sql<string | null>`(
 // Copies held for buyers whose offers were accepted aren't for sale to anyone else.
 const heldCopies = sql<number>`(select count(*)::int from ${offers} o where o.listing_id = ${listings.id} and o.status = 'accepted' and o.expires_at > now())`
 
-function offersSubquery(db: Db, condition?: string) {
+export function offersSubquery(db: Db, condition?: string) {
   const where = [eq(listings.status, 'active'), gt(listings.quantity, 0)]
   if (condition === 'new') where.push(eq(listings.condition, 'new'))
   if (condition === 'used') where.push(ne(listings.condition, 'new'))
@@ -43,7 +43,7 @@ function offersSubquery(db: Db, condition?: string) {
     .as('offers')
 }
 
-function cardColumns(offers: ReturnType<typeof offersSubquery>) {
+export function cardColumns(offers: ReturnType<typeof offersSubquery>) {
   return {
     id: books.id,
     slug: books.slug,

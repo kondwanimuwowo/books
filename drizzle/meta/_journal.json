@@ -43,6 +43,13 @@
       "when": 1792812869763,
       "tag": "0005_offer_counters",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792816626743,
+      "tag": "0006_zambia_chart",
+      "breakpoints": true
     }
   ]
 }

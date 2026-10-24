@@ -2,6 +2,7 @@ export const FOOTER_NAV = [
   {
     title: 'Shop',
     links: [
+      { label: 'Zambia Top 20', to: '/top-20' },
       { label: 'Zambian authors', to: '/search', search: { zambian: true } },
       { label: 'Used books', to: '/search', search: { condition: 'used' } },
       { label: 'School textbooks', to: '/search', search: { category: 'textbooks' } },

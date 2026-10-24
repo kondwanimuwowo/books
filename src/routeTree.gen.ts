@@ -19,6 +19,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as Top20RouteImport } from './routes/top-20'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
 import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
@@ -91,6 +92,11 @@ const SignupRoute = SignupRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Top20Route = Top20RouteImport.update({
+  id: '/top-20',
+  path: '/top-20',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/top-20': typeof Top20Route
   '/account': typeof AuthedAccountRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/top-20': typeof Top20Route
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
   '/admin/login': typeof AdminLoginRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/top-20': typeof Top20Route
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
   '/_authed/sell': typeof AuthedSellRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/terms'
+    | '/top-20'
     | '/account'
     | '/checkout'
     | '/sell'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/terms'
+    | '/top-20'
     | '/checkout'
     | '/sell'
     | '/admin/login'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/signup'
     | '/terms'
+    | '/top-20'
     | '/_authed/account'
     | '/_authed/checkout'
     | '/_authed/sell'
@@ -432,6 +444,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
+  Top20Route: typeof Top20Route
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
@@ -510,6 +523,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/top-20': {
+      id: '/top-20'
+      path: '/top-20'
+      fullPath: '/top-20'
+      preLoaderRoute: typeof Top20RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/account': {
@@ -767,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
+  Top20Route: Top20Route,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,

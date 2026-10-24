@@ -4,6 +4,7 @@ import { listings, offers, payments, payouts, sellerOrders, sellers } from '#/db
 import { getTransferStatus } from './lenco.server'
 import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
 import { notifyLapsed } from './offers.server'
+import { snapshotChart } from './chart.server'
 
 // Runs from the Worker's cron trigger (see src/server.ts and wrangler.jsonc).
 const BATCH = 50
@@ -109,7 +110,7 @@ async function expireOffers(db: Db) {
   return rows.length
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers }
+const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

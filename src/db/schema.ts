@@ -472,6 +472,26 @@ export const payouts = pgTable(
   ],
 ).enableRLS()
 
+// The weekly Zambia Top 20, frozen each Monday so ranks can be compared week to week.
+// Only books with enough distinct buyers are stored; the public chart needs a full set.
+export const chartEntries = pgTable(
+  'chart_entries',
+  {
+    week: date('week').notNull(),
+    rank: integer('rank').notNull(),
+    bookId: uuid('book_id')
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }),
+    buyers: integer('buyers').notNull(),
+    score: numeric('score', { precision: 8, scale: 3 }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.week, t.rank] }),
+    uniqueIndex('chart_entries_week_book_key').on(t.week, t.bookId),
+  ],
+).enableRLS()
+
 export const fxRates = pgTable(
   'fx_rates',
   {

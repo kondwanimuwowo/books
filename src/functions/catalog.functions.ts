@@ -9,6 +9,7 @@ import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
 import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getSellerBySlug, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
+import { loadChart } from '#/server/chart.server'
 
 function publicCache(seconds: number) {
   setResponseHeader('Cache-Control', `public, max-age=${seconds}`)
@@ -51,7 +52,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
 
 export const getHomeData = createServerFn({ method: 'GET' }).handler(async () => {
   const db = getDb()
-  const [zambian, recent, bargains, categories, towns] = await Promise.all([
+  const [chart, zambian, recent, bargains, categories, towns] = await Promise.all([
+    loadChart(db),
     shelf(db, 'zambian'),
     shelf(db, 'recent'),
     shelf(db, 'bargains'),
@@ -61,7 +63,14 @@ export const getHomeData = createServerFn({ method: 'GET' }).handler(async () =>
   publicCache(60)
   // The intro band's cover background reuses covers already loaded for the shelves.
   const wall = [...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24)
-  return { zambian, recent, bargains, categories, wall, towns }
+  return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall, towns }
+})
+
+export const getChart = createServerFn({ method: 'GET' }).handler(async () => {
+  const db = getDb()
+  const [chart, zambian] = await Promise.all([loadChart(db), shelf(db, 'zambian')])
+  publicCache(300)
+  return { ...chart, zambian }
 })
 
 export const getCategories = createServerFn({ method: 'GET' }).handler(async () => {

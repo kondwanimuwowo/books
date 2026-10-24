@@ -11,7 +11,7 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const { zambian, recent, bargains, categories, wall, towns } = Route.useLoaderData()
+  const { chart, zambian, recent, bargains, categories, wall, towns } = Route.useLoaderData()
   const isEmpty = !zambian.length && !recent.length
 
   return (
@@ -37,7 +37,17 @@ function Home() {
           </Placeholder>
         )}
 
-        <Shelf title="By Zambian authors" books={zambian} more={<MoreLink search={{ zambian: true }} />} />
+        <Shelf
+          title="Zambia Top 20"
+          ranked
+          books={chart.map((e) => e.book)}
+          more={
+            <Link to="/top-20" className="shrink-0 text-sm font-medium text-accent-ink">
+              Full chart
+            </Link>
+          }
+        />
+        <Shelf title="New from Zambian authors" books={zambian} more={<MoreLink search={{ zambian: true }} />} />
         <Shelf title="Just listed" books={recent} more={<MoreLink search={{ sort: 'newest' }} />} />
         <Shelf title="Used, under K100" books={bargains} more={<MoreLink search={{ condition: 'used', sort: 'price' }} />} />
 
