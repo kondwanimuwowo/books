@@ -137,11 +137,11 @@ export const getMyOrders = createServerFn({ method: 'GET' })
             from ${orderItems} oi
             join ${sellerOrders} so on so.id = oi.seller_order_id
             left join ${books} b on b.id = oi.book_id
-            where so.order_id = ${orders.id}
+            where so.order_id = ${orders}.id
             order by oi.id limit 3
           ) x
         )`,
-        itemCount: sql<number>`(select coalesce(sum(oi.quantity), 0)::int from ${orderItems} oi join ${sellerOrders} so on so.id = oi.seller_order_id where so.order_id = ${orders.id})`,
+        itemCount: sql<number>`(select coalesce(sum(oi.quantity), 0)::int from ${orderItems} oi join ${sellerOrders} so on so.id = oi.seller_order_id where so.order_id = ${orders}.id)`,
       })
       .from(orders)
       .where(eq(orders.buyerId, context.user.id))

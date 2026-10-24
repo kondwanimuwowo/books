@@ -301,7 +301,7 @@ export async function categoriesWithCounts(db: Db) {
     .select({
       slug: categories.slug,
       name: categories.name,
-      count: sql<number>`(select count(*)::int from ${books} b where b.category_id = ${categories.id})`,
+      count: sql<number>`(select count(*)::int from ${books} b where b.category_id = ${categories}.id)`,
     })
     .from(categories)
     .orderBy(asc(categories.sortOrder))
