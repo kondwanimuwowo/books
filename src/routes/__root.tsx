@@ -5,6 +5,7 @@ import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
 import { SiteFooter, SiteHeader } from '#/components/site-header'
+import { BARE_ROUTES } from '#/data/brand'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -56,6 +57,7 @@ function RootLayout() {
   const { user, fx, currency } = Route.useLoaderData()
   // Admin brings its own shell (src/components/admin-shell.tsx) and always shows kwacha.
   const isAdmin = useMatches({ select: (matches) => matches.some((m) => m.routeId === '/admin') })
+  const bare = useMatches({ select: (matches) => matches.some((m) => BARE_ROUTES.includes(m.routeId)) })
   if (isAdmin) {
     return (
       <CurrencyProvider initial="ZMW" rate={null}>
@@ -68,13 +70,19 @@ function RootLayout() {
     <CurrencyProvider initial={currency} rate={fx?.rate ?? null} rateDay={fx?.day ?? null}>
       <ServiceWorker />
       <BagProvider>
-        <div className="flex min-h-dvh flex-col">
-          <SiteHeader user={user} />
-          <main className="flex-1">
+        {bare ? (
+          <main>
             <Outlet />
           </main>
-          <SiteFooter />
-        </div>
+        ) : (
+          <div className="flex min-h-dvh flex-col">
+            <SiteHeader user={user} />
+            <main className="flex-1">
+              <Outlet />
+            </main>
+            <SiteFooter />
+          </div>
+        )}
       </BagProvider>
     </CurrencyProvider>
   )

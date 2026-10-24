@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { requestPasswordReset } from '#/functions/auth.functions'
 import { AuthShell } from '#/components/auth-shell'
@@ -18,7 +18,17 @@ function ForgotPassword() {
   })
 
   return (
-    <AuthShell title="Reset password">
+    <AuthShell
+      title="Reset password"
+      footer={
+        <>
+          Remembered it?{' '}
+          <Link to="/login" className="font-medium">
+            Sign in
+          </Link>
+        </>
+      }
+    >
       {sent ? (
         <Alert tone="info">If {email} has an account, a link is on its way.</Alert>
       ) : (

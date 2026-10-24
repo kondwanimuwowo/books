@@ -31,7 +31,17 @@ function SignupPage() {
 
   if (sentTo) {
     return (
-      <AuthShell title="Check your email">
+      <AuthShell
+        title="Check your email"
+        footer={
+          <>
+            Confirmed it?{' '}
+            <Link to="/login" search={{ next }} className="font-medium">
+              Sign in
+            </Link>
+          </>
+        }
+      >
         <div className="flex gap-3 rounded-xl bg-accent-soft p-4 text-accent-soft-ink">
           <EnvelopeIcon className="size-5 shrink-0" aria-hidden />
           <p className="text-sm">
