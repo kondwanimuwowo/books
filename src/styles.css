@@ -125,6 +125,11 @@
   textarea {
     font-size: 16px; /* stops iOS zooming into inputs */
   }
+  /* Chrome's blue clear mark clashes with the burgundy header; clearing the text does the same job. */
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   /* Tailwind's reset gives buttons the arrow cursor; everything you can click gets the hand. */
   button:not(:disabled),
   [role='button'],
