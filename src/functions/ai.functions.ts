@@ -68,9 +68,11 @@ export const readPhotos = createServerFn({ method: 'POST' })
     if (!reading.isBook || !reading.title) throw new Error('We couldn’t make out a book in those photos. Try a sharper photo of the front cover.')
 
     const front = photos.find((p) => p.slot === 'front')
+    const condition = CONDITIONS.some((c) => c.value === reading.condition) ? (reading.condition as Condition) : null
     const suggestions = {
-      condition: CONDITIONS.some((c) => c.value === reading.condition) ? (reading.condition as Condition) : null,
-      conditionNotes: reading.conditionNotes,
+      condition,
+      // Without a grade, any note is the model talking about the photos, not wear a buyer should read about.
+      conditionNotes: condition ? reading.conditionNotes : null,
       description: reading.backCoverText,
       summary: reading.summary,
     }

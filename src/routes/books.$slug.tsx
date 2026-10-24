@@ -11,6 +11,8 @@ import { Price, useBag } from '#/components/providers'
 import { OFFER_REPLY_HOURS, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
 import { SAFETY } from '#/data/safety'
+import { SHARE_COPY } from '#/data/share'
+import { ShareOnWhatsApp } from '#/components/share'
 import { cn } from '#/lib/utils'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 
@@ -54,7 +56,17 @@ function BookPage() {
   const hasNew = book.offers.some((o) => o.condition === 'new')
   const hasUsed = book.offers.some((o) => o.condition !== 'new')
 
-  const action = selected && <AddButton inBag={inBag} onAdd={() => add(selected.id)} />
+  // Sellers see their own copy as theirs: no buying it, a way to edit it instead.
+  const ownCopy = !!selected && !!user?.sellerSlug && selected.seller.slug === user.sellerSlug
+  const action =
+    selected &&
+    (ownCopy ? (
+      <Link to="/account/listings" className="btn btn-secondary w-full">
+        Edit your listing
+      </Link>
+    ) : (
+      <AddButton inBag={inBag} onAdd={() => add(selected.id)} />
+    ))
 
   return (
     <div className="page py-6 pb-28 sm:py-10 lg:pb-10">
@@ -109,6 +121,15 @@ function BookPage() {
           {book.description && <Description text={book.description} />}
 
           <Specs book={book} />
+          <ShareOnWhatsApp
+            className="mt-6"
+            path={`/books/${book.slug}`}
+            text={SHARE_COPY.book({
+              title: book.title,
+              authors: book.authors.map((a) => a.name).join(', '),
+              fromNgwee: book.offers.length ? Math.min(...book.offers.map((o) => o.priceNgwee)) : null,
+            })}
+          />
         </div>
 
         <aside aria-labelledby="copies-heading" className="md:col-span-2 lg:sticky lg:top-28 lg:col-span-1 lg:self-start">
@@ -132,7 +153,7 @@ function BookPage() {
                 <fieldset className="mt-4 space-y-2">
                   <legend className="sr-only">Choose a copy</legend>
                   {offers.map((o) => (
-                    <CopyOption key={o.id} offer={o} checked={selected?.id === o.id} onPick={() => setPickedId(o.id)} />
+                    <CopyOption key={o.id} offer={o} mine={!!user?.sellerSlug && o.seller.slug === user.sellerSlug} checked={selected?.id === o.id} onPick={() => setPickedId(o.id)} />
                   ))}
                 </fieldset>
                 {/* Desktop keeps the action beside the list; phones get the bar pinned under the thumb. */}
@@ -142,7 +163,7 @@ function BookPage() {
                 )}
                 <p className="mt-4 flex items-center gap-2 text-xs text-subtle">
                   <ShieldCheckIcon className="size-4 shrink-0 text-success" aria-hidden />
-                  Seller is paid after you receive it.
+                  {ownCopy ? 'You’re paid once the buyer has it.' : 'Seller is paid after you receive it.'}
                 </p>
                 {selected && (
                   <Link to="/sellers/$slug" params={{ slug: selected.seller.slug }} className="mt-3 inline-block text-sm font-medium text-accent-ink">
@@ -251,7 +272,7 @@ function ConditionToggle({ value, onChange }: { value: Filter; onChange: (f: Fil
   )
 }
 
-function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean; onPick: () => void }) {
+function CopyOption({ offer, mine, checked, onPick }: { offer: Offer; mine: boolean; checked: boolean; onPick: () => void }) {
   return (
     <label
       className={cn(
@@ -271,7 +292,7 @@ function CopyOption({ offer, checked, onPick }: { offer: Offer; checked: boolean
       </span>
       {offer.notes && <span className="mt-1 block text-sm text-muted">{offer.notes}</span>}
       <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
-        <span className="font-medium text-muted">{offer.seller.storeName}</span>
+        {mine ? <span className="rounded-full bg-sunken px-2 py-0.5 font-medium text-ink">Your listing</span> : <span className="font-medium text-muted">{offer.seller.storeName}</span>}
         {offer.fromAuthor ? <VerifiedMark label="From the author" /> : offer.seller.verified && <VerifiedMark />}
         <span className="inline-flex items-center gap-0.5">
           <MapPinIcon className="size-3.5" aria-hidden />

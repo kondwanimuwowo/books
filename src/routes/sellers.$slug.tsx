@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { MapPinIcon } from '@heroicons/react/16/solid'
 import { getSeller } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark } from '#/components/book'
+import { ShareOnWhatsApp } from '#/components/share'
+import { SHARE_COPY } from '#/data/share'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { formatDate } from '#/lib/utils'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
@@ -29,6 +31,7 @@ function SellerPage() {
         <span>Since {formatDate(seller.createdAt)}</span>
       </p>
       {seller.bio && <p className="mt-5 max-w-prose leading-relaxed">{seller.bio}</p>}
+      <ShareOnWhatsApp className="mt-5" path={`/sellers/${seller.slug}`} text={SHARE_COPY.shop({ storeName: seller.storeName, inStock: seller.books.length })} />
       <h2 className="mt-12 mb-6 text-xl">
         {seller.books.length} in stock
       </h2>

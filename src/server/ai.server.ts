@@ -78,7 +78,9 @@ const photoReading = z.object({
   backCoverText: nullableText.describe('The blurb from the back cover, transcribed word for word. Leave out review quotes, prices, barcodes and publisher addresses. Null if no back cover photo.'),
   summary: nullableText.describe('One or two plain sentences saying what the book is about, using only facts in backCoverText. Null if backCoverText is null.'),
   condition: z.enum(CONDITIONS.map((c) => c.value) as [string, ...string[]]).nullable().describe('Grade of this physical copy from visible wear. Null if the photos look like stock images or show too little.'),
-  conditionNotes: nullableText.describe('Up to two short sentences for buyers on visible wear, e.g. "Light creasing on the spine. Corners slightly bumped." Null if condition is null or no wear is visible.'),
+  conditionNotes: nullableText.describe(
+    'Up to two short sentences addressed to buyers about visible wear on this copy, e.g. "Light creasing on the spine. Corners slightly bumped." Never comment on the photos themselves. Null if condition is null or no wear is visible.',
+  ),
 })
 
 export type PhotoReading = z.infer<typeof photoReading>

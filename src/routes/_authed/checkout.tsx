@@ -24,7 +24,10 @@ function isProvince(value: string | null): value is Province {
 
 function etaLabel([min, max]: [number, number]) {
   if (max === 0) return 'Today'
-  return min === max ? `${max} days` : `${Math.max(min, 1)}–${max} days`
+  if (min === 0 && max === 1) return 'Today or tomorrow'
+  const from = Math.max(min, 1)
+  if (from === max) return max === 1 ? '1 day' : `${max} days`
+  return `${from}–${max} days`
 }
 
 

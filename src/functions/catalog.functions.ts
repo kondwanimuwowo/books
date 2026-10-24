@@ -1,7 +1,7 @@
 import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
-import { getCookie, setResponseHeader } from '@tanstack/react-start/server'
+import { getCookie, getRequest, setResponseHeader } from '@tanstack/react-start/server'
 import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
@@ -11,7 +11,10 @@ import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getP
 import { getZmwPerUsd } from '#/server/fx.server'
 import { loadChart } from '#/server/chart.server'
 
+// Only the data a browser fetches for a page is shared and cacheable. During a full page load these functions
+// run inside the HTML response, which also carries who is signed in, so that response must never be cached.
 function publicCache(seconds: number) {
+  if (!new URL(getRequest().url).pathname.startsWith('/_serverFn/')) return
   setResponseHeader('Cache-Control', `public, max-age=${seconds}`)
 }
 

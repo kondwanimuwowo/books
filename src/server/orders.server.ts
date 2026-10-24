@@ -77,7 +77,7 @@ export function loadDeliveryRates(db: Db): Promise<DeliveryRate[]> {
 type CartListing = Awaited<ReturnType<typeof loadCartListings>>[number]
 
 /** Groups cart lines by seller and prices shipping for the buyer's town. Shared by checkout preview and order creation. */
-export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: string; province: string } | null, rates: DeliveryRate[]) {
+export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: string; province: string } | null, rates: DeliveryRate[], buyerId: string | null) {
   const byId = new Map(rows.map((r) => [r.id, r]))
   const groups = new Map<string, { seller: CartListing['seller']; items: { listing: CartListing; quantity: number; available: number; offerNgwee: number | null; lineNgwee: number }[] }>()
   const problems: string[] = []
@@ -87,6 +87,10 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
     const available = listing ? listing.quantity - listing.held : 0
     if (!listing || listing.status !== 'active' || available < 1) {
       problems.push(`${listing?.book.title ?? 'A book in your bag'} is no longer available`)
+      continue
+    }
+    if (buyerId && listing.seller.profileId === buyerId) {
+      problems.push(`${listing.book.title} is your own listing. Remove it from your bag`)
       continue
     }
     const quantity = Math.min(line.quantity, available)
@@ -113,7 +117,7 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
 
 export async function createOrder(db: Db, buyerId: string, lines: CartLine[], shipTo: ShipTo, methods: Record<string, ShippingMethod>) {
   const [rows, rates] = await Promise.all([loadCartListings(db, lines, buyerId), loadDeliveryRates(db)])
-  const quote = quoteCart(rows, lines, shipTo, rates)
+  const quote = quoteCart(rows, lines, shipTo, rates, buyerId)
   if (quote.problems.length) throw new Error(quote.problems.join('. '))
   if (!quote.groups.length) throw new Error('Your bag is empty')
   if (quote.groups.some((g) => g.seller.profileId === buyerId)) throw new Error('You can’t buy your own listing')

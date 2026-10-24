@@ -27,7 +27,7 @@ export const quoteBag = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const db = getDb()
     const [rows, rates] = await Promise.all([loadCartListings(db, data.lines, context.user?.id ?? null), data.to ? loadDeliveryRates(db) : []])
-    const quote = quoteCart(rows, data.lines, data.to, rates)
+    const quote = quoteCart(rows, data.lines, data.to, rates, context.user?.id ?? null)
     return {
       problems: quote.problems,
       groups: quote.groups.map((g) => ({
