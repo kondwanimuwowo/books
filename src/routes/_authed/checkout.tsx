@@ -7,7 +7,7 @@ import { Price, useBag, useCurrency } from '#/components/providers'
 import { useBagQuote } from '#/components/use-bag-quote'
 import { PROVINCES } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
-import { etaLabel } from '#/data/shipping'
+import { etaLabel, PICKUP_COPY } from '#/data/shipping'
 import type { ActiveShippingMethod, ShippingOption } from '#/data/shipping'
 import { TownField } from '#/components/town-field'
 import { Select } from '#/components/select'
@@ -97,7 +97,9 @@ function Checkout() {
   const groups = quote?.groups ?? []
   const subtotal = groups.reduce((n, g) => n + g.subtotalNgwee, 0)
   const shipping = groups.reduce((n, g) => n + (g.options.find((o) => o.method === methods[g.seller.id])?.totalNgwee ?? 0), 0)
-  const ready = !!destination && groups.length > 0 && groups.every((g) => methods[g.seller.id])
+  const pickups = groups.filter((g) => methods[g.seller.id] === 'collect').length
+  const allPickup = groups.length > 0 && pickups === groups.length
+  const ready = !!destination && groups.length > 0 && groups.every((g) => methods[g.seller.id]) && (allPickup || form.address.trim().length >= 3)
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [key]: e.target.value })
   const step = destination ? 1 : 0
 
@@ -124,15 +126,15 @@ function Checkout() {
               Where to?
             </h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Full name">
+              <Field label="Full name" hint={pickups ? PICKUP_COPY.nameHint : undefined}>
                 <input className="input" autoComplete="name" required value={form.name} onChange={set('name')} />
               </Field>
-              <Field label="Phone" hint="For the courier">
+              <Field label="Phone" hint={pickups ? PICKUP_COPY.phoneHint : 'For the courier'}>
                 <input className="input" type="tel" inputMode="tel" autoComplete="tel" placeholder="097 123 4567" required value={form.phone} onChange={set('phone')} />
               </Field>
               <TownField label="Town" value={form} onChange={(place) => setForm({ ...form, ...place })} />
-              <Field label="Address or landmark" className="sm:col-span-2">
-                <input className="input" autoComplete="street-address" placeholder="Plot 12, near the market" required value={form.address} onChange={set('address')} />
+              <Field label={allPickup ? PICKUP_COPY.addressOptional : 'Address or landmark'} className="sm:col-span-2">
+                <input className="input" autoComplete="street-address" placeholder="Plot 12, near the market" required={!allPickup} value={form.address} onChange={set('address')} />
               </Field>
             </div>
           </section>

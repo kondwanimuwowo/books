@@ -48,12 +48,15 @@ interface Place {
   province: string
 }
 
-const METHODS: Record<ActiveShippingMethod, { label: string; describe: (from: Place) => string }> = {
+const METHODS: Record<ActiveShippingMethod, { label: string; describe: (from: Place, band: DeliveryBand) => string }> = {
   yango: { label: 'Yango Delivery', describe: (from) => `By motorbike, to your door in ${from.town}` },
   platinum: { label: 'Platinum Courier', describe: () => 'To you anywhere in Zambia. Drop-off queues can add a day.' },
   mercury: { label: 'Mercury Tigmoo', describe: () => 'Premium courier, tracked to your door' },
   bus_parcel: { label: 'Bus parcel', describe: () => 'Collect at your bus station with your order number' },
-  collect: { label: 'Collect from seller', describe: (from) => `Agree a meeting point in ${from.town}` },
+  collect: {
+    label: 'Pick up from seller',
+    describe: (from, band) => (band === 'same_town' ? `Agree a meeting point in ${from.town}` : `Pick up in ${from.town}: you, or someone you send, meets the seller`),
+  },
 }
 
 const isActive = (method: ShippingMethod): method is ActiveShippingMethod => (SHIPPING_METHODS as readonly string[]).includes(method)
@@ -79,7 +82,7 @@ export function shippingOptions(
       return {
         method: r.method,
         label: METHODS[r.method].label,
-        description: METHODS[r.method].describe(from),
+        description: METHODS[r.method].describe(from, band),
         totalNgwee: free ? 0 : fee,
         free: free && fee > 0,
         etaDays: [r.etaMinDays, r.etaMaxDays] as [number, number],
@@ -93,7 +96,7 @@ const SHIPPING_LABELS: Record<ShippingMethod, string> = {
   platinum: 'Platinum Courier',
   mercury: 'Mercury Tigmoo',
   bus_parcel: 'Bus parcel',
-  collect: 'Collect from seller',
+  collect: 'Pick up from seller',
   courier: 'Courier',
   zampost: 'Zampost',
 }
@@ -118,3 +121,11 @@ export function cheapestDelivery(from: Place, to: Place, rates: DeliveryRate[], 
 
 // After "shipped", the buyer has this long to confirm or dispute before escrow releases by itself.
 export const AUTO_RELEASE_DAYS = 7
+/** Pickup waits on the buyer (or whoever they send) getting there, so it gets longer before money is released. */
+export const PICKUP_RELEASE_DAYS = 14
+
+export const PICKUP_COPY = {
+  nameHint: 'Picking up for someone else? Put their name and number; they show the order number.',
+  phoneHint: 'For the courier, or whoever picks up',
+  addressOptional: 'Address or landmark (not needed for pickup)',
+} as const

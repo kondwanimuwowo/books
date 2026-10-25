@@ -9,7 +9,8 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Search: exact words, close spellings and AI reading of requests ("grade 7 maths in Bemba"); instant results in the header; eBay-style filters.
 - Book pages: every copy for sale from every shop with photos of each copy, delivery estimate to the buyer's town, a trust strip (delivery, payment, protection), details table, about the author, more by this author, reviews with the average beside the title, share on WhatsApp.
 - Bag grouped by shop; checkout with mobile money or card (Lenco); escrow until the buyer confirms delivery.
-- Delivery: two prices, K50 in town and K100 out of town plus K10 per extra book (Mercury premium, collect free); each shop's parcel priced from its own town; free delivery over a shop's threshold.
+- Delivery: two prices, K50 in town and K100 out of town plus K10 per extra book (Mercury premium); each shop's parcel priced from its own town; free delivery over a shop's threshold.
+- Pickup from the seller, free, in any town: the buyer goes, or sends someone (their name and number go on the order); no address needed; 14 days before money is released.
 - eBay-style offers with one counter each side, a hidden floor and 24-hour replies.
 - Zambia Top 20 (Zambian authors, distinct buyers, weekly), shown only once there is real data.
 - School book lists: photo or typed list read by AI and matched to the catalogue.
@@ -48,18 +49,33 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Checkout delivery dropdown with books from two shops.
 
 ## Next (in order)
-1. Legal pages: terms, privacy, refunds, seller agreement. Needs business name and address, PACRA number, contact email, refund policy; lawyer review.
-2. Designed share images for books, authors and shops.
-3. Sale prices ("Save 25%") and Coming soon / pre-order.
-4. One real test purchase.
-5. Off-platform payment detection in messages; AI dispute summaries for admin.
-6. From the publisher research:
+1. Lost and undelivered books (see below), starting with the automatic refund and proof of shipping.
+2. Legal pages: terms, privacy, refunds, seller agreement. Needs business name and address, PACRA number, contact email, refund policy; lawyer review.
+3. Designed share images for books, authors and shops.
+4. Sale prices ("Save 25%") and Coming soon / pre-order.
+5. One real test purchase.
+6. Off-platform payment detection in messages; AI dispute summaries for admin.
+7. From the publisher research:
    - Publisher onboarding: import a publisher's catalogue in bulk.
    - "Buy all of this author's books" in one tap.
    - A contents list ("Inside the book"); a returns policy line in the trust strip once the policy exists.
    - Mailing list for new releases.
-7. Location detector for the buyer's town.
-8. Search: "Did you mean", barcode scan.
+8. Location detector for the buyer's town.
+9. Search: "Did you mean", barcode scan.
+
+### Lost and undelivered books
+- Proof of shipping: marking a parcel shipped needs a photo of the courier receipt or waybill and its number (Yango: the trip link).
+- Handover code: a 4-digit code on the buyer's order page, given to the courier, seller or collector at handover; the seller enters it, delivery is proven and the money released at once.
+- Seller doesn't ship within 5 days of payment: automatic full refund, order cancelled.
+- Who carries a loss:
+  - No proof of shipping: refund the buyer; the seller isn't paid.
+  - Proof plus handover code or tracking showing delivered: release to the seller.
+  - Proof, but the courier lost it: refund the buyer; the seller claims from the courier with the receipt. Kuwala doesn't absorb courier losses.
+  - Bus parcel not collected: 7 more days to sort it at the station, then admin decides.
+- Timelines: buyer reports within the release window (7 days, 14 for pickup); seller answers with proof within 48 hours; admin decides within 3 working days.
+- Repeat "not received" claims cost a buyer Trusted reader and flag them; sellers with repeated losses are flagged too.
+- Written into the refund policy and seller agreement.
+- Later: optional insured delivery for expensive books.
 
 ## Later
 - Awards and events: awards on author profiles, events page, Readers' Choice; reader perks (early access, delivery credits).

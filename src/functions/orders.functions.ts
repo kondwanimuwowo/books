@@ -60,14 +60,18 @@ export const placeOrder = createServerFn({ method: 'POST' })
       shipTo: placeSchema.extend({
         name: z.string().trim().min(2).max(80),
         phone: z.string().transform((v, ctx) => normalizeLocalPhone(v) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a Zambian mobile number' }), z.NEVER)),
-        address: z.string().trim().min(3).max(300),
+        address: z.string().trim().max(300),
       }),
       methods: z.record(z.string(), z.enum(SHIPPING_METHODS)),
     }),
   )
   .handler(async ({ data, context }) => {
     const db = getDb()
-    const order = await createOrder(db, context.user.id, data.lines, data.shipTo, data.methods)
+    // An address only matters if something is being delivered; pickups need just a name and number.
+    const allPickup = Object.values(data.methods).length > 0 && Object.values(data.methods).every((m) => m === 'collect')
+    if (!allPickup && data.shipTo.address.length < 3) throw new Error('Add your address or a landmark')
+    const shipTo = { ...data.shipTo, address: data.shipTo.address || 'Pickup from seller' }
+    const order = await createOrder(db, context.user.id, data.lines, shipTo, data.methods)
     await db
       .update(profiles)
       .set({ phone: data.shipTo.phone, town: data.shipTo.town, province: data.shipTo.province })
@@ -327,9 +331,10 @@ export const markShipped = createServerFn({ method: 'POST' })
   .validator(z.object({ sellerOrderId: z.string().uuid(), trackingNote: z.string().trim().min(3).max(300) }))
   .handler(async ({ data, context }) => {
     const db = getDb()
+    const [current] = await db.select({ method: sellerOrders.shippingMethod }).from(sellerOrders).where(eq(sellerOrders.id, data.sellerOrderId)).limit(1)
     const [part] = await db
       .update(sellerOrders)
-      .set({ status: 'shipped', shippedAt: new Date(), trackingNote: data.trackingNote, autoReleaseAt: autoReleaseDate() })
+      .set({ status: 'shipped', shippedAt: new Date(), trackingNote: data.trackingNote, autoReleaseAt: autoReleaseDate(current?.method) })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.sellerId, context.seller.id), eq(sellerOrders.status, 'to_ship')))
       .returning({ orderId: sellerOrders.orderId })
     if (!part) throw new Error('This order isn’t waiting to be shipped')

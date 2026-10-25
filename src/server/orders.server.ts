@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { deliveryRates, listings, offers, orderItems, orders, payments, profiles, sellerOrders, sellers, books } from '#/db/schema'
-import { AUTO_RELEASE_DAYS, shippingOptions } from '#/data/shipping'
+import { AUTO_RELEASE_DAYS, shippingOptions, PICKUP_RELEASE_DAYS } from '#/data/shipping'
 import type { DeliveryRate, ShippingMethod } from '#/data/shipping'
 import { COMMISSION_RATE } from '#/data/listing-options'
 import { formatMoney } from '#/lib/money'
@@ -339,6 +339,7 @@ export async function completeOrderIfSettled(db: Db, orderId: string) {
   if (!open.length) await db.update(orders).set({ status: 'completed' }).where(eq(orders.id, orderId))
 }
 
-export function autoReleaseDate() {
-  return new Date(Date.now() + AUTO_RELEASE_DAYS * 24 * 60 * 60 * 1000)
+export function autoReleaseDate(method?: ShippingMethod) {
+  const days = method === 'collect' ? PICKUP_RELEASE_DAYS : AUTO_RELEASE_DAYS
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 }

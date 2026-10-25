@@ -155,6 +155,13 @@
       "when": 1792954997467,
       "tag": "0021_listing_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792957162274,
+      "tag": "0022_pickup_anywhere",
+      "breakpoints": true
     }
   ]
 }
