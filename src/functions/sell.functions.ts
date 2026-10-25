@@ -15,6 +15,7 @@ import { toIsbn13 } from '#/lib/isbn'
 import { ownedCoverUrl } from '#/server/covers.server'
 import { payOutSeller, sellerBalance } from '#/server/payouts.server'
 import { INSTANT_MIN_NGWEE, instantFee, nextPayoutDay } from '#/data/payouts'
+import { MAX_LISTING_PHOTOS, PHOTOS_COPY } from '#/data/listing-options'
 import { writeSellerProfile } from '#/server/sellers.server'
 
 const phoneSchema = z.string().transform((value, ctx) => {
@@ -188,6 +189,8 @@ export const createListing = createServerFn({ method: 'POST' })
       summary: z.string().trim().max(400).optional(),
       // A photo the seller uploaded through uploadCover.
       coverKey: z.string().max(64).optional(),
+      // Photos of this copy, also uploaded through uploadCover.
+      photoKeys: z.array(z.string().max(64)).max(MAX_LISTING_PHOTOS).default([]),
     }),
   )
   .handler(async ({ data, context }) => {
@@ -197,6 +200,9 @@ export const createListing = createServerFn({ method: 'POST' })
     let slug: string
     const uploadedCover = data.coverKey ? await ownedCoverUrl(data.coverKey, context.user.id) : null
     if (data.coverKey && !uploadedCover) throw new Error('That photo didn’t upload. Add it again.')
+    if (data.condition !== 'new' && !data.photoKeys.length) throw new Error(PHOTOS_COPY.required)
+    const copyPhotos = await Promise.all(data.photoKeys.map((key) => ownedCoverUrl(key, context.user.id)))
+    if (copyPhotos.some((url) => !url)) throw new Error('A photo didn’t upload. Add it again.')
 
     if (data.book.kind === 'existing') {
       const [book] = await db.select({ id: books.id, slug: books.slug }).from(books).where(eq(books.id, data.book.bookId)).limit(1)
@@ -242,6 +248,7 @@ export const createListing = createServerFn({ method: 'POST' })
       priceNgwee: toNgwee(data.priceKwacha),
       quantity: data.quantity,
       notes: data.notes || null,
+      photos: copyPhotos as string[],
       ...offerSettings,
     })
     return { slug }
@@ -274,6 +281,7 @@ export const getMyListings = createServerFn({ method: 'GET' })
         status: listings.status,
         acceptsOffers: listings.acceptsOffers,
         offerFloorNgwee: listings.offerFloorNgwee,
+        photos: listings.photos,
         createdAt: listings.createdAt,
         book: { slug: books.slug, title: books.title, coverUrl: books.coverUrl, isbn13: books.isbn13, hasDescription: sql<boolean>`${books.description} is not null` },
       })
@@ -293,14 +301,24 @@ export const updateListing = createServerFn({ method: 'POST' })
       status: z.enum(['active', 'paused', 'removed']),
       ...offerFields,
       description: descriptionField,
+      // Omitted: photos unchanged.
+      photoKeys: z.array(z.string().max(64)).max(MAX_LISTING_PHOTOS).optional(),
     }),
   )
   .handler(async ({ data, context }) => {
     const db = getDb()
     const status = data.status === 'active' && data.quantity === 0 ? 'sold_out' : data.status
+    let photos: string[] | undefined
+    if (data.photoKeys) {
+      const [current] = await db.select({ photos: listings.photos }).from(listings).where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id))).limit(1)
+      // Photos already on this copy stay; new ones must be this seller's uploads.
+      const urls = await Promise.all(data.photoKeys.map(async (key) => (current?.photos.includes(`/covers/${key}`) ? `/covers/${key}` : ownedCoverUrl(key, context.user.id))))
+      if (urls.some((url) => !url)) throw new Error('A photo didn’t upload. Add it again.')
+      photos = urls as string[]
+    }
     const [updated] = await db
       .update(listings)
-      .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status, ...offerValues(data) })
+      .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status, ...offerValues(data), ...(photos && { photos }) })
       .where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id)))
       .returning({ bookId: listings.bookId })
     if (!updated) throw new Error('Listing not found')

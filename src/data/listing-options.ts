@@ -41,3 +41,14 @@ export const OFFER_HOLD_HOURS = 24
 export const MAX_COUNTERS = 2
 // Declined or withdrawn offers a buyer can make on one copy in a week, so sellers aren't worn down.
 export const OFFERS_PER_COPY_PER_WEEK = 3
+
+export const MAX_LISTING_PHOTOS = 3
+
+export const PHOTOS_COPY = {
+  heading: 'Photos of your copy',
+  used: 'Up to three: the front, the back and any wear. Buyers trust what they can see. At least one.',
+  new: 'Optional for new copies: the cover above shows the book.',
+  required: 'Add at least one photo of your copy. Buyers want to see its condition.',
+  thisCopy: 'This copy',
+  backToCover: 'Back to the cover',
+} as const

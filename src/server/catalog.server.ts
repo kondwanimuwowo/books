@@ -195,6 +195,7 @@ export async function getBookBySlug(db: Db, slug: string) {
         priceNgwee: listings.priceNgwee,
         quantity: sql<number>`(${listings.quantity} - ${heldCopies})::int`,
         notes: listings.notes,
+        photos: listings.photos,
         acceptsOffers: listings.acceptsOffers,
         seller: {
           id: sellers.id,

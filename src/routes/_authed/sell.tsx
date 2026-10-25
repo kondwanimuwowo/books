@@ -18,7 +18,9 @@ import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
-import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
+import { COMMISSION_RATE, CONDITIONS, FORMATS, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
+import { ListingPhotos } from '#/components/listing-photos'
+import type { ListingPhoto } from '#/components/listing-photos'
 import { instantFee } from '#/data/payouts'
 import type { Condition, Format } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
@@ -309,12 +311,17 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
   const [cover, setCover] = useState<{ key: string; preview: string } | null>(photos?.cover ? { key: photos.cover.key, preview: photos.cover.url } : null)
   const [coverBusy, setCoverBusy] = useState(false)
+  // The reader's front and back photos are the copy's first photos, so sellers don't take them twice.
+  const [copyPhotos, setCopyPhotos] = useState<ListingPhoto[]>(photos?.copyPhotos ?? [])
+  const [photosBusy, setPhotosBusy] = useState(false)
+  const used = condition !== 'new'
 
   useEffect(() => {
     if (selection.kind === 'existing') void getPriceGuide({ data: { bookId: selection.id } }).then(setGuide)
   }, [selection])
 
   const submit = useAction(async () => {
+    if (used && !copyPhotos.length) throw new Error(PHOTOS_COPY.required)
     const book =
       selection.kind === 'existing'
         ? { kind: 'existing' as const, bookId: selection.id }
@@ -353,6 +360,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         description: missingDescription !== undefined ? description.trim() || undefined : undefined,
         summary: photos?.summary ?? undefined,
         coverKey: cover?.key,
+        photoKeys: copyPhotos.map((p) => p.key),
       },
     })
     await navigate({ to: '/books/$slug', params: { slug } })
@@ -374,8 +382,8 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
       : undefined
 
   const publish = (
-    <button type="submit" className="btn btn-primary w-full" disabled={submit.pending || coverBusy}>
-      {submit.pending ? 'Publishing…' : coverBusy ? 'Uploading photo…' : 'Publish'}
+    <button type="submit" className="btn btn-primary w-full" disabled={submit.pending || coverBusy || photosBusy}>
+      {submit.pending ? 'Publishing…' : coverBusy || photosBusy ? 'Uploading photo…' : 'Publish'}
     </button>
   )
 
@@ -493,6 +501,14 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
               ))}
             </div>
           </fieldset>
+        </section>
+
+        <section aria-labelledby="copy-photos-heading">
+          <h2 id="copy-photos-heading" className="text-xl">
+            {PHOTOS_COPY.heading}
+          </h2>
+          <p className="mt-1 mb-4 text-sm text-subtle">{used ? PHOTOS_COPY.used : PHOTOS_COPY.new}</p>
+          <ListingPhotos value={copyPhotos} onChange={setCopyPhotos} onBusy={setPhotosBusy} />
         </section>
 
         <section className="grid gap-4 sm:grid-cols-[1fr_140px]">

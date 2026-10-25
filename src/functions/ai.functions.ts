@@ -38,6 +38,8 @@ export type PhotoResult = {
   summary: string | null
   /** The front photo, kept as the cover in case the book has none. */
   cover: { key: string; url: string } | null
+  /** The front and back photos, kept as the first photos of this copy. */
+  copyPhotos: { key: string; url: string }[]
 }
 
 /** Reads the seller's photos with Claude, then finds the book on Kuwala or online, or prefills the form. */
@@ -77,10 +79,14 @@ export const readPhotos = createServerFn({ method: 'POST' })
       description: reading.backCoverText,
       summary: reading.summary,
     }
-    // The front photo becomes the cover only for a book that has none; too large a photo is simply skipped.
+    // The front and back become photos of this copy; the front is also the cover for a book that has none.
+    // A photo too large to keep is simply skipped.
+    const keep = (photo: (typeof photos)[number] | undefined) =>
+      photo ? storeCover(photo.bytes, context.user.id).then((key) => ({ key, url: `/covers/${key}` }), () => null) : Promise.resolve(null)
+    const [frontKept, backKept] = await Promise.all([keep(front), keep(photos.find((p) => p.slot === 'back'))])
+    const kept = [frontKept, backKept].filter((p): p is { key: string; url: string } => p !== null)
     const finish = async (book: PhotoResult['book'], coverUrl: string | null): Promise<PhotoResult> => {
-      const cover = !coverUrl && front ? await storeCover(front.bytes, context.user.id).then((key) => ({ key, url: `/covers/${key}` }), () => null) : null
-      return { book, ...suggestions, cover }
+      return { book, ...suggestions, cover: coverUrl ? null : frontKept, copyPhotos: kept }
     }
 
     const isbn13 = reading.isbn ? toIsbn13(reading.isbn) : null

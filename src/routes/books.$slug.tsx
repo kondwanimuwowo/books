@@ -8,7 +8,7 @@ import { makeOffer } from '#/functions/offers.functions'
 import { Alert, useAction } from '#/components/form'
 import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { Price, useBag } from '#/components/providers'
-import { OFFER_REPLY_HOURS, conditionLabel, formatLabel } from '#/data/listing-options'
+import { OFFER_REPLY_HOURS, PHOTOS_COPY, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
 import { cheapestDelivery, etaLabel } from '#/data/shipping'
 import type { DeliveryRate } from '#/data/shipping'
@@ -103,11 +103,10 @@ function BookPage() {
       </nav>
 
       <div className="grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr_360px] lg:gap-10">
-        <BookCover
-          src={book.coverUrl}
-          title={book.title}
-          author={book.authors.map((a) => a.name).join(', ')}
-          className="rise mx-auto w-44 shadow-lg md:w-full"
+        <CopyGallery
+          key={selected?.id ?? 'none'}
+          cover={<BookCover src={book.coverUrl} title={book.title} author={book.authors.map((a) => a.name).join(', ')} className="rise mx-auto w-44 shadow-lg md:w-full" />}
+          photos={selected?.photos ?? []}
         />
 
         <div className="min-w-0">
@@ -442,5 +441,43 @@ function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; n
         </button>
       </div>
     </form>
+  )
+}
+
+/**
+ * The catalogue cover, then photos of the selected copy beneath it. Tapping a photo shows it large in the
+ * cover's place: the cover shows the book, the photos show the copy you'd get.
+ */
+function CopyGallery({ cover, photos }: { cover: ReactNode; photos: string[] }) {
+  const [shown, setShown] = useState<string | null>(null)
+  return (
+    <div className="space-y-3">
+      {shown ? (
+        <button type="button" onClick={() => setShown(null)} className="mx-auto block w-44 md:w-full" aria-label={PHOTOS_COPY.backToCover}>
+          <img src={shown} alt="Photo of this copy" className="photo-in aspect-[3/4] w-full rounded-md object-cover shadow-lg" />
+        </button>
+      ) : (
+        cover
+      )}
+      {photos.length > 0 && (
+        <div className="mx-auto w-44 md:w-full">
+          <p className="eyebrow mb-2">{PHOTOS_COPY.thisCopy}</p>
+          <div className="flex gap-2">
+            {photos.map((src, i) => (
+              <button
+                key={src}
+                type="button"
+                aria-pressed={shown === src}
+                aria-label={`Photo ${i + 1} of this copy`}
+                onClick={() => setShown(shown === src ? null : src)}
+                className={cn('overflow-hidden rounded-md transition-[box-shadow,transform] active:scale-95', shown === src ? 'shadow-[0_0_0_2px_var(--color-accent-ink)]' : 'shadow-[0_0_0_1px_var(--color-line)]')}
+              >
+                <img src={src} alt="" loading="lazy" className="aspect-[3/4] w-14 object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

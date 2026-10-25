@@ -437,6 +437,8 @@ export const listings = pgTable(
     priceNgwee: integer('price_ngwee').notNull(),
     quantity: integer('quantity').notNull().default(1),
     notes: text('notes'),
+    // Photos of this copy (/covers/<key>), front first. Used copies need at least one; the catalogue cover shows the book, not its wear.
+    photos: text('photos').array().notNull().default(sql`'{}'`),
     status: listingStatus('status').notNull().default('active'),
     acceptsOffers: boolean('accepts_offers').notNull().default(false),
     // Offers below this are declined automatically. Never shown to buyers.

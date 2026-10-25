@@ -7,9 +7,11 @@ import { Alert, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { Price } from '#/components/providers'
-import { conditionLabel } from '#/data/listing-options'
+import { conditionLabel, PHOTOS_COPY } from '#/data/listing-options'
 import { cn } from '#/lib/utils'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
+import { ListingPhotos } from '#/components/listing-photos'
+import type { ListingPhoto } from '#/components/listing-photos'
 
 export const Route = createFileRoute('/_authed/account/listings')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading listings" shapes={<RowShapes />} />,
@@ -60,9 +62,20 @@ function ListingItem({ listing }: { listing: Listing }) {
     floor: listing.offerFloorNgwee !== null ? String(listing.offerFloorNgwee / 100) : '',
   })
   const [description, setDescription] = useState('')
+  const [photos, setPhotos] = useState<ListingPhoto[]>(listing.photos.map((url) => ({ key: url.replace('/covers/', ''), url })))
+  const [photosBusy, setPhotosBusy] = useState(false)
+  const needsPhoto = listing.condition !== 'new' && !listing.photos.length
   const save = useAction(async (status: Status) => {
     await updateListing({
-      data: { id: listing.id, priceKwacha: Number(price), quantity: Number(quantity), status, ...offerSettingsData(offerSettings), description: description.trim() || undefined },
+      data: {
+        id: listing.id,
+        priceKwacha: Number(price),
+        quantity: Number(quantity),
+        status,
+        ...offerSettingsData(offerSettings),
+        description: description.trim() || undefined,
+        photoKeys: photos.map((p) => p.key),
+      },
     })
     setMode('view')
     await router.invalidate()
@@ -89,6 +102,11 @@ function ListingItem({ listing }: { listing: Listing }) {
           <span className={cn(listing.status === 'active' ? 'text-success' : 'text-subtle')}>{STATE[listing.status]}</span>
           {listing.acceptsOffers && ' · Offers'}
         </p>
+        {needsPhoto && mode === 'view' && (
+          <button type="button" className="mt-1 text-sm font-medium text-accent-ink" onClick={() => setMode('edit')}>
+            Add photos of this copy
+          </button>
+        )}
 
         {save.error && (
           <div className="mt-2">
@@ -114,7 +132,11 @@ function ListingItem({ listing }: { listing: Listing }) {
                 <MissingDescription isbn={listing.book.isbn13} value={description} onChange={setDescription} />
               </div>
             )}
-            <button type="button" className="btn btn-primary btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
+            <div className="w-full">
+              <p className="field-label">{PHOTOS_COPY.heading}</p>
+              <ListingPhotos value={photos} onChange={setPhotos} onBusy={setPhotosBusy} />
+            </div>
+            <button type="button" className="btn btn-primary btn-sm" disabled={save.pending || photosBusy} onClick={() => void save.run('active')}>
               Save
             </button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('view')}>
