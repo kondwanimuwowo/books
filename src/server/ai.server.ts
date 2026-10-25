@@ -233,7 +233,9 @@ const authorDraft = z.object({
   found: z.boolean().describe('False if no real author by this name could be identified with confidence.'),
   name: z.string().describe('The name as printed on their books.'),
   isZambian: z.boolean().describe('True only if sources say the author is Zambian or Zambia-based.'),
-  bio: z.string().describe('Third person, warm and plain, 60 to 120 words, only facts the sources support. Empty if found is false.'),
+  bio: z
+    .string()
+    .describe('Third person, warm and plain, 100 to 200 words, only facts the sources support: background, what they write, notable work, and initiatives they run. Empty if found is false.'),
   books: z
     .array(
       z.object({
@@ -243,7 +245,14 @@ const authorDraft = z.object({
         isbn: z.string().nullable().describe('ISBN-10 or ISBN-13 exactly as a source gives it; null if no source gives one.'),
       }),
     )
-    .describe('Books the author wrote, most recent first.'),
+    .describe('Every book the author wrote or co-wrote that a source lists, most recent first. Authors often have many titles; list them all, including ebooks and small-press editions.'),
+  initiatives: z
+    .array(z.object({ name: z.string(), url: nullableText, note: z.string().describe('One sentence: what it is and anything current, like an upcoming event.') }))
+    .describe('Projects, networks, ministries, podcasts or events the author runs or founded.'),
+  photoUrl: nullableText.describe(
+    'Direct URL of a JPEG, PNG or WebP portrait of the author published on a site they run (their own website or their publisher’s page about them). Null if there is none there; never from news sites, social media or image searches.',
+  ),
+  photoSource: nullableText.describe('URL of the page that shows photoUrl.'),
   links: z
     .object({ website: nullableText, facebook: nullableText, instagram: nullableText, x: nullableText, tiktok: nullableText })
     .describe('Profiles that are clearly the author’s own, as full URLs.'),
@@ -263,13 +272,18 @@ const authorDraft = z.object({
 
 export type AuthorDraftReading = z.infer<typeof authorDraft>
 
-const AUTHOR_SYSTEM = `You research an author for Kuwala Books, a Zambian book marketplace, so the team can prepare a free author page and invite the author to claim it.
-Search the web and read the author's own site and profiles. Only record facts that a source states; when sources disagree or you are unsure, leave it out. Never invent books, ISBNs, links or contact details.
+const AUTHOR_SYSTEM = `You research an author for Kuwala Books, a Zambian book marketplace, so the team can prepare a free author page and invite the author to claim it. Be thorough: the page should feel complete.
+Work through this, reading pages rather than relying on search snippets:
+1. Find the author's own website and read it: the home, about, books and contact pages.
+2. Find every title: their Amazon author page, Goodreads, Google Books, their publishers and bookshops. Authors here often self-publish many books; list each one, with its ISBN when a source gives it.
+3. Find their profiles (Facebook, Instagram, X, TikTok) and any initiatives they run: a network, ministry, podcast, festival or event, and what is coming up next. Facebook usually needs a login, so rely on search results for it.
+4. Look for a portrait on a page they run, and for contact details they publish.
+Only record facts that a source states; when sources disagree or you are unsure, leave it out. Never invent books, ISBNs, links or contact details.
 Contact details: record an email or phone number only when the author (or their publisher, for them) publishes it for enquiries or bookings on a page they control. Never take personal numbers from news stories, comments, directories or other people's posts.
 Do not describe the author's appearance, family or private life. When done, call record_author once.`
 
 const RECORD_TOOL = 'record_author'
-const AUTHOR_ROUNDS = 5
+const AUTHOR_ROUNDS = 8
 
 /** Researches an author on the web and drafts their page and invite. Admin reviews everything before it goes anywhere. */
 export async function draftAuthor(db: Db, userId: string, input: { name: string; hints: string }) {
@@ -277,8 +291,8 @@ export async function draftAuthor(db: Db, userId: string, input: { name: string;
   if (!anthropic) return null
   const tools: BetaToolUnion[] = [
     // No user_location: web search doesn't support Zambia as a country; the prompt carries the context.
-    { type: 'web_search_20260209', name: 'web_search', max_uses: 6 },
-    { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 },
+    { type: 'web_search_20260209', name: 'web_search', max_uses: 12 },
+    { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 12 },
     { name: RECORD_TOOL, description: 'Record what you found about the author. Call once, at the end.', input_schema: z.toJSONSchema(authorDraft) as BetaTool.InputSchema },
   ]
   const messages: BetaMessageParam[] = [{ role: 'user', content: `Author: ${input.name}${input.hints ? `\nWhat we know: ${input.hints}` : ''}` }]
@@ -291,13 +305,13 @@ export async function draftAuthor(db: Db, userId: string, input: { name: string;
       const response = await anthropic.beta.messages.create(
         {
           model: AI_MODELS.reader,
-          max_tokens: 8000,
+          max_tokens: 16000,
           system: AUTHOR_SYSTEM,
           tools,
           messages,
           ...(force && { tool_choice: { type: 'tool', name: RECORD_TOOL } }),
         },
-        { timeout: 180_000 },
+        { timeout: 240_000 },
       )
       usage = { input_tokens: usage.input_tokens + response.usage.input_tokens, output_tokens: usage.output_tokens + response.usage.output_tokens }
       const recorded = response.content.find((b) => b.type === 'tool_use' && b.name === RECORD_TOOL)

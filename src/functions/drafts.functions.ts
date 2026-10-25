@@ -1,3 +1,4 @@
+import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
@@ -12,6 +13,7 @@ import { draftAuthor } from '#/server/ai.server'
 import { lookupIsbn } from '#/server/book-sources.server'
 import { findOrCreateBook, refreshSearchText, uniqueSlug } from '#/server/catalog.server'
 import { escapeHtml, sendEmail } from '#/server/email.server'
+import { mirrorImage } from '#/server/covers.server'
 import { newToken, sha256 } from '#/server/tokens.server'
 
 const LINK_KEYS = ['website', 'facebook', 'instagram', 'x', 'tiktok'] as const
@@ -21,12 +23,37 @@ export const listDrafts = createServerFn({ method: 'GET' })
   .handler(async () => {
     return getDb()
       .select({
-        draft: authorDrafts,
-        author: { slug: authors.slug, claimed: sql<boolean>`${authors.verifiedSellerId} is not null` },
+        id: authorDrafts.id,
+        name: authorDrafts.name,
+        books: sql<number>`jsonb_array_length(${authorDrafts.books})::int`,
+        photo: sql<string | null>`coalesce(${authors.photoUrl}, case when (${authorDrafts.extras}->>'usePhoto')::boolean then ${authorDrafts.extras}->'photo'->>'url' end)`,
+        hasContact: sql<boolean>`${authorDrafts.contact} ? 'email' or ${authorDrafts.contact} ? 'phone'`,
+        invitedAt: authorDrafts.invitedAt,
+        optedOut: sql<boolean>`${authorDrafts.optedOutAt} is not null`,
+        published: sql<boolean>`${authorDrafts.authorId} is not null`,
+        claimed: sql<boolean>`${authors.verifiedSellerId} is not null`,
+        updatedAt: authorDrafts.updatedAt,
       })
       .from(authorDrafts)
       .leftJoin(authors, eq(authors.id, authorDrafts.authorId))
       .orderBy(sql`${authorDrafts.authorId} is not null`, desc(authorDrafts.updatedAt))
+  })
+
+export const getDraft = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const [row] = await getDb()
+      .select({
+        draft: authorDrafts,
+        author: { slug: authors.slug, photoUrl: authors.photoUrl, claimed: sql<boolean>`${authors.verifiedSellerId} is not null` },
+      })
+      .from(authorDrafts)
+      .leftJoin(authors, eq(authors.id, authorDrafts.authorId))
+      .where(eq(authorDrafts.id, data.id))
+      .limit(1)
+    if (!row) throw notFound()
+    return row
   })
 
 export const createDraft = createServerFn({ method: 'POST' })
@@ -51,6 +78,10 @@ export const createDraft = createServerFn({ method: 'POST' })
           ...(reading.contactEmail && { email: reading.contactEmail, emailSource: reading.contactEmailSource ?? undefined }),
           ...(reading.contactPhone && { phone: reading.contactPhone, phoneSource: reading.contactPhoneSource ?? undefined }),
         },
+        extras: {
+          ...(reading.photoUrl && reading.photoSource && { photo: { url: reading.photoUrl, source: reading.photoSource } }),
+          initiatives: reading.initiatives,
+        },
         invite: { subject: reading.inviteSubject, body: reading.inviteBody, whatsapp: reading.inviteWhatsapp },
         createdBy: context.user.id,
       })
@@ -73,11 +104,13 @@ export const saveDraft = createServerFn({ method: 'POST' })
       email: z.string().trim().max(200),
       phone: z.string().trim().max(40),
       invite: z.object({ subject: z.string().trim().max(120), body: z.string().trim().max(3000), whatsapp: z.string().trim().max(600) }),
+      usePhoto: z.boolean(),
+      initiatives: z.array(z.object({ name: z.string().trim().min(1).max(200), url: z.string().trim().max(300).nullable(), note: z.string().trim().max(400) })).max(20),
     }),
   )
   .handler(async ({ data }) => {
     const db = getDb()
-    const [current] = await db.select({ contact: authorDrafts.contact }).from(authorDrafts).where(eq(authorDrafts.id, data.id)).limit(1)
+    const [current] = await db.select({ contact: authorDrafts.contact, extras: authorDrafts.extras }).from(authorDrafts).where(eq(authorDrafts.id, data.id)).limit(1)
     if (!current) throw new Error('That draft is gone')
     const links = Object.fromEntries(Object.entries(data.links).filter(([, v]) => v)) as AuthorLinks
     await db
@@ -94,6 +127,7 @@ export const saveDraft = createServerFn({ method: 'POST' })
           ...(data.phone && { phone: data.phone, phoneSource: data.phone === current.contact.phone ? current.contact.phoneSource : undefined }),
         },
         invite: data.invite,
+        extras: { ...current.extras, usePhoto: data.usePhoto && !!current.extras.photo, initiatives: data.initiatives },
       })
       .where(eq(authorDrafts.id, data.id))
     return { ok: true }
@@ -135,6 +169,16 @@ export const publishDraft = createServerFn({ method: 'POST' })
           .returning({ id: authors.id, slug: authors.slug, name: authors.name, isZambian: authors.isZambian })
     await db.update(authorDrafts).set({ authorId: author.id }).where(eq(authorDrafts.id, draft.id))
 
+    // Their own portrait, from a page they run, only when admin chose to use it; never over a photo already there.
+    let photo = false
+    if (draft.extras.usePhoto && draft.extras.photo && !existing?.photoUrl) {
+      const photoUrl = await mirrorImage(draft.extras.photo.url, { author: author.id })
+      if (photoUrl) {
+        await db.update(authors).set({ photoUrl }).where(eq(authors.id, author.id))
+        photo = true
+      }
+    }
+
     // Only books we can confirm by ISBN reach the catalogue; the rest stay in the draft for reference.
     let added = 0
     for (const book of draft.books) {
@@ -145,7 +189,7 @@ export const publishDraft = createServerFn({ method: 'POST' })
       await refreshSearchText(db, created.id)
       added++
     }
-    return { slug: author.slug, added }
+    return { slug: author.slug, added, photo }
   })
 
 /** Sends the invite by email, or returns a WhatsApp link with it typed out. Each invite gets a fresh link. */
@@ -182,5 +226,5 @@ export const sendInvite = createServerFn({ method: 'POST' })
     return { whatsapp: null }
   })
 
-export type DraftRow = Awaited<ReturnType<typeof listDrafts>>[number]
+export type DraftRow = Awaited<ReturnType<typeof getDraft>>
 export type { DraftBook }

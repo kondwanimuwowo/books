@@ -49,12 +49,13 @@ import { Route as AdminShellIndexRouteImport } from './routes/admin/_shell/index
 import { Route as AdminShellAuthorsRouteImport } from './routes/admin/_shell/authors'
 import { Route as AdminShellBooksRouteImport } from './routes/admin/_shell/books'
 import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/delivery'
-import { Route as AdminShellDraftsRouteImport } from './routes/admin/_shell/drafts'
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
 import { Route as AdminShellPublishersRouteImport } from './routes/admin/_shell/publishers'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
 import { Route as AdminShellVerificationRouteImport } from './routes/admin/_shell/verification'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
+import { Route as AdminShellDraftsIndexRouteImport } from './routes/admin/_shell/drafts.index'
+import { Route as AdminShellDraftsIdRouteImport } from './routes/admin/_shell/drafts.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -254,11 +255,6 @@ const AdminShellDeliveryRoute = AdminShellDeliveryRouteImport.update({
   path: '/delivery',
   getParentRoute: () => AdminShellRoute,
 } as any)
-const AdminShellDraftsRoute = AdminShellDraftsRouteImport.update({
-  id: '/drafts',
-  path: '/drafts',
-  getParentRoute: () => AdminShellRoute,
-} as any)
 const AdminShellOrdersRoute = AdminShellOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -283,6 +279,16 @@ const ApiWebhooksLencoRoute = ApiWebhooksLencoRouteImport.update({
   id: '/api/webhooks/lenco',
   path: '/api/webhooks/lenco',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminShellDraftsIndexRoute = AdminShellDraftsIndexRouteImport.update({
+  id: '/drafts/',
+  path: '/drafts/',
+  getParentRoute: () => AdminShellRoute,
+} as any)
+const AdminShellDraftsIdRoute = AdminShellDraftsIdRouteImport.update({
+  id: '/drafts/$id',
+  path: '/drafts/$id',
+  getParentRoute: () => AdminShellRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -322,7 +328,6 @@ export interface FileRoutesByFullPath {
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/books': typeof AdminShellBooksRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
-  '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
@@ -330,6 +335,8 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/admin/': typeof AdminShellIndexRoute
+  '/admin/drafts/$id': typeof AdminShellDraftsIdRoute
+  '/admin/drafts/': typeof AdminShellDraftsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -367,13 +374,14 @@ export interface FileRoutesByTo {
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/books': typeof AdminShellBooksRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
-  '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/admin/verification': typeof AdminShellVerificationRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
+  '/admin/drafts/$id': typeof AdminShellDraftsIdRoute
+  '/admin/drafts': typeof AdminShellDraftsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -415,7 +423,6 @@ export interface FileRoutesById {
   '/admin/_shell/authors': typeof AdminShellAuthorsRoute
   '/admin/_shell/books': typeof AdminShellBooksRoute
   '/admin/_shell/delivery': typeof AdminShellDeliveryRoute
-  '/admin/_shell/drafts': typeof AdminShellDraftsRoute
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
   '/admin/_shell/publishers': typeof AdminShellPublishersRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
@@ -423,6 +430,8 @@ export interface FileRoutesById {
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/admin/_shell/': typeof AdminShellIndexRoute
+  '/admin/_shell/drafts/$id': typeof AdminShellDraftsIdRoute
+  '/admin/_shell/drafts/': typeof AdminShellDraftsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -463,7 +472,6 @@ export interface FileRouteTypes {
     | '/admin/authors'
     | '/admin/books'
     | '/admin/delivery'
-    | '/admin/drafts'
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
@@ -471,6 +479,8 @@ export interface FileRouteTypes {
     | '/api/webhooks/lenco'
     | '/account/'
     | '/admin/'
+    | '/admin/drafts/$id'
+    | '/admin/drafts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -508,13 +518,14 @@ export interface FileRouteTypes {
     | '/admin/authors'
     | '/admin/books'
     | '/admin/delivery'
-    | '/admin/drafts'
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
     | '/admin/verification'
     | '/api/webhooks/lenco'
     | '/account'
+    | '/admin/drafts/$id'
+    | '/admin/drafts'
   id:
     | '__root__'
     | '/'
@@ -555,7 +566,6 @@ export interface FileRouteTypes {
     | '/admin/_shell/authors'
     | '/admin/_shell/books'
     | '/admin/_shell/delivery'
-    | '/admin/_shell/drafts'
     | '/admin/_shell/orders'
     | '/admin/_shell/publishers'
     | '/admin/_shell/sellers'
@@ -563,6 +573,8 @@ export interface FileRouteTypes {
     | '/api/webhooks/lenco'
     | '/_authed/account/'
     | '/admin/_shell/'
+    | '/admin/_shell/drafts/$id'
+    | '/admin/_shell/drafts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -873,13 +885,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellDeliveryRouteImport
       parentRoute: typeof AdminShellRoute
     }
-    '/admin/_shell/drafts': {
-      id: '/admin/_shell/drafts'
-      path: '/drafts'
-      fullPath: '/admin/drafts'
-      preLoaderRoute: typeof AdminShellDraftsRouteImport
-      parentRoute: typeof AdminShellRoute
-    }
     '/admin/_shell/orders': {
       id: '/admin/_shell/orders'
       path: '/orders'
@@ -914,6 +919,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/webhooks/lenco'
       preLoaderRoute: typeof ApiWebhooksLencoRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/_shell/drafts/': {
+      id: '/admin/_shell/drafts/'
+      path: '/drafts'
+      fullPath: '/admin/drafts/'
+      preLoaderRoute: typeof AdminShellDraftsIndexRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
+    '/admin/_shell/drafts/$id': {
+      id: '/admin/_shell/drafts/$id'
+      path: '/drafts/$id'
+      fullPath: '/admin/drafts/$id'
+      preLoaderRoute: typeof AdminShellDraftsIdRouteImport
+      parentRoute: typeof AdminShellRoute
     }
   }
 }
@@ -965,24 +984,26 @@ interface AdminShellRouteChildren {
   AdminShellAuthorsRoute: typeof AdminShellAuthorsRoute
   AdminShellBooksRoute: typeof AdminShellBooksRoute
   AdminShellDeliveryRoute: typeof AdminShellDeliveryRoute
-  AdminShellDraftsRoute: typeof AdminShellDraftsRoute
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
   AdminShellPublishersRoute: typeof AdminShellPublishersRoute
   AdminShellSellersRoute: typeof AdminShellSellersRoute
   AdminShellVerificationRoute: typeof AdminShellVerificationRoute
   AdminShellIndexRoute: typeof AdminShellIndexRoute
+  AdminShellDraftsIdRoute: typeof AdminShellDraftsIdRoute
+  AdminShellDraftsIndexRoute: typeof AdminShellDraftsIndexRoute
 }
 
 const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellAuthorsRoute: AdminShellAuthorsRoute,
   AdminShellBooksRoute: AdminShellBooksRoute,
   AdminShellDeliveryRoute: AdminShellDeliveryRoute,
-  AdminShellDraftsRoute: AdminShellDraftsRoute,
   AdminShellOrdersRoute: AdminShellOrdersRoute,
   AdminShellPublishersRoute: AdminShellPublishersRoute,
   AdminShellSellersRoute: AdminShellSellersRoute,
   AdminShellVerificationRoute: AdminShellVerificationRoute,
   AdminShellIndexRoute: AdminShellIndexRoute,
+  AdminShellDraftsIdRoute: AdminShellDraftsIdRoute,
+  AdminShellDraftsIndexRoute: AdminShellDraftsIndexRoute,
 }
 
 const AdminShellRouteWithChildren = AdminShellRoute._addFileChildren(

@@ -276,6 +276,14 @@ export interface DraftBook {
   isbn: string | null
 }
 
+export interface DraftExtras {
+  /** A portrait from a page the author runs; only copied to their page if admin ticks usePhoto. */
+  photo?: { url: string; source: string }
+  usePhoto?: boolean
+  /** Things they run beyond their books: a ministry, a women's network, a festival. */
+  initiatives?: { name: string; url: string | null; note: string }[]
+}
+
 export interface DraftContact {
   email?: string
   emailSource?: string
@@ -300,6 +308,7 @@ export const authorDrafts = pgTable(
     books: jsonb('books').$type<DraftBook[]>().notNull().default([]),
     sources: jsonb('sources').$type<{ url: string; title: string }[]>().notNull().default([]),
     contact: jsonb('contact').$type<DraftContact>().notNull().default({}),
+    extras: jsonb('extras').$type<DraftExtras>().notNull().default({}),
     invite: jsonb('invite').$type<{ subject: string; body: string; whatsapp: string }>(),
     // Only the hash is kept; the link in the invite carries the token.
     inviteTokenHash: text('invite_token_hash'),

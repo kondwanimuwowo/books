@@ -1,0 +1,1 @@
+ALTER TABLE "author_drafts" ADD COLUMN "extras" jsonb DEFAULT '{}'::jsonb NOT NULL;

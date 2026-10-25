@@ -120,6 +120,13 @@
       "when": 1792928742540,
       "tag": "0016_author_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792931605247,
+      "tag": "0017_draft_extras",
+      "breakpoints": true
     }
   ]
 }

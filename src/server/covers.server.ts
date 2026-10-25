@@ -59,7 +59,12 @@ export async function ownedCoverUrl(key: string, uploaderId: string) {
 }
 
 /** Keeps our own copy of a cover found online, so pages don't depend on Google or Open Library staying up. */
-export async function mirrorCover(url: string, bookId: string) {
+export function mirrorCover(url: string, bookId: string) {
+  return mirrorImage(url, { book: bookId })
+}
+
+/** Copies an image from the web into the covers bucket, or null if it isn't a usable image. */
+export async function mirrorImage(url: string, meta: Record<string, string>) {
   try {
     const response = await fetch(url, { headers: { 'User-Agent': 'KuwalaBooks/1.0 (https://kuwalabooks.com)' } })
     if (!response.ok) return null
@@ -67,7 +72,7 @@ export async function mirrorCover(url: string, bookId: string) {
     const ext = detectImage(bytes)
     if (!ext || bytes.byteLength > MAX_MIRROR_BYTES || (imageWidth(bytes, ext) ?? 0) < MIN_MIRROR_WIDTH) return null
     const key = `${crypto.randomUUID()}.${ext}`
-    await env.COVERS.put(key, bytes, { httpMetadata: { contentType: TYPES[ext] }, customMetadata: { book: bookId, source: url } })
+    await env.COVERS.put(key, bytes, { httpMetadata: { contentType: TYPES[ext] }, customMetadata: { ...meta, source: url } })
     return `/covers/${key}`
   } catch {
     return null
