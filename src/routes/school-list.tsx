@@ -6,6 +6,7 @@ import type { ListLine } from '#/functions/ai.functions'
 import { BookCover } from '#/components/book'
 import { compress } from '#/components/cover-upload'
 import { Alert, Field, useAction } from '#/components/form'
+import { LoadingLine, Spinner } from '#/components/loading-line'
 import { Price, useBag } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { LIST_PHOTO_EDGE, MAX_LIST_PHOTOS, SCHOOL_LIST_COPY as COPY } from '#/data/school-list'
@@ -93,9 +94,13 @@ function ListInput({ onRead }: { onRead: (result: Result) => void }) {
 
       {read.error && <Alert>{read.error}</Alert>}
       {user ? (
-        <button type="submit" className="btn btn-primary" disabled={read.pending || (!photos.length && !text.trim())}>
-          {read.pending ? COPY.finding : COPY.find}
-        </button>
+        <>
+          <button type="submit" className="btn btn-primary" disabled={read.pending || (!photos.length && !text.trim())}>
+            {read.pending && <Spinner />}
+            {read.pending ? COPY.finding : COPY.find}
+          </button>
+          {read.pending && <LoadingLine kind="list" />}
+        </>
       ) : (
         <Link to="/login" search={{ next: '/school-list' }} className="btn btn-primary">
           {COPY.signIn}

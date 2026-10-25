@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import type { InputHTMLAttributes } from 'react'
 import { suggestBookNames } from '#/functions/sell.functions'
 import { cn } from '#/lib/utils'
+import { Spinner } from './loading-line'
 
 export interface Suggestion {
   key: string
@@ -68,6 +69,7 @@ export function SuggestInput<T extends Suggestion>({
   // Hide a suggestion that's exactly what's typed already.
   const items = searching && found?.term === term ? found.items.filter((i) => onPick || i.label.toLowerCase() !== term.toLowerCase()) : []
   const showing = open && items.length > 0
+  const loading = searching && found?.term !== term
 
   const choose = (item: T) => {
     setOpen(false)
@@ -79,7 +81,7 @@ export function SuggestInput<T extends Suggestion>({
     <div className="relative" onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}>
       <input
         {...props}
-        className={cn('input', props.className)}
+        className={cn('input pr-10', props.className)}
         role="combobox"
         aria-expanded={showing}
         aria-controls={`${id}-list`}
@@ -109,8 +111,9 @@ export function SuggestInput<T extends Suggestion>({
           }
         }}
       />
+      {loading && <Spinner className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-subtle" />}
       {showing && (
-        <div className="card absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto py-1">
+        <div className="card drop-in absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto py-1">
           {heading && <p className="eyebrow px-3 pt-2 pb-1">{heading}</p>}
           <ul id={`${id}-list`} role="listbox">
             {items.map((item, i) => (

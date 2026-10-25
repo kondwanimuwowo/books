@@ -8,6 +8,8 @@ import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-input'
 import { PhotoReader } from '#/components/photo-reader'
+import { LoadingLine, Spinner } from '#/components/loading-line'
+import { OptionShapes } from '#/components/placeholder'
 import { suggestTidyName } from '#/functions/ai.functions'
 import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
 import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
@@ -144,8 +146,11 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
 
   const current = searching && found?.query === term ? found.result : null
   const loading = searching ? !current && !error : !all
-  const kuwala = (searching ? (current?.catalogue ?? []) : (all ?? [])).map(existingOption)
-  const online = (current?.external ?? []).map(externalOption)
+  // The last answer stays, dimmed and out of reach, until the next one lands: no blank flash between keys.
+  const stale = searching && loading && found ? found.result : null
+  const shown = current ?? stale
+  const kuwala = (searching ? (shown?.catalogue ?? []) : (all ?? [])).map(existingOption)
+  const online = (shown?.external ?? []).map(externalOption)
   const options = [...kuwala, ...online]
   const choose = (o: Option) => onSelect(o.pick)
 
@@ -158,7 +163,11 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
         }}
       >
-        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
+        {loading ? (
+          <Spinner className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-accent-ink" />
+        ) : (
+          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
+        )}
         <input
           className="input pl-10"
           role="combobox"
@@ -184,7 +193,7 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
             } else if (e.key === 'ArrowUp') {
               e.preventDefault()
               setActive((i) => Math.max(i - 1, 0))
-            } else if (e.key === 'Enter' && open && options[active]) {
+            } else if (e.key === 'Enter' && open && !stale && options[active]) {
               e.preventDefault()
               choose(options[active])
             } else if (e.key === 'Escape') {
@@ -194,8 +203,8 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
         />
 
         {open && (
-          <div className="card absolute inset-x-0 top-full z-20 mt-2 max-h-[min(60vh,28rem)] overflow-y-auto">
-            <ul id="book-options" role="listbox" aria-label="Books">
+          <div className="card drop-in absolute inset-x-0 top-full z-20 mt-2 max-h-[min(60vh,28rem)] overflow-y-auto">
+            <ul id="book-options" role="listbox" aria-label="Books" aria-busy={!!stale} className={cn('transition-opacity duration-200', stale && 'pointer-events-none opacity-50')}>
               {kuwala.length > 0 && <GroupLabel>{searching ? 'On Kuwala' : 'On Kuwala, A–Z'}</GroupLabel>}
               {kuwala.map((o, i) => (
                 <OptionRow key={o.id} option={o} active={i === active} onHover={() => setActive(i)} onPick={() => choose(o)} />
@@ -205,13 +214,18 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
                 <OptionRow key={o.id} option={o} active={kuwala.length + i === active} onHover={() => setActive(kuwala.length + i)} onPick={() => choose(o)} />
               ))}
             </ul>
-            {loading && <p className="px-4 py-3 text-sm text-subtle">{searching ? 'Searching…' : 'Loading…'}</p>}
+            {loading && !options.length && (
+              <div aria-hidden className="is-loading">
+                <OptionShapes />
+              </div>
+            )}
             {error && <p className="px-4 py-3 text-sm text-danger">{error}</p>}
             {!loading && !options.length && !error && (
               <p className="px-4 py-3 text-sm text-subtle">{searching ? 'Nothing found. Try the ISBN by the barcode.' : 'Type a title, author or ISBN'}</p>
             )}
-            <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3">
-              <p className="text-sm text-muted">Not here?</p>
+            {/* The wait is told down here, so the list above doesn't shift as the line comes and goes. */}
+            <div className="sticky bottom-0 flex min-h-[3.75rem] items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3">
+              {loading ? <LoadingLine kind="find" className="flex-1" /> : <p className="text-sm text-muted">Not here?</p>}
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
                 Add it yourself
               </button>

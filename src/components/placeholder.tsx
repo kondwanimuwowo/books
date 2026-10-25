@@ -93,6 +93,23 @@ export function RowShapes({ count = 3, cover = true }: { count?: number; cover?:
   )
 }
 
+/** Rows in a dropdown of books: a small cover, a title, a byline. */
+export function OptionShapes({ count = 3 }: { count?: number }) {
+  return (
+    <div className="py-1">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-2">
+          <Bone className="aspect-[2/3] w-9 shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Bone className="h-3.5 w-3/5" />
+            <Bone className="h-3 w-2/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function ParcelShapes() {
   return (
     <div className="card overflow-hidden">

@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/react/16/solid'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { z } from 'zod'
 import { searchBooksFn } from '#/functions/catalog.functions'
@@ -9,6 +9,7 @@ import { FilterPanel, FilterSheet, activeFilterCount } from '#/components/search
 import { LANGUAGES } from '#/data/zambia'
 import { cn } from '#/lib/utils'
 import { CoverGridShapes, PageShapes, Placeholder } from '#/components/placeholder'
+import { LoadingLine } from '#/components/loading-line'
 
 const searchParams = z.object({
   q: z.string().optional(),
@@ -27,7 +28,7 @@ type SearchState = z.infer<typeof searchParams>
 type Data = Awaited<ReturnType<typeof searchBooksFn>>
 
 export const Route = createFileRoute('/search')({
-  pendingComponent: () => <Placeholder mode="loading" label="Searching" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
+  pendingComponent: SearchPending,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => searchBooksFn({ data: deps }),
@@ -46,12 +47,36 @@ function useSetSearch() {
   return (patch: Partial<SearchState>) => navigate({ search: (prev) => ({ ...prev, ...patch, page: undefined, exact: undefined }) })
 }
 
+function SearchPending() {
+  return (
+    <div className="relative">
+      <Placeholder mode="loading" label="Searching" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />
+      <div className="page pointer-events-none absolute inset-x-0 top-[5.5rem] lg:top-[6.25rem]">
+        <LoadingLine kind="find" className="w-fit rounded-full bg-surface py-1.5 pr-4 pl-3 shadow-md" />
+      </div>
+    </div>
+  )
+}
+
+// Blurs the grid for a beat as its columns change, so cards re-flowing into a new count read as one move.
+const REFLOW: Keyframe[] = [
+  { opacity: 0.35, filter: 'blur(4px)' },
+  { opacity: 1, filter: 'blur(0px)' },
+]
+
 function SearchPage() {
   const search = Route.useSearch()
   const { results, total, page, categories, interpreted, closeMatches } = Route.useLoaderData()
   const set = useSetSearch()
+  // New filters keep this page up while the next results load; it dims and says it's working.
+  const fetching = Route.useMatch({ select: (m) => !!m.isFetching })
+  const results$ = useRef<HTMLDivElement>(null)
   // Desktop starts with filters showing; phones open them in a sheet.
   const [panel, setPanel] = useState(true)
+  const togglePanel = () => {
+    setPanel(!panel)
+    results$.current?.animate(REFLOW, { duration: 450, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' })
+  }
   const [sheet, setSheet] = useState(false)
   const closeSheet = useCallback(() => setSheet(false), [])
   const sections = categories.filter((c) => c.count > 0)
@@ -66,16 +91,22 @@ function SearchPage() {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           <h1 className="truncate text-3xl sm:text-4xl">{title}</h1>
-          <p className="mt-1 text-sm text-subtle tabular-nums">
-            {total} {total === 1 ? 'book' : 'books'}
-          </p>
+          <div className="mt-1 h-5 text-sm text-subtle tabular-nums">
+            {fetching ? (
+              <LoadingLine kind="find" />
+            ) : (
+              <p>
+                {total} {total === 1 ? 'book' : 'books'}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" className="btn btn-secondary btn-sm gap-1.5 lg:hidden" onClick={() => setSheet(true)}>
             <AdjustmentsHorizontalIcon className="size-4" aria-hidden />
             Filters{active > 0 && ` (${active})`}
           </button>
-          <button type="button" className="btn btn-secondary btn-sm hidden gap-1.5 lg:inline-flex" aria-expanded={panel} onClick={() => setPanel(!panel)}>
+          <button type="button" className="btn btn-secondary btn-sm hidden gap-1.5 lg:inline-flex" aria-expanded={panel} aria-controls="filter-panel" onClick={togglePanel}>
             <AdjustmentsHorizontalIcon className="size-4" aria-hidden />
             {panel ? 'Hide filters' : `Filters${active > 0 ? ` (${active})` : ''}`}
           </button>
@@ -90,13 +121,24 @@ function SearchPage() {
         {panelContent}
       </FilterSheet>
 
-      <div className={cn('mt-8', panel && 'lg:grid lg:grid-cols-[15rem_1fr] lg:gap-10')}>
-        {panel && (
-          <aside className="hidden lg:block" aria-label="Filters">
-            <div className="sticky top-28 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 pb-6">{panelContent}</div>
-          </aside>
+      {/* The panel's column slides shut rather than vanishing; the results widen into the space. */}
+      <div
+        className={cn(
+          'mt-8 lg:grid lg:transition-[grid-template-columns,column-gap] lg:duration-[450ms] lg:ease-in-out motion-reduce:transition-none',
+          panel ? 'lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-x-10' : 'lg:grid-cols-[0rem_minmax(0,1fr)] lg:gap-x-0',
         )}
-        <div className="min-w-0">
+      >
+        <aside id="filter-panel" className="hidden overflow-x-clip lg:block" aria-label="Filters" inert={!panel}>
+          <div
+            className={cn(
+              'sticky top-28 max-h-[calc(100dvh-8rem)] w-60 overflow-y-auto pr-2 pb-6 transition-[opacity,translate] duration-300 ease-out motion-reduce:translate-none',
+              panel ? 'opacity-100' : '-translate-x-3 opacity-0',
+            )}
+          >
+            {panelContent}
+          </div>
+        </aside>
+        <div ref={results$} className={cn('min-w-0 transition-opacity duration-300', fetching && 'opacity-55')}>
           {results.length ? <BookGrid books={results} layout={panel ? 'beside' : 'full'} /> : <NoResults query={search.q} filtered={active > 0} />}
           {pages > 1 && <Pager search={search} page={page} pages={pages} />}
         </div>

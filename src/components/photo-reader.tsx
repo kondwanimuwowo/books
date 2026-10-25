@@ -7,6 +7,7 @@ import type { PhotoSlot } from '#/data/ai'
 import { cn } from '#/lib/utils'
 import { compress } from './cover-upload'
 import { Alert, useAction } from './form'
+import { LoadingLine, Spinner } from './loading-line'
 
 // Larger than a cover upload: the copyright page's small print has to stay legible.
 const READ_EDGE = 1600
@@ -80,8 +81,10 @@ export function PhotoReader({ onRead }: { onRead: (result: PhotoResult) => void 
       </div>
       {read.error && <Alert>{read.error}</Alert>}
       <button type="button" className="btn btn-primary" disabled={!picked.front || read.pending} onClick={() => void read.run()}>
+        {read.pending && <Spinner />}
         {read.pending ? PHOTO_COPY.reading : PHOTO_COPY.read}
       </button>
+      {read.pending && <LoadingLine kind="read" />}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV } from '#/data/navigation'
 import { quickSearch } from '#/functions/catalog.functions'
 import { BookCover } from './book'
+import { LoadingLine, Spinner } from './loading-line'
 import { useHideOnScroll } from './use-hide-on-scroll'
 import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
@@ -81,7 +82,13 @@ function SearchBox() {
     }
   }, [term, searching])
 
-  const result = searching && found?.q === term ? found.result : null
+  const fresh = searching && found?.q === term ? found.result : null
+  // While the next answer loads, the last one stays (dimmed) rather than the list blinking away on every key.
+  const stale = searching && !fresh && found && (found.result.books.length || found.result.authors.length) ? found.result : null
+  const result = fresh ?? stale
+  const loading = searching && !fresh
+  // A submitted search runs on /search; the box shows it's working until that page arrives.
+  const navigating = useRouterState({ select: (s) => s.isLoading && s.location.pathname === '/search' })
   const items: QuickItem[] = result
     ? [
         ...result.books.map((b) => ({ key: `b-${b.slug}`, to: 'book' as const, slug: b.slug })),
@@ -105,13 +112,17 @@ function SearchBox() {
       className="relative w-full"
       onSubmit={(e) => {
         e.preventDefault()
-        go(items[active])
+        go(fresh ? items[active] : undefined)
       }}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
       }}
     >
-      <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" aria-hidden />
+      {loading || navigating ? (
+        <Spinner className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" />
+      ) : (
+        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" aria-hidden />
+      )}
       <input
         type="search"
         value={q}
@@ -122,7 +133,7 @@ function SearchBox() {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (!items.length) return
+          if (!fresh) return
           if (e.key === 'ArrowDown') {
             e.preventDefault()
             setActive((i) => Math.min(i + 1, items.length - 1))
@@ -134,16 +145,24 @@ function SearchBox() {
           }
         }}
         role="combobox"
-        aria-expanded={!!result}
+        aria-expanded={!!fresh}
         aria-controls="quick-results"
         aria-autocomplete="list"
-        aria-activedescendant={result && active >= 0 ? `quick-${items[active]?.key}` : undefined}
+        aria-activedescendant={fresh && active >= 0 ? `quick-${items[active]?.key}` : undefined}
         autoComplete="off"
         placeholder="A title, an author, or an ISBN"
         aria-label="Search books"
         className="h-11 w-full rounded-full bg-on-accent/10 pr-4 pl-11 text-[15px] text-on-accent transition-colors placeholder:text-on-deep-muted focus:bg-on-accent/15 focus:shadow-[inset_0_0_0_1.5px_var(--color-on-deep-muted)] focus:outline-none md:h-12"
       />
-      {result && <QuickResults result={result} term={term} items={items} active={active} onHover={setActive} onPick={go} />}
+      {searching && (
+        <div className="card drop-in absolute inset-x-0 top-full z-40 mt-2 max-h-[min(70vh,34rem)] overflow-y-auto text-left">
+          {result ? (
+            <QuickResults result={result} term={term} items={items} active={active} stale={!fresh} onHover={setActive} onPick={go} />
+          ) : (
+            <LoadingLine kind="find" className="px-4 py-3.5" />
+          )}
+        </div>
+      )}
     </form>
   )
 }
@@ -153,6 +172,7 @@ function QuickResults({
   term,
   items,
   active,
+  stale,
   onHover,
   onPick,
 }: {
@@ -160,6 +180,7 @@ function QuickResults({
   term: string
   items: QuickItem[]
   active: number
+  stale: boolean
   onHover: (i: number) => void
   onPick: (item: QuickItem) => void
 }) {
@@ -176,7 +197,7 @@ function QuickResults({
   })
   const authorStart = result.books.length
   return (
-    <div className="card absolute inset-x-0 top-full z-40 mt-2 max-h-[min(70vh,34rem)] overflow-y-auto py-1 text-left">
+    <div className={cn('py-1 transition-opacity duration-200', stale && 'pointer-events-none opacity-50')} aria-busy={stale}>
       <ul id="quick-results" role="listbox" aria-label="Search results">
         {!result.books.length && !result.authors.length && <li className="px-4 py-3 text-sm text-subtle">No books match “{term}” yet</li>}
         {result.books.map((b, i) => (

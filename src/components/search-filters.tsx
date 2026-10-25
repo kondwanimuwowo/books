@@ -153,7 +153,7 @@ export function FilterSheet({ open, onClose, total, children }: { open: boolean;
           <XMarkIcon className="size-5" aria-hidden />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-5">{children}</div>
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5">{children}</div>
       <div className="border-t border-line px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button type="button" className="btn btn-primary w-full" onClick={onClose}>
           Show {total} {total === 1 ? 'book' : 'books'}

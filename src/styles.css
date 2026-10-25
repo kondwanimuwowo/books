@@ -241,39 +241,44 @@
   .scroll-row[data-at-end='true'] {
     --fade-end: 0px;
   }
-  /* The mobile menu drops from under the header. */
+  /* The mobile menu drops from under the header, unhurried; it leaves a little quicker than it came. */
   .menu-panel {
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-8px);
+    transform: translateY(-12px);
     transition:
-      opacity 200ms var(--ease-out),
-      transform 200ms var(--ease-out),
-      visibility 0s linear 200ms;
+      opacity 240ms var(--ease-out),
+      transform 240ms var(--ease-out),
+      visibility 0s linear 240ms;
   }
   .menu-panel[data-open='true'] {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
     transition:
-      opacity 200ms var(--ease-out),
-      transform 200ms var(--ease-out),
+      opacity 340ms var(--ease-out),
+      transform 340ms var(--ease-out),
       visibility 0s;
   }
-  /* Phone filter sheet: rises from the bottom and leaves the same way. */
+  /* Phone filter sheet: rises from the bottom and leaves the same way, a touch faster. */
   .sheet {
     visibility: hidden;
     transform: translateY(100%);
     transition:
-      transform 300ms var(--ease-drawer),
-      visibility 0s linear 300ms;
+      transform 360ms var(--ease-drawer),
+      visibility 0s linear 360ms;
   }
   .sheet[data-open='true'] {
     visibility: visible;
     transform: translateY(0);
     transition:
-      transform 300ms var(--ease-drawer),
+      transform 460ms var(--ease-drawer),
       visibility 0s;
+  }
+  /* Search dropdowns settle down from the box they belong to. */
+  .drop-in {
+    transform-origin: top;
+    animation: drop-in 220ms var(--ease-out) both;
   }
   .pill {
     @apply inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors;
@@ -286,6 +291,12 @@
   }
 }
 
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
 @keyframes rise {
   from {
     opacity: 0;
@@ -339,7 +350,8 @@
   .sheet[data-open='true'] {
     transform: none;
   }
-  .rise {
+  .rise,
+  .drop-in {
     animation: fade-in 200ms ease both;
   }
   .is-loading .bone::after {
@@ -362,5 +374,14 @@
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+
+/* iOS zooms into any field under 16px and never zooms back out. Unlayered, so it beats text-size utilities. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
