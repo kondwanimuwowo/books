@@ -10,6 +10,7 @@ import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-
 import { PhotoReader } from '#/components/photo-reader'
 import { LoadingLine, Spinner } from '#/components/loading-line'
 import { OptionShapes } from '#/components/placeholder'
+import { SLOW_AFTER_MS } from '#/data/loading'
 import { suggestTidyName } from '#/functions/ai.functions'
 import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
 import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
@@ -146,6 +147,7 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
 
   const current = searching && found?.query === term ? found.result : null
   const loading = searching ? !current && !error : !all
+  const slow = useSlow(loading)
   // The last answer stays, dimmed and out of reach, until the next one lands: no blank flash between keys.
   const stale = searching && loading && found ? found.result : null
   const shown = current ?? stale
@@ -225,16 +227,13 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
             )}
             {/* The wait is told down here, so the list above doesn't shift as the line comes and goes. */}
             <div className="sticky bottom-0 flex min-h-[3.75rem] items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3">
-              {/* Offered once the search has answered, so nobody gives up on a book that was about to turn up. */}
-              {loading ? (
-                <LoadingLine kind="find" className="flex-1" />
-              ) : (
-                <>
-                  <p className="rise text-sm text-muted">Not here?</p>
-                  <button type="button" className="rise btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
-                    Add it yourself
-                  </button>
-                </>
+              {/* Offered once the search has answered, so nobody gives up on a book that was about to turn up;
+                  on a slow network it comes early, for sellers who already know it isn't here. */}
+              {loading ? <LoadingLine kind="find" className="flex-1" /> : <p className="rise text-sm text-muted">Not here?</p>}
+              {(!loading || slow) && (
+                <button type="button" className="rise btn btn-secondary btn-sm shrink-0" onClick={() => onSelect({ kind: 'manual' })}>
+                  Add it yourself
+                </button>
               )}
             </div>
           </div>
@@ -254,6 +253,17 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
       </div>
     </div>
   )
+}
+
+/** True once `waiting` has stayed true for SLOW_AFTER_MS. */
+function useSlow(waiting: boolean) {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (!waiting) return setSlow(false)
+    const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
+    return () => clearTimeout(timer)
+  }, [waiting])
+  return slow
 }
 
 function GroupLabel({ children }: { children: ReactNode }) {

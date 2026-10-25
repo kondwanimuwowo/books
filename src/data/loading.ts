@@ -3,6 +3,9 @@ export type LoadingKind = 'find' | 'read' | 'list'
 /** How long each line stays before the next one rolls in. */
 export const LOADING_LINE_MS = 2800
 
+/** When a wait counts as a slow network: the lines admit it, and the sell search offers a way out. */
+export const SLOW_AFTER_MS = 9000
+
 const SLOW_NETWORK = ['The network is taking the scenic route…', 'Slower than Cairo Road at five, but moving…', 'Still here. Still looking. Promise…', 'Nearly there. Probably…']
 
 /**
@@ -16,7 +19,7 @@ export const LOADING_LINES: Record<LoadingKind, { after: number; lines: string[]
       lines: ['Flipping through the shelves…', 'Reading the spines…', 'Asking the librarian…', 'Checking the back room…', 'Shushing the other books…', 'Following the smell of new pages…'],
     },
     { after: 4000, lines: ['Still looking. Books hide well…', 'This one is playing hard to get…', 'Checking behind the dictionaries…', 'Blowing the dust off the old stock…'] },
-    { after: 9000, lines: SLOW_NETWORK },
+    { after: SLOW_AFTER_MS, lines: SLOW_NETWORK },
   ],
   read: [
     {
