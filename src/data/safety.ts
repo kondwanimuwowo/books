@@ -18,3 +18,12 @@ export function containsPhoneNumber(text: string) {
   // Not inside a longer run of digits, so ISBNs and prices pass.
   return /(?<!\d)(?:\+?260|0)[79]\d{8}(?!\d)/.test(text.replace(/[\s().-]/g, ''))
 }
+
+// The three questions a careful buyer has before paying, answered under the price.
+export const BUY_TRUST = {
+  delivery: (inTown: string | null, outOfTown: string | null, extra: string | null) =>
+    [inTown && `${inTown} in the seller’s town`, outOfTown && `${outOfTown} to other towns${extra ? `, plus ${extra} for each extra book` : ''}`].filter(Boolean).join(', ') ||
+    'Shown at checkout',
+  pay: 'Airtel Money, MTN MoMo, Zamtel Kwacha or card, approved on your own phone.',
+  held: 'Your money is held until you confirm the book arrived. Something wrong? Report it before you confirm.',
+} as const

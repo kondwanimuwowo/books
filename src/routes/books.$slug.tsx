@@ -1,18 +1,19 @@
 import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { CheckIcon, MapPinIcon } from '@heroicons/react/16/solid'
-import { ShieldCheckIcon } from '@heroicons/react/20/solid'
+import { DevicePhoneMobileIcon, ShieldCheckIcon, TruckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getBook } from '#/functions/catalog.functions'
 import { makeOffer } from '#/functions/offers.functions'
 import { Alert, useAction } from '#/components/form'
 import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
-import { Price, useBag } from '#/components/providers'
+import { Price, useBag, useCurrency } from '#/components/providers'
 import { OFFER_REPLY_HOURS, PHOTOS_COPY, conditionLabel, formatLabel } from '#/data/listing-options'
 import { languageName } from '#/data/zambia'
 import { cheapestDelivery, etaLabel } from '#/data/shipping'
 import type { DeliveryRate } from '#/data/shipping'
-import { SAFETY } from '#/data/safety'
+import { BUY_TRUST, SAFETY } from '#/data/safety'
+import { PhotoFallback } from '#/components/photo-fallback'
 import { SHARE_COPY } from '#/data/share'
 import { ShareOnWhatsApp } from '#/components/share'
 import { RecentlyViewed, useRecordView } from '#/components/recently-viewed'
@@ -145,6 +146,7 @@ function BookPage() {
           {book.description && <Description text={book.description} />}
 
           <Specs book={book} />
+          <AboutTheAuthors authors={book.authors} />
           <ShareOnWhatsApp
             className="mt-6"
             path={`/books/${book.slug}`}
@@ -192,10 +194,14 @@ function BookPage() {
                 {selected?.acceptsOffers && selected.seller.slug !== user?.sellerSlug && (
                   <MakeOffer key={selected.id} copy={selected} signedIn={!!user} next={`/books/${book.slug}`} />
                 )}
-                <p className="mt-4 flex items-center gap-2 text-xs text-subtle">
-                  <ShieldCheckIcon className="size-4 shrink-0 text-success" aria-hidden />
-                  {ownCopy ? 'You’re paid once the buyer has it.' : 'Seller is paid after you receive it.'}
-                </p>
+                {ownCopy ? (
+                  <p className="mt-4 flex items-center gap-2 text-xs text-subtle">
+                    <ShieldCheckIcon className="size-4 shrink-0 text-success" aria-hidden />
+                    You’re paid once the buyer has it.
+                  </p>
+                ) : (
+                  <TrustStrip rates={book.deliveryRates} />
+                )}
                 {selected && (
                   <Link to="/sellers/$slug" params={{ slug: selected.seller.slug }} className="btn btn-secondary btn-sm mt-3 w-full">
                     <span className="truncate">View {selected.seller.storeName}&rsquo;s shop</span>
@@ -208,6 +214,7 @@ function BookPage() {
       </div>
 
       <BookReviews slug={book.slug} title={book.title} reviews={book.reviews} />
+      {book.moreByAuthor.length > 0 && <Shelf title={`More by ${book.authors.length === 1 ? book.authors[0].name : 'these authors'}`} books={book.moreByAuthor} />}
       <Shelf title={`More in ${book.category?.name ?? 'this section'}`} books={book.related} />
       <RecentlyViewed exclude={book.slug} />
 
@@ -479,5 +486,62 @@ function CopyGallery({ cover, photos }: { cover: ReactNode; photos: string[] }) 
         </div>
       )}
     </div>
+  )
+}
+
+/** Delivery cost, how to pay, and buyer protection: answered before anyone has to ask. Prices come from the live rate list. */
+function TrustStrip({ rates }: { rates: DeliveryRate[] }) {
+  const { format } = useCurrency()
+  const paid = (band: DeliveryRate['band']) => rates.filter((r) => r.band === band && r.feeNgwee > 0).sort((a, b) => a.feeNgwee - b.feeNgwee)[0] ?? null
+  const inTown = paid('same_town')
+  const outOfTown = paid('other_province')
+  const lines = [
+    { icon: TruckIcon, label: 'Delivery', text: BUY_TRUST.delivery(inTown && format(inTown.feeNgwee), outOfTown && format(outOfTown.feeNgwee), outOfTown?.extraItemNgwee ? format(outOfTown.extraItemNgwee) : null) },
+    { icon: DevicePhoneMobileIcon, label: 'Pay', text: BUY_TRUST.pay },
+    { icon: ShieldCheckIcon, label: 'Protected', text: BUY_TRUST.held },
+  ]
+  return (
+    <ul className="mt-5 space-y-3 border-t border-line pt-4 text-sm">
+      {lines.map(({ icon: Icon, label, text }) => (
+        <li key={label} className="flex gap-3">
+          <Icon className="mt-0.5 size-4 shrink-0 text-accent-ink" aria-hidden />
+          <span>
+            <span className="font-medium">{label}.</span> <span className="text-muted">{text}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+type BookAuthor = Book['authors'][number]
+
+/** Who wrote it, in their own words where they've claimed their page. Only authors with a bio appear. */
+function AboutTheAuthors({ authors }: { authors: BookAuthor[] }) {
+  const withBio = authors.filter((a) => a.bio).slice(0, 2)
+  if (!withBio.length) return null
+  return (
+    <section aria-labelledby="about-author" className="mt-10">
+      <h2 id="about-author" className="mb-4 text-xl">
+        {withBio.length === 1 ? 'About the author' : 'About the authors'}
+      </h2>
+      <div className="space-y-6">
+        {withBio.map((a) => (
+          <div key={a.id} className="flex gap-4">
+            {a.photoUrl ? <img src={a.photoUrl} alt="" loading="lazy" className="aspect-[2/3] w-16 shrink-0 rounded-md object-cover" /> : <PhotoFallback kind="person" className="aspect-[2/3] w-16 rounded-md" />}
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
+                {a.name}
+                {a.verified && <VerifiedMark label="Verified author" />}
+              </p>
+              <p className="mt-1 line-clamp-4 max-w-prose text-sm leading-relaxed text-muted">{a.bio}</p>
+              <Link to="/authors/$slug" params={{ slug: a.slug }} className="mt-1 inline-block text-sm font-medium">
+                Read more about {a.name.split(' ')[0]}
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }

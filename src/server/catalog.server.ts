@@ -178,6 +178,8 @@ export async function getBookBySlug(db: Db, slug: string) {
         slug: authors.slug,
         name: authors.name,
         isZambian: authors.isZambian,
+        bio: authors.bio,
+        photoUrl: authors.photoUrl,
         verified: sql<boolean>`${authors.verifiedSellerId} is not null`,
         // The author's own shop, so the page can mark their copies and offer them an edit link.
         shopSlug: sellers.slug,
@@ -227,11 +229,27 @@ export async function getBookBySlug(db: Db, slug: string) {
       .limit(6)
   }
 
+  // The author's other books, in stock first: what a reader who liked this one looks for next.
+  let moreByAuthor: BookCard[] = []
+  if (bookAuthorRows.length) {
+    const offers = offersSubquery(db)
+    const rows = await db
+      .select(cardColumns(offers))
+      .from(books)
+      .innerJoin(bookAuthors, eq(bookAuthors.bookId, books.id))
+      .leftJoin(offers, eq(offers.bookId, books.id))
+      .where(and(inArray(bookAuthors.authorId, bookAuthorRows.map((a) => a.id)), ne(books.id, book.book.id)))
+      .orderBy(sql`${offers.bookId} is null`, desc(books.publishedYear))
+      .limit(12)
+    // A book co-written by two of these authors comes back once per author.
+    moreByAuthor = [...new Map(rows.map((b) => [b.id, b])).values()].slice(0, 8)
+  }
+
   const authorShops = new Set(bookAuthorRows.map((a) => a.shopSlug).filter(Boolean))
   const ratings = await shopRatings(db, [...new Set(offerRows.map((o) => o.seller.id))])
   const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug), seller: { ...o.seller, rating: ratings.get(o.seller.id) ?? null } }))
   const bookReviews = await getBookReviews(db, book.book.id)
-  return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related, reviews: bookReviews }
+  return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related, moreByAuthor, reviews: bookReviews }
 }
 
 /** Visible reviews, newest first, with each reviewer's first name and reader badge; plus the average over all of them. */
