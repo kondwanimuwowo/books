@@ -3,11 +3,25 @@ import { signOut } from '#/functions/auth.functions'
 import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
 import { SIGN_OUT_ICON, accountNav } from '#/data/navigation'
 import { cn } from '#/lib/utils'
+import { CheckBadgeIcon } from '@heroicons/react/16/solid'
+import { KIND_COPY, VERIFICATION_LABELS } from '#/data/onboarding'
+import type { SellerKind } from '#/data/listing-options'
 
 export const Route = createFileRoute('/_authed/account')({
   head: () => ({ meta: [{ title: 'Your account | Kuwala Books' }] }),
   component: AccountLayout,
 })
+
+function RoleChip({ role }: { role: { kind: SellerKind | null; verified: boolean; pending: boolean } }) {
+  const label = role.kind ? KIND_COPY[role.kind].label : KIND_COPY.individual.label
+  const status = role.verified ? VERIFICATION_LABELS.approved : role.pending ? VERIFICATION_LABELS.pending : null
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-soft-ink">
+      {role.verified && <CheckBadgeIcon className="size-3.5" aria-hidden />}
+      {status ? `${label} · ${status}` : label}
+    </span>
+  )
+}
 
 const sideItem = 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] no-underline transition-colors'
 
@@ -25,7 +39,10 @@ function AccountLayout() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-4xl sm:text-5xl">{user?.displayName.split(' ')[0] ?? 'Account'}</h1>
-          <p className="mt-1 truncate text-sm text-subtle">{user?.email}</p>
+          <p className="mt-2 flex min-w-0 items-center gap-2.5 text-sm text-subtle">
+            {user && <RoleChip role={user.role} />}
+            <span className="truncate">{user?.email}</span>
+          </p>
         </div>
         <button type="button" className="btn btn-ghost btn-sm lg:hidden" onClick={() => void leave()}>
           Sign out

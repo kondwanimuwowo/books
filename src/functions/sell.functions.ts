@@ -7,7 +7,6 @@ import { PROVINCES } from '#/data/zambia'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { normalizeLocalPhone } from '#/lib/phone'
 import { toNgwee } from '#/lib/money'
-import { randomCode, slugify } from '#/lib/utils'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { findDescription, lookupIsbn, searchExternal } from '#/server/book-sources.server'
 import { findCatalogueMatches, findOrCreateBook, suggestNames } from '#/server/catalog.server'
@@ -15,6 +14,7 @@ import { attemptPayout } from '#/server/orders.server'
 import { createMobileMoneyRecipient, resolveMobileMoney } from '#/server/lenco.server'
 import { toIsbn13 } from '#/lib/isbn'
 import { ownedCoverUrl } from '#/server/covers.server'
+import { writeSellerProfile } from '#/server/sellers.server'
 
 const phoneSchema = z.string().transform((value, ctx) => {
   const local = normalizeLocalPhone(value)
@@ -39,6 +39,7 @@ export const getMySeller = createServerFn({ method: 'GET' })
             storeName: seller.storeName,
             kind: seller.kind,
             bio: seller.bio,
+            photoUrl: seller.photoUrl,
             phone: seller.phone,
             town: seller.town,
             province: seller.province,
@@ -64,21 +65,15 @@ export const saveSellerProfile = createServerFn({ method: 'POST' })
       phone: phoneSchema,
       town: z.string().trim().min(2).max(60),
       province: z.enum(PROVINCES),
+      photoKey: z.string().max(64).optional(),
     }),
   )
   .handler(async ({ data, context }) => {
-    const db = getDb()
-    const [existing] = await db.select({ id: sellers.id }).from(sellers).where(eq(sellers.profileId, context.user.id)).limit(1)
-    const values = { storeName: data.storeName, kind: data.kind, bio: data.bio || null, phone: data.phone, town: data.town, province: data.province }
-    if (existing) {
-      await db.update(sellers).set(values).where(eq(sellers.id, existing.id))
-    } else {
-      const base = slugify(data.storeName) || 'shop'
-      const [taken] = await db.select({ id: sellers.id }).from(sellers).where(eq(sellers.slug, base)).limit(1)
-      await db.insert(sellers).values({ ...values, profileId: context.user.id, slug: taken ? `${base}-${randomCode(4)}` : base })
-    }
-    await db.update(profiles).set({ phone: data.phone, town: data.town, province: data.province }).where(eq(profiles.id, context.user.id))
-    return { ok: true }
+    const { photoKey, ...profile } = data
+    const photoUrl = photoKey ? await ownedCoverUrl(photoKey, context.user.id) : undefined
+    if (photoUrl === null) throw new Error('That photo didn’t upload. Add it again.')
+    const slug = await writeSellerProfile(getDb(), context.user.id, { ...profile, photoUrl })
+    return { slug }
   })
 
 export const saveDeliverySettings = createServerFn({ method: 'POST' })

@@ -344,6 +344,7 @@ export async function getSellerBySlug(db: Db, slug: string) {
       storeName: sellers.storeName,
       kind: sellers.kind,
       bio: sellers.bio,
+      photoUrl: sellers.photoUrl,
       town: sellers.town,
       province: sellers.province,
       verified: sql<boolean>`${sellers.verifiedAt} is not null`,
@@ -392,7 +393,7 @@ export async function categoriesWithCounts(db: Db) {
     .orderBy(asc(categories.sortOrder))
 }
 
-async function uniqueSlug(db: Db, table: typeof books | typeof authors, base: string) {
+export async function uniqueSlug(db: Db, table: typeof books | typeof authors, base: string) {
   const slug = base || 'book'
   const [taken] = await db.select({ id: table.id }).from(table).where(eq(table.slug, slug)).limit(1)
   return taken ? `${slug}-${randomCode(4)}` : slug

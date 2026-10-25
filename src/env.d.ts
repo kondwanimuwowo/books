@@ -5,6 +5,7 @@ declare namespace Cloudflare {
     DATABASE_URL: string
     HYPERDRIVE?: Hyperdrive
     COVERS: R2Bucket
+    PRIVATE: R2Bucket
     SUPABASE_URL: string
     SUPABASE_PUBLISHABLE_KEY: string
     LENCO_SANDBOX: string

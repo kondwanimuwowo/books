@@ -351,6 +351,16 @@
 .rise {
   animation: rise 240ms var(--ease-out) backwards;
 }
+/* A just-picked photo settles into its tile. */
+@keyframes photo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.photo-in {
+  animation: photo-in 260ms var(--ease-out) backwards;
+}
 /* The pending payment prompt breathes so it reads as live, not frozen. */
 @keyframes prompt-pulse {
   50% {
@@ -396,7 +406,8 @@
     transform: none;
   }
   .rise,
-  .drop-in {
+  .drop-in,
+  .photo-in {
     animation: fade-in 200ms ease backwards;
   }
   .is-loading .bone::after {

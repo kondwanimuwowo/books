@@ -42,7 +42,9 @@ export function accountNav(isSeller: boolean, isAuthor: boolean) {
         ] as const)
       : []),
     ...(isAuthor ? ([{ to: '/account/author', label: 'Your books', exact: false, icon: PencilSquareIcon }] as const) : []),
-    { to: '/account/shop', label: isSeller ? 'Shop and payouts' : 'Start selling', exact: false, icon: BuildingStorefrontIcon },
+    isSeller
+      ? ({ to: '/account/shop', label: 'Shop and payouts', exact: false, icon: BuildingStorefrontIcon } as const)
+      : ({ to: '/start-selling', label: 'Start selling', exact: false, icon: BuildingStorefrontIcon } as const),
     { to: '/account/password', label: 'Password', exact: false, icon: KeyIcon },
   ] as const
 }

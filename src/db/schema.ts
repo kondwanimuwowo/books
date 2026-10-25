@@ -114,6 +114,12 @@ export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
   'bank_account',
 ])
+export const verificationStatus = pgEnum('verification_status', [
+  'pending',
+  'approved',
+  'rejected',
+  'needs_more',
+])
 
 // id = auth.users.id (Supabase Auth). Kept in public so app queries never touch the auth schema.
 export const profiles = pgTable('profiles', {
@@ -139,6 +145,8 @@ export const sellers = pgTable(
     storeName: text('store_name').notNull(),
     kind: sellerKind('kind').notNull().default('individual'),
     bio: text('bio'),
+    // Portrait or logo, public in the covers bucket. Null shows a fallback.
+    photoUrl: text('photo_url'),
     phone: text('phone').notNull(),
     town: text('town').notNull(),
     province: text('province').notNull(),
@@ -163,6 +171,38 @@ export const sellers = pgTable(
   (t) => [
     uniqueIndex('sellers_profile_id_key').on(t.profileId),
     uniqueIndex('sellers_slug_key').on(t.slug),
+  ],
+).enableRLS()
+
+// An author's proof of identity, reviewed by an admin. Documents live in the private bucket and are deleted once decided.
+export const verificationRequests = pgTable(
+  'verification_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerId: uuid('seller_id')
+      .notNull()
+      .references(() => sellers.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').references(() => authors.id, {
+      onDelete: 'set null',
+    }),
+    legalName: text('legal_name').notNull(),
+    documents: jsonb('documents')
+      .$type<{ type: 'id' | 'selfie' | 'extra'; key: string }[]>()
+      .notNull()
+      .default([]),
+    status: verificationStatus('status').notNull().default('pending'),
+    // Shown to the author when more is needed or the request is turned down.
+    note: text('note'),
+    reviewerId: uuid('reviewer_id').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('verification_requests_seller_idx').on(t.sellerId),
+    index('verification_requests_status_idx').on(t.status),
   ],
 ).enableRLS()
 

@@ -39,6 +39,9 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         town: profiles.town,
         province: profiles.province,
         isAuthor: sql<boolean>`exists (select 1 from ${authors} where ${authors.verifiedSellerId} = ${sellers.id})`,
+        sellerKind: sellers.kind,
+        sellerVerified: sql<boolean>`${sellers.verifiedAt} is not null`,
+        verificationPending: sql<boolean>`exists (select 1 from verification_requests v where v.seller_id = ${sellers.id} and v.status = 'pending')`,
       })
       .from(profiles)
       .leftJoin(sellers, eq(sellers.profileId, profiles.id))
@@ -56,6 +59,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         // Where they usually receive books, for delivery estimates on book pages.
         place: row?.town && row.province ? { town: row.town, province: row.province } : null,
         isAuthor: row?.isAuthor ?? false,
+        // Everyone starts as a reader; opening a shop gives them its kind.
+        role: { kind: row?.sellerKind ?? null, verified: row?.sellerVerified ?? false, pending: row?.verificationPending ?? false },
       },
       fx,
       currency,

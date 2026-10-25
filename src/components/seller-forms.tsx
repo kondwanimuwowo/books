@@ -9,6 +9,8 @@ import { SHIPPING_METHODS, shippingLabel } from '#/data/shipping'
 import type { ActiveShippingMethod, ShippingMethod } from '#/data/shipping'
 import { getBookDescription, saveDeliverySettings } from '#/functions/sell.functions'
 import { TownField } from './town-field'
+import { CoverUpload } from './cover-upload'
+import { KIND_COPY } from '#/data/onboarding'
 import { detectOperator, OPERATOR_LABELS } from '#/lib/phone'
 import type { Operator } from '#/lib/phone'
 import { cn } from '#/lib/utils'
@@ -21,6 +23,7 @@ interface SellerDefaults {
   phone: string | null
   town: string | null
   province: string | null
+  photoUrl: string | null
 }
 
 export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = true }: { defaults: SellerDefaults; submitLabel: string; onSaved?: () => void; primary?: boolean }) {
@@ -33,10 +36,12 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = tr
     town: defaults.town ?? '',
     province: (PROVINCES.includes(defaults.province as Province) ? defaults.province : '') as Province | '',
   })
+  const [photo, setPhoto] = useState<{ key: string } | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [saved, setSaved] = useState(false)
   const action = useAction(async () => {
     if (!form.province) throw new Error('Choose your province')
-    await saveSellerProfile({ data: { ...form, province: form.province, bio: form.bio || undefined } })
+    await saveSellerProfile({ data: { ...form, province: form.province, bio: form.bio || undefined, photoKey: photo?.key } })
     setSaved(true)
     await router.invalidate()
     onSaved?.()
@@ -71,9 +76,19 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = tr
           ))}
         </div>
       </fieldset>
-      <Field label="Shop name">
-        <input className="input" required minLength={2} maxLength={60} value={form.storeName} onChange={set('storeName')} />
-      </Field>
+      <div className="flex flex-col gap-5 sm:flex-row">
+        <CoverUpload
+          shape={KIND_COPY[form.kind].photoShape}
+          label={KIND_COPY[form.kind].photoLabel}
+          current={defaults.photoUrl}
+          onBusy={setUploading}
+          onChange={(p) => (setPhoto(p), setSaved(false))}
+          className="shrink-0"
+        />
+        <Field label="Shop name" className="flex-1">
+          <input className="input" required minLength={2} maxLength={60} value={form.storeName} onChange={set('storeName')} />
+        </Field>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Phone number">
           <input className="input" type="tel" inputMode="tel" required value={form.phone} onChange={set('phone')} placeholder="097 123 4567" />
@@ -83,8 +98,8 @@ export function SellerProfileForm({ defaults, submitLabel, onSaved, primary = tr
       <Field label="About (optional)">
         <textarea className="input" rows={3} maxLength={600} value={form.bio} onChange={set('bio')} />
       </Field>
-      <button type="submit" className={cn('btn', primary ? 'btn-primary' : 'btn-secondary')} disabled={action.pending}>
-        {action.pending ? 'Saving…' : submitLabel}
+      <button type="submit" className={cn('btn', primary ? 'btn-primary' : 'btn-secondary')} disabled={uploading || action.pending}>
+        {uploading ? 'Uploading photo…' : action.pending ? 'Saving…' : submitLabel}
       </button>
     </form>
   )

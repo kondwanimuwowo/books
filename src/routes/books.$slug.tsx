@@ -17,6 +17,7 @@ import { SHARE_COPY } from '#/data/share'
 import { ShareOnWhatsApp } from '#/components/share'
 import { RecentlyViewed, useRecordView } from '#/components/recently-viewed'
 import { cn } from '#/lib/utils'
+import { ogMeta } from '#/lib/og'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 
 export const Route = createFileRoute('/books/$slug')({
@@ -27,7 +28,12 @@ export const Route = createFileRoute('/books/$slug')({
       ? [
           { title: `${loaderData.title} | Kuwala Books` },
           { name: 'description', content: (loaderData.summary ?? loaderData.description)?.slice(0, 160) ?? `Buy ${loaderData.title} in Zambia` },
-          { property: 'og:image', content: loaderData.coverUrl ?? '' },
+          ...ogMeta({
+            title: loaderData.title,
+            description: (loaderData.summary ?? loaderData.description)?.slice(0, 160) ?? `Buy ${loaderData.title} in Zambia`,
+            path: `/books/${loaderData.slug}`,
+            image: loaderData.coverUrl,
+          }),
         ]
       : [],
   }),

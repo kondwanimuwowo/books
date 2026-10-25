@@ -35,13 +35,16 @@ export function CoverUpload({
   onBusy,
   current = null,
   label = 'Add cover photo',
+  shape = 'cover',
   className,
 }: {
-  onChange: (cover: { key: string; preview: string } | null) => void
+  onChange: (cover: { key: string; preview: string; url: string } | null) => void
   onBusy?: (busy: boolean) => void
   /** The image already in place, shown until a new one is picked. */
   current?: string | null
   label?: string
+  /** Covers and author portraits are 2:3; shop logos are square. */
+  shape?: 'cover' | 'square'
   className?: string
 }) {
   const [state, setState] = useState<State>({ kind: 'empty' })
@@ -60,9 +63,9 @@ export function CoverUpload({
       onChange(null)
       const form = new FormData()
       form.append('cover', new File([blob], blob.type === 'image/webp' ? 'cover.webp' : 'cover.jpg', { type: blob.type }))
-      const { key } = await uploadCover({ data: form })
+      const { key, url } = await uploadCover({ data: form })
       setState({ kind: 'done', preview: local })
-      onChange({ key, preview: local })
+      onChange({ key, preview: local, url })
     } catch (e) {
       setState({ kind: 'failed', reason: errorMessage(e) })
       onChange(null)
@@ -75,14 +78,15 @@ export function CoverUpload({
     <div className={cn('space-y-2', className)}>
       <label
         className={cn(
-          'relative flex aspect-[2/3] w-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-md text-center transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
+          'relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-md text-center transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
+          shape === 'cover' ? 'aspect-[2/3] w-32' : 'aspect-square w-32 rounded-xl',
           preview ? 'shadow-md' : 'border-2 border-dashed border-line-strong text-subtle hover:border-accent-ink hover:text-accent-ink',
         )}
       >
         <input type="file" accept="image/*" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} aria-label={label} />
         {preview ? (
           <>
-            <img src={preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <img src={preview} alt="" className="photo-in absolute inset-0 h-full w-full object-cover" />
             {state.kind === 'uploading' && (
               <span className="absolute inset-0 flex items-center justify-center bg-deep/50" role="status" aria-label="Uploading">
                 <span

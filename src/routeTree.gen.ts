@@ -24,6 +24,8 @@ import { Route as Top20RouteImport } from './routes/top-20'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
 import { Route as AuthedSellRouteImport } from './routes/_authed/sell'
+import { Route as AuthedStartSellingRouteImport } from './routes/_authed/start-selling'
+import { Route as AdminFilesKeyRouteImport } from './routes/admin-files.$key'
 import { Route as AdminShellRouteImport } from './routes/admin/_shell'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -48,6 +50,7 @@ import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/de
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
 import { Route as AdminShellPublishersRouteImport } from './routes/admin/_shell/publishers'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
+import { Route as AdminShellVerificationRouteImport } from './routes/admin/_shell/verification'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
 
 const IndexRoute = IndexRouteImport.update({
@@ -123,6 +126,16 @@ const AuthedSellRoute = AuthedSellRouteImport.update({
   id: '/sell',
   path: '/sell',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStartSellingRoute = AuthedStartSellingRouteImport.update({
+  id: '/start-selling',
+  path: '/start-selling',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AdminFilesKeyRoute = AdminFilesKeyRouteImport.update({
+  id: '/admin-files/$key',
+  path: '/admin-files/$key',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminShellRoute = AdminShellRouteImport.update({
   id: '/_shell',
@@ -243,6 +256,11 @@ const AdminShellSellersRoute = AdminShellSellersRouteImport.update({
   path: '/sellers',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const AdminShellVerificationRoute = AdminShellVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 const ApiWebhooksLencoRoute = ApiWebhooksLencoRouteImport.update({
   id: '/api/webhooks/lenco',
   path: '/api/webhooks/lenco',
@@ -264,6 +282,8 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthedAccountRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
+  '/start-selling': typeof AuthedStartSellingRoute
+  '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -285,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
+  '/admin/verification': typeof AdminShellVerificationRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/admin/': typeof AdminShellIndexRoute
@@ -303,6 +324,8 @@ export interface FileRoutesByTo {
   '/top-20': typeof Top20Route
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
+  '/start-selling': typeof AuthedStartSellingRoute
+  '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -324,6 +347,7 @@ export interface FileRoutesByTo {
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
+  '/admin/verification': typeof AdminShellVerificationRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
 }
@@ -344,6 +368,8 @@ export interface FileRoutesById {
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
   '/_authed/sell': typeof AuthedSellRoute
+  '/_authed/start-selling': typeof AuthedStartSellingRoute
+  '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/_shell': typeof AdminShellRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -366,6 +392,7 @@ export interface FileRoutesById {
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
   '/admin/_shell/publishers': typeof AdminShellPublishersRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
+  '/admin/_shell/verification': typeof AdminShellVerificationRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/admin/_shell/': typeof AdminShellIndexRoute
@@ -387,6 +414,8 @@ export interface FileRouteTypes {
     | '/account'
     | '/checkout'
     | '/sell'
+    | '/start-selling'
+    | '/admin-files/$key'
     | '/admin/login'
     | '/auth/callback'
     | '/authors/$slug'
@@ -408,6 +437,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
+    | '/admin/verification'
     | '/api/webhooks/lenco'
     | '/account/'
     | '/admin/'
@@ -426,6 +456,8 @@ export interface FileRouteTypes {
     | '/top-20'
     | '/checkout'
     | '/sell'
+    | '/start-selling'
+    | '/admin-files/$key'
     | '/admin/login'
     | '/auth/callback'
     | '/authors/$slug'
@@ -447,6 +479,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
+    | '/admin/verification'
     | '/api/webhooks/lenco'
     | '/account'
   id:
@@ -466,6 +499,8 @@ export interface FileRouteTypes {
     | '/_authed/account'
     | '/_authed/checkout'
     | '/_authed/sell'
+    | '/_authed/start-selling'
+    | '/admin-files/$key'
     | '/admin/_shell'
     | '/admin/login'
     | '/auth/callback'
@@ -488,6 +523,7 @@ export interface FileRouteTypes {
     | '/admin/_shell/orders'
     | '/admin/_shell/publishers'
     | '/admin/_shell/sellers'
+    | '/admin/_shell/verification'
     | '/api/webhooks/lenco'
     | '/_authed/account/'
     | '/admin/_shell/'
@@ -506,6 +542,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   Top20Route: typeof Top20Route
+  AdminFilesKeyRoute: typeof AdminFilesKeyRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
@@ -623,6 +660,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sell'
       preLoaderRoute: typeof AuthedSellRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/start-selling': {
+      id: '/_authed/start-selling'
+      path: '/start-selling'
+      fullPath: '/start-selling'
+      preLoaderRoute: typeof AuthedStartSellingRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/admin-files/$key': {
+      id: '/admin-files/$key'
+      path: '/admin-files/$key'
+      fullPath: '/admin-files/$key'
+      preLoaderRoute: typeof AdminFilesKeyRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/_shell': {
       id: '/admin/_shell'
@@ -792,6 +843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellSellersRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/admin/_shell/verification': {
+      id: '/admin/_shell/verification'
+      path: '/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AdminShellVerificationRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
     '/api/webhooks/lenco': {
       id: '/api/webhooks/lenco'
       path: '/api/webhooks/lenco'
@@ -830,6 +888,7 @@ interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
   AuthedCheckoutRoute: typeof AuthedCheckoutRoute
   AuthedSellRoute: typeof AuthedSellRoute
+  AuthedStartSellingRoute: typeof AuthedStartSellingRoute
   AuthedOrdersNumberRoute: typeof AuthedOrdersNumberRoute
 }
 
@@ -837,6 +896,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRouteWithChildren,
   AuthedCheckoutRoute: AuthedCheckoutRoute,
   AuthedSellRoute: AuthedSellRoute,
+  AuthedStartSellingRoute: AuthedStartSellingRoute,
   AuthedOrdersNumberRoute: AuthedOrdersNumberRoute,
 }
 
@@ -849,6 +909,7 @@ interface AdminShellRouteChildren {
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
   AdminShellPublishersRoute: typeof AdminShellPublishersRoute
   AdminShellSellersRoute: typeof AdminShellSellersRoute
+  AdminShellVerificationRoute: typeof AdminShellVerificationRoute
   AdminShellIndexRoute: typeof AdminShellIndexRoute
 }
 
@@ -858,6 +919,7 @@ const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellOrdersRoute: AdminShellOrdersRoute,
   AdminShellPublishersRoute: AdminShellPublishersRoute,
   AdminShellSellersRoute: AdminShellSellersRoute,
+  AdminShellVerificationRoute: AdminShellVerificationRoute,
   AdminShellIndexRoute: AdminShellIndexRoute,
 }
 
@@ -890,6 +952,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   Top20Route: Top20Route,
+  AdminFilesKeyRoute: AdminFilesKeyRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, CameraIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -16,7 +16,7 @@ import { suggestTidyName } from '#/functions/ai.functions'
 import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
 import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
-import { MissingDescription, OfferSettings, SellerProfileForm, offerSettingsData } from '#/components/seller-forms'
+import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
 import type { Condition, Format } from '#/data/listing-options'
@@ -27,7 +27,8 @@ import { cn } from '#/lib/utils'
 export const Route = createFileRoute('/_authed/sell')({
   loader: async () => {
     const [mine, categories] = await Promise.all([getMySeller(), getCategories()])
-    return { ...mine, categories }
+    if (!mine.seller) throw redirect({ to: '/start-selling' })
+    return { seller: mine.seller, categories }
   },
   head: () => ({ meta: [{ title: 'Sell a book | Kuwala Books' }] }),
   component: SellPage,
@@ -60,24 +61,8 @@ const optionCard = (selected: boolean) =>
   )
 
 function SellPage() {
-  const { seller, profile } = Route.useLoaderData()
+  const { seller } = Route.useLoaderData()
   const [selection, setSelection] = useState<Selection | null>(null)
-
-  if (!seller) {
-    return (
-      <div className="page rise max-w-2xl py-10 lg:py-14">
-        <h1 className="text-4xl sm:text-5xl">Open your shop</h1>
-        <p className="mt-2 text-muted">Once, then list as many books as you like.</p>
-        <div className="mt-8">
-          <SellerProfileForm
-            submitLabel="Open shop"
-            onSaved={() => undefined}
-            defaults={{ storeName: profile?.displayName ?? '', kind: 'individual', bio: null, phone: profile?.phone ?? null, town: profile?.town ?? null, province: profile?.province ?? null }}
-          />
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className={cn('page py-10 lg:py-14', selection ? 'max-w-5xl' : 'max-w-3xl')}>

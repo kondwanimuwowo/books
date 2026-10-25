@@ -6,12 +6,14 @@ import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
-import { authors, bookAuthors, books, deliveryRates, orderItems, orders, payments, profiles, publishers, sellerOrders, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, deliveryRates, listings, orderItems, orders, payments, profiles, publishers, sellerOrders, sellers, verificationRequests } from '#/db/schema'
 import { slugify } from '#/lib/utils'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
 import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
-import { sendEmail } from '#/server/email.server'
+import { escapeHtml, sendEmail } from '#/server/email.server'
+import { deletePrivate } from '#/server/private-files.server'
+import { uniqueSlug } from '#/server/catalog.server'
 import { attemptPayout, completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 
 const LATE_SHIPMENT_DAYS = 3
@@ -454,5 +456,107 @@ export const retryPayout = createServerFn({ method: 'POST' })
       .returning({ id: sellerOrders.id })
     if (!row) throw new Error('This payout is not in a failed state')
     await attemptPayout(db, data.sellerOrderId)
+    return { ok: true }
+  })
+
+export const listVerifications = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .handler(async () => {
+    return getDb()
+      .select({
+        id: verificationRequests.id,
+        legalName: verificationRequests.legalName,
+        documents: verificationRequests.documents,
+        status: verificationRequests.status,
+        createdAt: verificationRequests.createdAt,
+        seller: {
+          slug: sellers.slug,
+          storeName: sellers.storeName,
+          photoUrl: sellers.photoUrl,
+          bio: sellers.bio,
+          town: sellers.town,
+          // The name the mobile money network has on file: SIM registration is NRC-backed.
+          payoutAccountName: sellers.payoutAccountName,
+        },
+        author: sql<{ slug: string; name: string; books: number } | null>`case when ${authors.id} is null then null
+          else json_build_object('slug', ${authors.slug}, 'name', ${authors.name},
+            'books', (select count(*)::int from book_authors ba where ba.author_id = ${authors.id})) end`,
+        listings: sql<number>`(select count(*)::int from listings l where l.seller_id = ${sellers.id} and l.status = 'active')`,
+      })
+      .from(verificationRequests)
+      .innerJoin(sellers, eq(sellers.id, verificationRequests.sellerId))
+      .leftJoin(authors, eq(authors.id, verificationRequests.authorId))
+      .where(eq(verificationRequests.status, 'pending'))
+      .orderBy(asc(verificationRequests.createdAt))
+  })
+
+export const decideVerification = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(
+    z.object({
+      requestId: z.string().uuid(),
+      decision: z.enum(['approved', 'rejected', 'needs_more']),
+      note: z.string().trim().max(600).optional(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const db = getDb()
+    const [request] = await db
+      .select({ request: verificationRequests, seller: sellers, email: profiles.email })
+      .from(verificationRequests)
+      .innerJoin(sellers, eq(sellers.id, verificationRequests.sellerId))
+      .innerJoin(profiles, eq(profiles.id, sellers.profileId))
+      .where(and(eq(verificationRequests.id, data.requestId), eq(verificationRequests.status, 'pending')))
+      .limit(1)
+    if (!request) throw new Error('Already decided')
+    if (data.decision !== 'approved' && !data.note) throw new Error('Tell them why, so they can put it right')
+    const { seller } = request
+
+    let authorSlug: string | null = null
+    if (data.decision === 'approved') {
+      const [listed] = await db.select({ id: listings.id }).from(listings).where(eq(listings.sellerId, seller.id)).limit(1)
+      if (!listed) throw new Error('They need to list a book first')
+      if (request.request.authorId) {
+        // Their own words and face fill the page where the catalogue had nothing.
+        const [page] = await db
+          .update(authors)
+          .set({ verifiedSellerId: seller.id, bio: sql`coalesce(${authors.bio}, ${seller.bio})`, photoUrl: sql`coalesce(${authors.photoUrl}, ${seller.photoUrl})` })
+          .where(and(eq(authors.id, request.request.authorId), or(isNull(authors.verifiedSellerId), eq(authors.verifiedSellerId, seller.id))))
+          .returning({ slug: authors.slug })
+        if (!page) throw new Error('That author page is verified to another shop now')
+        authorSlug = page.slug
+      } else {
+        const [page] = await db
+          .insert(authors)
+          .values({ slug: await uniqueSlug(db, authors, slugify(seller.storeName)), name: seller.storeName, bio: seller.bio, photoUrl: seller.photoUrl, verifiedSellerId: seller.id })
+          .returning({ slug: authors.slug })
+        authorSlug = page.slug
+      }
+      await db.update(sellers).set({ verifiedAt: new Date() }).where(eq(sellers.id, seller.id))
+    }
+
+    // Documents are only kept while someone needs to look at them.
+    await deletePrivate(request.request.documents.map((d) => d.key))
+    await db
+      .update(verificationRequests)
+      .set({ status: data.decision, note: data.note || null, documents: [], reviewerId: context.user.id, decidedAt: new Date() })
+      .where(eq(verificationRequests.id, data.requestId))
+
+    const first = request.request.legalName.split(' ')[0]
+    await sendEmail(
+      data.decision === 'approved'
+        ? {
+            to: request.email,
+            subject: 'You’re a verified author on Kuwala Books',
+            lines: [`Congratulations ${escapeHtml(first)}. Your author page now carries the verified mark, and you can edit it and your books.`],
+            action: { label: 'See your page', path: `/authors/${authorSlug}` },
+          }
+        : {
+            to: request.email,
+            subject: data.decision === 'needs_more' ? 'We need a little more to verify you' : 'About your author verification',
+            lines: [escapeHtml(data.note ?? ''), 'Your shop stays open while this is sorted.'],
+            action: { label: data.decision === 'needs_more' ? 'Send it again' : 'Your shop', path: '/account/shop' },
+          },
+    )
     return { ok: true }
   })

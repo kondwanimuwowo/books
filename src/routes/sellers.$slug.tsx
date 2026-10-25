@@ -5,13 +5,26 @@ import { BookGrid, VerifiedMark } from '#/components/book'
 import { ShareOnWhatsApp } from '#/components/share'
 import { SHARE_COPY } from '#/data/share'
 import { SELLER_KINDS } from '#/data/listing-options'
-import { formatDate } from '#/lib/utils'
+import { cn, formatDate } from '#/lib/utils'
+import { ogMeta } from '#/lib/og'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 
 export const Route = createFileRoute('/sellers/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
   loader: ({ params }) => getSeller({ data: { slug: params.slug } }),
-  head: ({ loaderData }) => ({ meta: loaderData ? [{ title: `${loaderData.storeName} | Kuwala Books` }] : [] }),
+  head: ({ loaderData }) => ({
+    meta: loaderData
+      ? [
+          { title: `${loaderData.storeName} | Kuwala Books` },
+          ...ogMeta({
+            title: loaderData.storeName,
+            description: loaderData.bio?.slice(0, 160) ?? SHARE_COPY.shop({ storeName: loaderData.storeName, inStock: loaderData.books.length }),
+            path: `/sellers/${loaderData.slug}`,
+            image: loaderData.photoUrl,
+          }),
+        ]
+      : [],
+  }),
   component: SellerPage,
 })
 
@@ -20,9 +33,14 @@ function SellerPage() {
   const kind = SELLER_KINDS.find((k) => k.value === seller.kind)?.label
   return (
     <div className="page rise py-10">
-      <p className="eyebrow">{kind}</p>
-      <h1 className="mt-2 text-4xl sm:text-5xl">{seller.storeName}</h1>
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+      <div className="flex items-end gap-5">
+        <SellerPhoto name={seller.storeName} src={seller.photoUrl} portrait={seller.kind === 'author'} />
+        <div className="min-w-0">
+          <p className="eyebrow">{kind}</p>
+          <h1 className="mt-2 text-4xl sm:text-5xl">{seller.storeName}</h1>
+        </div>
+      </div>
+      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
         {seller.verified && <VerifiedMark />}
         <span className="inline-flex items-center gap-1">
           <MapPinIcon className="size-3.5" aria-hidden />
@@ -42,6 +60,17 @@ function SellerPage() {
           <EmptyMessage title="Nothing in stock right now" />
         </Placeholder>
       )}
+    </div>
+  )
+}
+
+function SellerPhoto({ name, src, portrait }: { name: string; src: string | null; portrait: boolean }) {
+  const shape = portrait ? 'aspect-[2/3] w-20 rounded-md sm:w-24' : 'aspect-square w-20 rounded-xl sm:w-24'
+  return src ? (
+    <img src={src} alt="" className={cn('shrink-0 object-cover shadow-md', shape)} />
+  ) : (
+    <div className={cn('band flex shrink-0 items-end p-2.5 text-4xl leading-none font-bold shadow-md', shape)} aria-hidden>
+      {name.charAt(0)}
     </div>
   )
 }

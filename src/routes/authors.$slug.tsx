@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { MapPinIcon } from '@heroicons/react/16/solid'
 import { getAuthor } from '#/functions/catalog.functions'
+import { ogMeta } from '#/lib/og'
 import { BookGrid, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 
@@ -19,7 +20,11 @@ export const Route = createFileRoute('/authors/$slug')({
   loader: ({ params }) => getAuthor({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({
     meta: loaderData
-      ? [{ title: `${loaderData.name} | Kuwala Books` }, { name: 'description', content: loaderData.bio?.slice(0, 160) ?? `Books by ${loaderData.name}` }]
+      ? [
+          { title: `${loaderData.name} | Kuwala Books` },
+          { name: 'description', content: loaderData.bio?.slice(0, 160) ?? `Books by ${loaderData.name}` },
+          ...ogMeta({ title: loaderData.name, description: loaderData.bio?.slice(0, 160) ?? `Books by ${loaderData.name} on Kuwala Books`, path: `/authors/${loaderData.slug}`, image: loaderData.photoUrl }),
+        ]
       : [],
   }),
   component: AuthorPage,
