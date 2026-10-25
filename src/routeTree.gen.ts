@@ -51,6 +51,7 @@ import { Route as AdminShellBooksRouteImport } from './routes/admin/_shell/books
 import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/delivery'
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
 import { Route as AdminShellPublishersRouteImport } from './routes/admin/_shell/publishers'
+import { Route as AdminShellRefundsRouteImport } from './routes/admin/_shell/refunds'
 import { Route as AdminShellReviewsRouteImport } from './routes/admin/_shell/reviews'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
 import { Route as AdminShellVerificationRouteImport } from './routes/admin/_shell/verification'
@@ -266,6 +267,11 @@ const AdminShellPublishersRoute = AdminShellPublishersRouteImport.update({
   path: '/publishers',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const AdminShellRefundsRoute = AdminShellRefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 const AdminShellReviewsRoute = AdminShellReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
+  '/admin/refunds': typeof AdminShellRefundsRoute
   '/admin/reviews': typeof AdminShellReviewsRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/admin/verification': typeof AdminShellVerificationRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
+  '/admin/refunds': typeof AdminShellRefundsRoute
   '/admin/reviews': typeof AdminShellReviewsRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/admin/verification': typeof AdminShellVerificationRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/admin/_shell/delivery': typeof AdminShellDeliveryRoute
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
   '/admin/_shell/publishers': typeof AdminShellPublishersRoute
+  '/admin/_shell/refunds': typeof AdminShellRefundsRoute
   '/admin/_shell/reviews': typeof AdminShellReviewsRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
   '/admin/_shell/verification': typeof AdminShellVerificationRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/admin/delivery'
     | '/admin/orders'
     | '/admin/publishers'
+    | '/admin/refunds'
     | '/admin/reviews'
     | '/admin/sellers'
     | '/admin/verification'
@@ -530,6 +540,7 @@ export interface FileRouteTypes {
     | '/admin/delivery'
     | '/admin/orders'
     | '/admin/publishers'
+    | '/admin/refunds'
     | '/admin/reviews'
     | '/admin/sellers'
     | '/admin/verification'
@@ -579,6 +590,7 @@ export interface FileRouteTypes {
     | '/admin/_shell/delivery'
     | '/admin/_shell/orders'
     | '/admin/_shell/publishers'
+    | '/admin/_shell/refunds'
     | '/admin/_shell/reviews'
     | '/admin/_shell/sellers'
     | '/admin/_shell/verification'
@@ -911,6 +923,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellPublishersRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/admin/_shell/refunds': {
+      id: '/admin/_shell/refunds'
+      path: '/refunds'
+      fullPath: '/admin/refunds'
+      preLoaderRoute: typeof AdminShellRefundsRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
     '/admin/_shell/reviews': {
       id: '/admin/_shell/reviews'
       path: '/reviews'
@@ -1005,6 +1024,7 @@ interface AdminShellRouteChildren {
   AdminShellDeliveryRoute: typeof AdminShellDeliveryRoute
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
   AdminShellPublishersRoute: typeof AdminShellPublishersRoute
+  AdminShellRefundsRoute: typeof AdminShellRefundsRoute
   AdminShellReviewsRoute: typeof AdminShellReviewsRoute
   AdminShellSellersRoute: typeof AdminShellSellersRoute
   AdminShellVerificationRoute: typeof AdminShellVerificationRoute
@@ -1019,6 +1039,7 @@ const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellDeliveryRoute: AdminShellDeliveryRoute,
   AdminShellOrdersRoute: AdminShellOrdersRoute,
   AdminShellPublishersRoute: AdminShellPublishersRoute,
+  AdminShellRefundsRoute: AdminShellRefundsRoute,
   AdminShellReviewsRoute: AdminShellReviewsRoute,
   AdminShellSellersRoute: AdminShellSellersRoute,
   AdminShellVerificationRoute: AdminShellVerificationRoute,

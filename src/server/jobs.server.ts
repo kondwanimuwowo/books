@@ -6,6 +6,7 @@ import { mirrorCover } from './covers.server'
 import { summariseDescription } from './ai.server'
 import { releaseToSeller, settlePayment } from './orders.server'
 import { reconcilePayout, weeklyPayouts } from './payouts.server'
+import { cancelUnshipped, remindToShip, settleRefunds } from './refunds.server'
 import { notifyLapsed } from './offers.server'
 import { snapshotChart } from './chart.server'
 import { awardPlaques } from './tiers.server'
@@ -135,7 +136,7 @@ async function summariseBooks(db: Db) {
   })
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, weeklyPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate }
+const JOBS = { remindToShip, cancelUnshipped, settleRefunds, releaseOverdue, settleStalePayments, reconcilePayouts, weeklyPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

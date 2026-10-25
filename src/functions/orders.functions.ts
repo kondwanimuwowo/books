@@ -15,6 +15,8 @@ import { optionalUserMiddleware, requireSellerMiddleware, requireUserMiddleware 
 import { initiateMobileMoneyCollection } from '#/server/lenco.server'
 import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
 import { sendEmail } from '#/server/email.server'
+import { ownsPrivate } from '#/server/private-files.server'
+import { FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
 
 const linesSchema = z
   .array(z.object({ listingId: z.string().uuid(), quantity: z.number().int().min(1).max(50) }))
@@ -298,6 +300,7 @@ export const getMySales = createServerFn({ method: 'GET' })
         order: {
           buyerId: orders.buyerId,
           number: orders.number,
+          paidAt: orders.paidAt,
           createdAt: orders.createdAt,
           shipName: orders.shipName,
           shipPhone: orders.shipPhone,
@@ -328,13 +331,16 @@ export const getMySales = createServerFn({ method: 'GET' })
 
 export const markShipped = createServerFn({ method: 'POST' })
   .middleware([requireSellerMiddleware])
-  .validator(z.object({ sellerOrderId: z.string().uuid(), trackingNote: z.string().trim().min(3).max(300) }))
+  .validator(z.object({ sellerOrderId: z.string().uuid(), trackingNote: z.string().trim().min(3).max(300), proofKey: z.string().max(64).optional() }))
   .handler(async ({ data, context }) => {
     const db = getDb()
     const [current] = await db.select({ method: sellerOrders.shippingMethod }).from(sellerOrders).where(eq(sellerOrders.id, data.sellerOrderId)).limit(1)
+    // Couriers that give a receipt: its photo is what settles a "never arrived" claim.
+    if (current && PROOF_REQUIRED.includes(current.method) && !data.proofKey) throw new Error(FULFILMENT_COPY.proofRequired)
+    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new Error('The receipt photo didn’t upload. Add it again.')
     const [part] = await db
       .update(sellerOrders)
-      .set({ status: 'shipped', shippedAt: new Date(), trackingNote: data.trackingNote, autoReleaseAt: autoReleaseDate(current?.method) })
+      .set({ status: 'shipped', shippedAt: new Date(), trackingNote: data.trackingNote, proofKey: data.proofKey ?? null, autoReleaseAt: autoReleaseDate(current?.method) })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.sellerId, context.seller.id), eq(sellerOrders.status, 'to_ship')))
       .returning({ orderId: sellerOrders.orderId })
     if (!part) throw new Error('This order isn’t waiting to be shipped')

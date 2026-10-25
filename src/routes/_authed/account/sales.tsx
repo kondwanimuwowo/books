@@ -4,6 +4,8 @@ import { getMySales, markShipped } from '#/functions/orders.functions'
 import { getMyBalance, payMeNow } from '#/functions/sell.functions'
 import { INSTANT_MIN_NGWEE, PAYOUT_COPY, WEEKLY_MIN_NGWEE } from '#/data/payouts'
 import { formatMoney } from '#/lib/money'
+import { DocumentUpload } from '#/components/document-upload'
+import { FULFILMENT_COPY, PROOF_REQUIRED, SHIP_FORM, SHIP_FORM_DEFAULT, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
@@ -89,8 +91,12 @@ function Sales() {
 function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
   const router = useRouter()
   const [note, setNote] = useState('')
+  const [proof, setProof] = useState<string | null>(null)
+  const needsProof = PROOF_REQUIRED.includes(sale.shippingMethod)
+  const form = SHIP_FORM[sale.shippingMethod] ?? SHIP_FORM_DEFAULT
+  const shipBy = sale.order.paidAt ? new Date(new Date(sale.order.paidAt).getTime() + SHIP_WITHIN_DAYS * 86_400_000) : null
   const ship = useAction(async () => {
-    await markShipped({ data: { sellerOrderId: sale.id, trackingNote: note } })
+    await markShipped({ data: { sellerOrderId: sale.id, trackingNote: note, proofKey: proof ?? undefined } })
     await router.invalidate()
   })
   const status = STATUS[sale.status]
@@ -137,15 +143,21 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
             <span className="mt-2 block text-xs text-subtle">{SAFETY.sellerContact}</span>
           </address>
           <div className="flex flex-col gap-2">
+            {shipBy && (
+              <p className="text-sm font-medium text-warning" suppressHydrationWarning>
+                {FULFILMENT_COPY.shipBy(shipBy.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))}
+              </p>
+            )}
             <label htmlFor={noteId} className="field-label mb-0">
-              How did you send it?
+              {form.label}
             </label>
-            <textarea id={noteId} className="input" rows={2} placeholder="Bus, receipt number, arrival day" value={note} onChange={(e) => setNote(e.target.value)} />
+            <textarea id={noteId} className="input" rows={2} placeholder={form.placeholder} value={note} onChange={(e) => setNote(e.target.value)} />
+            {needsProof && <DocumentUpload label={FULFILMENT_COPY.proofLabel} hint={FULFILMENT_COPY.proofHint} value={proof} onChange={setProof} />}
             {ship.error && <Alert>{ship.error}</Alert>}
             <button
               type="button"
               className={cn('btn self-start', primary ? 'btn-primary' : 'btn-secondary')}
-              disabled={ship.pending || note.trim().length < 3}
+              disabled={ship.pending || note.trim().length < 3 || (needsProof && !proof)}
               onClick={() => void ship.run()}
             >
               {ship.pending ? 'Saving…' : 'Mark as shipped'}

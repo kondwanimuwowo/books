@@ -7,7 +7,7 @@ import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
-import { authors, bookAuthors, books, deliveryRates, listings, orderItems, orders, payments, profiles, publishers, sellerOrders, sellers, verificationRequests } from '#/db/schema'
+import { authors, bookAuthors, books, deliveryRates, listings, orderItems, orders, payments, profiles, publishers, sellerOrders, sellers, verificationRequests, refunds } from '#/db/schema'
 import { slugify } from '#/lib/utils'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
@@ -17,6 +17,7 @@ import { deletePrivate } from '#/server/private-files.server'
 import { uniqueSlug } from '#/server/catalog.server'
 import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 import { payOutSeller } from '#/server/payouts.server'
+import { refundParcel } from '#/server/refunds.server'
 
 const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
@@ -86,6 +87,7 @@ export const listDisputes = createServerFn({ method: 'GET' })
         disputedAt: sellerOrders.disputedAt,
         shippedAt: sellerOrders.shippedAt,
         trackingNote: sellerOrders.trackingNote,
+        proofKey: sellerOrders.proofKey,
         shippingMethod: sellerOrders.shippingMethod,
         subtotalNgwee: sellerOrders.subtotalNgwee,
         shippingNgwee: sellerOrders.shippingNgwee,
@@ -163,6 +165,8 @@ export const resolveDispute = createServerFn({ method: 'POST' })
         .update(sellerOrders)
         .set({ ...resolution, status: 'refunded', payoutStatus: 'refunded' })
         .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.status, 'disputed')))
+      // Sent back to the buyer's mobile money now; card payments wait in admin's refund list.
+      await refundParcel(db, data.sellerOrderId, 'dispute')
       await completeOrderIfSettled(db, part.orderId)
     }
 
@@ -615,5 +619,46 @@ export const deleteBook = createServerFn({ method: 'POST' })
       const [shared] = await db.select({ id: books.id }).from(books).where(eq(books.coverUrl, deleted.coverUrl as string)).limit(1)
       if (!shared) await env.COVERS.delete(key)
     }
+    return { ok: true }
+  })
+
+export const listRefunds = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .handler(async () => {
+    return getDb()
+      .select({
+        id: refunds.id,
+        amountNgwee: refunds.amountNgwee,
+        reason: refunds.reason,
+        status: refunds.status,
+        phone: refunds.phone,
+        failureReason: refunds.failureReason,
+        attempts: refunds.attempts,
+        createdAt: refunds.createdAt,
+        orderNumber: orders.number,
+        buyerEmail: profiles.email,
+        storeName: sellers.storeName,
+      })
+      .from(refunds)
+      .innerJoin(sellerOrders, eq(sellerOrders.id, refunds.sellerOrderId))
+      .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+      .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+      .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+      // What needs a person first: card refunds to send by hand, then anything still moving.
+      .orderBy(sql`${refunds.status} = 'manual' desc`, sql`${refunds.status} in ('processing', 'failed') desc`, desc(refunds.createdAt))
+      .limit(100)
+  })
+
+/** After refunding a card payment in the Lenco dashboard, admin records it here. */
+export const markRefundDone = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const [row] = await getDb()
+      .update(refunds)
+      .set({ status: 'done_manually' })
+      .where(and(eq(refunds.id, data.id), inArray(refunds.status, ['manual', 'failed'])))
+      .returning({ id: refunds.id })
+    if (!row) throw new Error('This refund isn’t waiting on you')
     return { ok: true }
   })

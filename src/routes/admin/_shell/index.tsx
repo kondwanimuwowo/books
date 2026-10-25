@@ -99,6 +99,13 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
               </>
             )}
           </p>
+          {d.proofKey ? (
+            <a href={`/admin-files/${d.proofKey}`} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-medium">
+              See the courier receipt
+            </a>
+          ) : (
+            d.shippedAt && <p className="mt-2 text-sm text-subtle">No receipt photo.</p>
+          )}
         </div>
 
         <dl className="grid grid-cols-2 gap-4 text-sm">

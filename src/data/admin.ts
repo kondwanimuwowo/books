@@ -1,8 +1,9 @@
-import { BookOpenIcon, BuildingLibraryIcon, BuildingStorefrontIcon, ClipboardDocumentListIcon, DocumentTextIcon, ShieldCheckIcon, Squares2X2Icon, StarIcon, TruckIcon, UserGroupIcon } from '@heroicons/react/20/solid'
+import { BookOpenIcon, BuildingLibraryIcon, BuildingStorefrontIcon, ClipboardDocumentListIcon, DocumentTextIcon, ReceiptRefundIcon, ShieldCheckIcon, Squares2X2Icon, StarIcon, TruckIcon, UserGroupIcon } from '@heroicons/react/20/solid'
 
 export const ADMIN_NAV = [
   { to: '/admin', label: 'Overview', icon: Squares2X2Icon, exact: true },
   { to: '/admin/orders', label: 'Orders', icon: ClipboardDocumentListIcon, exact: false },
+  { to: '/admin/refunds', label: 'Refunds', icon: ReceiptRefundIcon, exact: false },
   { to: '/admin/sellers', label: 'Sellers', icon: BuildingStorefrontIcon, exact: false },
   { to: '/admin/books', label: 'Books', icon: BookOpenIcon, exact: false },
   { to: '/admin/reviews', label: 'Reviews', icon: StarIcon, exact: false },

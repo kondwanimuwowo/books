@@ -115,6 +115,9 @@ export const payoutStatus = pgEnum('payout_status', [
 // per_order: one transfer per parcel (before weekly payouts). weekly: free, the whole balance on payout day.
 // instant: the seller's "Pay me now", the transfer fee deducted.
 export const payoutKind = pgEnum('payout_kind', ['per_order', 'weekly', 'instant'])
+// automatic: sent back to the payer's mobile money. manual: card payments, refunded by admin in the Lenco dashboard.
+export const refundStatus = pgEnum('refund_status', ['processing', 'paid', 'failed', 'manual', 'done_manually'])
+export const refundReason = pgEnum('refund_reason', ['not_shipped', 'dispute'])
 export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
   'bank_account',
@@ -497,6 +500,10 @@ export const sellerOrders = pgTable(
     commissionNgwee: integer('commission_ngwee').notNull(),
     payoutNgwee: integer('payout_ngwee').notNull(),
     trackingNote: text('tracking_note'),
+    // Photo of the courier receipt or waybill, in the private bucket (it shows the buyer's name and phone).
+    proofKey: text('proof_key'),
+    // The reminder that the parcel refunds itself if it isn't shipped in time.
+    shipReminderAt: timestamp('ship_reminder_at', { withTimezone: true }),
     shippedAt: timestamp('shipped_at', { withTimezone: true }),
     deliveredAt: timestamp('delivered_at', { withTimezone: true }),
     // Escrow auto-releases at this time if the buyer has not confirmed or disputed.
@@ -628,6 +635,29 @@ export const reviews = pgTable(
     index('reviews_book_idx').on(t.bookId, t.createdAt),
     check('reviews_score_range', sql`${t.score} between 1 and 5`),
   ],
+).enableRLS()
+
+// Money going back to a buyer: one row per refunded parcel, sent automatically when they paid by mobile money.
+export const refunds = pgTable(
+  'refunds',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerOrderId: uuid('seller_order_id')
+      .notNull()
+      .references(() => sellerOrders.id),
+    amountNgwee: integer('amount_ngwee').notNull(),
+    reason: refundReason('reason').notNull(),
+    status: refundStatus('status').notNull(),
+    reference: text('reference').notNull(),
+    phone: text('phone'),
+    operator: momoOperator('operator'),
+    lencoReference: text('lenco_reference'),
+    failureReason: text('failure_reason'),
+    attempts: integer('attempts').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('refunds_seller_order_key').on(t.sellerOrderId), uniqueIndex('refunds_reference_key').on(t.reference), index('refunds_status_idx').on(t.status)],
 ).enableRLS()
 
 export const payments = pgTable(

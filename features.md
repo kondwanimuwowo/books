@@ -30,6 +30,11 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Claim your page: on Zambian authors' pages, straight into verification.
 - AI-researched author pages (admin): web research, sources shown, admin publishes, invite by email or WhatsApp with a single-use link and opt-out.
 
+### Orders and refunds
+- Sellers are reminded on day 3 to ship; a parcel not shipped within 5 days of payment is cancelled, the buyer refunded in full and the listing paused.
+- Proof of shipping: Platinum, Mercury and bus parcels need a photo of the courier receipt (private, for admin); Yango needs the trip link.
+- Refunds go back to the buyer's mobile money automatically, retried up to 3 times; card refunds wait in admin's Refunds list to be done in the Lenco dashboard.
+
 ### Trust and reputation
 - Blind two-way ratings after delivery (stars and tags).
 - Book reviews from verified buyers; phone numbers and links blocked; admin can hide.
@@ -49,7 +54,7 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Checkout delivery dropdown with books from two shops.
 
 ## Next (in order)
-1. Lost and undelivered books (see below), starting with the automatic refund and proof of shipping.
+1. Lost and undelivered books: the handover code and the rest of the plan below (automatic refund and proof of shipping are live).
 2. Legal pages: terms, privacy, refunds, seller agreement. Needs business name and address, PACRA number, contact email, refund policy; lawyer review.
 3. Designed share images for books, authors and shops.
 4. Sale prices ("Save 25%") and Coming soon / pre-order.
@@ -64,9 +69,7 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 9. Search: "Did you mean", barcode scan.
 
 ### Lost and undelivered books
-- Proof of shipping: marking a parcel shipped needs a photo of the courier receipt or waybill and its number (Yango: the trip link).
 - Handover code: a 4-digit code on the buyer's order page, given to the courier, seller or collector at handover; the seller enters it, delivery is proven and the money released at once.
-- Seller doesn't ship within 5 days of payment: automatic full refund, order cancelled.
 - Who carries a loss:
   - No proof of shipping: refund the buyer; the seller isn't paid.
   - Proof plus handover code or tracking showing delivered: release to the seller.
