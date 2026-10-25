@@ -19,7 +19,7 @@ interface HeaderUser {
 
 export function Logo({ className, tone = 'default' }: { className?: string; tone?: 'default' | 'inverse' }) {
   return (
-    <Link to="/" className="shrink-0 no-underline">
+    <Link to="/" className="w-fit shrink-0 no-underline">
       <Wordmark tone={tone} className={className} />
     </Link>
   )
