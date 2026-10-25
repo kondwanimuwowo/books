@@ -19,12 +19,15 @@ const choice = (selected: boolean) =>
 /** Proof that the author is who they say: which page is theirs, their NRC, and a photo with the book. */
 export function VerificationForm({
   storeName,
+  include,
   value,
   onChange,
   onSubmitted,
   aside,
 }: {
   storeName: string
+  /** An author page to always offer, e.g. the one they came to claim. */
+  include?: string
   value: VerifyDraft
   onChange: (patch: Partial<VerifyDraft>) => void
   onSubmitted: () => void
@@ -34,13 +37,13 @@ export function VerificationForm({
   const [matches, setMatches] = useState<Match[] | null>(null)
   useEffect(() => {
     let cancelled = false
-    findAuthorPages({ data: { name: storeName } })
+    findAuthorPages({ data: { name: storeName, include } })
       .then((m) => !cancelled && setMatches(m))
       .catch(() => !cancelled && setMatches([]))
     return () => {
       cancelled = true
     }
-  }, [storeName])
+  }, [storeName, include])
 
   const submit = useAction(async () => {
     if (value.authorId === undefined) throw new Error('Choose your author page')

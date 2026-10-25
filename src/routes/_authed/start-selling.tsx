@@ -4,7 +4,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { z } from 'zod'
 import { getMySeller } from '#/functions/sell.functions'
-import { getMyVerification } from '#/functions/verification.functions'
+import { getClaimTarget, getMyVerification } from '#/functions/verification.functions'
 import { DoneStep, RoleStep, SetupStep } from '#/components/onboarding/steps'
 import { emptyVerify, useDraft } from '#/components/onboarding/draft'
 import type { Draft } from '#/components/onboarding/draft'
@@ -18,11 +18,12 @@ const STEPS = ['role', 'setup', 'verify', 'done'] as const
 type Step = (typeof STEPS)[number]
 
 export const Route = createFileRoute('/_authed/start-selling')({
-  validateSearch: z.object({ step: z.enum(STEPS).optional() }),
-  loader: async () => {
-    const mine = await getMySeller()
-    const verification = mine.seller?.kind === 'author' && !mine.seller.verified ? await getMyVerification() : null
-    return { ...mine, verification }
+  validateSearch: z.object({ step: z.enum(STEPS).optional(), author: z.string().uuid().optional() }),
+  loaderDeps: ({ search }) => ({ author: search.author }),
+  loader: async ({ deps }) => {
+    const [mine, claim] = await Promise.all([getMySeller(), deps.author ? getClaimTarget({ data: { id: deps.author } }) : null])
+    const verification = mine.seller && !mine.seller.verified ? await getMyVerification() : null
+    return { ...mine, verification, claim }
   },
   pendingComponent: () => <Placeholder mode="loading" label="Loading" shapes={<RowShapes count={4} cover={false} />} />,
   head: () => ({ meta: [{ title: 'Start selling | Kuwala Books' }] }),
@@ -38,9 +39,10 @@ const step = {
 }
 
 function StartSelling() {
-  const { seller, profile, verification } = Route.useLoaderData()
+  const { seller, profile, verification, claim } = Route.useLoaderData()
   const { user } = useLoaderData({ from: '__root__' })
-  const requested = Route.useSearch().step ?? 'role'
+  const search = Route.useSearch()
+  const requested = search.step ?? 'role'
   const navigate = useNavigate({ from: Route.fullPath })
   const router = useRouter()
   const { draft, update, updateVerify, clear, ready } = useDraft(user?.id ?? 'guest', {
@@ -55,16 +57,24 @@ function StartSelling() {
   })
 
   const kind = seller?.kind ?? draft.kind
-  const isAuthor = kind === 'author'
-  const flow: Step[] = isAuthor ? ['role', 'setup', 'verify', 'done'] : ['role', 'setup', 'done']
   // Once the shop exists only verification and the share screen are left; before it, nothing past setup.
-  const current: Step = seller
-    ? requested === 'verify' && isAuthor && !seller.verified && verification?.latest?.status !== 'pending'
-      ? 'verify'
-      : 'done'
-    : requested === 'setup' && kind
-      ? 'setup'
-      : 'role'
+  // Any unverified shop can verify: a reader who turns out to have written a book becomes an author.
+  const canVerify = !!seller && !seller.verified && verification?.latest?.status !== 'pending'
+  const current: Step = seller ? (requested === 'verify' && canVerify ? 'verify' : 'done') : requested === 'setup' && kind ? 'setup' : 'role'
+  const isAuthor = kind === 'author' || current === 'verify'
+  const flow: Step[] = isAuthor ? ['role', 'setup', 'verify', 'done'] : ['role', 'setup', 'done']
+
+  // Arriving from "Claim this page": start as that author, with their page already picked.
+  const claimed = useRef(false)
+  useEffect(() => {
+    if (!ready || !claim || claimed.current) return
+    claimed.current = true
+    updateVerify({ authorId: claim.id })
+    if (!seller) {
+      update({ kind: 'author', name: claim.name })
+      void navigate({ search: { step: 'setup', author: claim.id }, replace: true })
+    }
+  }, [ready, claim])
 
   const index = flow.indexOf(current)
   const previous = useRef(index)
@@ -73,7 +83,7 @@ function StartSelling() {
     previous.current = index
   }, [index])
 
-  const go = (to: Step) => void navigate({ search: { step: to } })
+  const go = (to: Step) => void navigate({ search: { step: to, author: search.author } })
   const finish = async (to: Step) => {
     if (to === 'done') clear()
     await router.invalidate()
@@ -133,6 +143,7 @@ function StartSelling() {
               {current === 'verify' && seller && (
                 <VerificationForm
                   storeName={seller.storeName}
+                  include={claim?.id}
                   value={draft.verify}
                   onChange={updateVerify}
                   onSubmitted={() => void finish('done')}

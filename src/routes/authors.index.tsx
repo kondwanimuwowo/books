@@ -5,9 +5,9 @@ import { PageShapes, Placeholder, RowShapes } from '#/components/placeholder'
 import { DIRECTORY } from '#/data/directory'
 
 export const Route = createFileRoute('/authors/')({
-  validateSearch: directorySchema.pick({ zambian: true }),
-  loaderDeps: ({ search }) => ({ zambian: search.zambian }),
-  loader: ({ deps }) => getDirectory({ data: { kind: 'authors', zambian: deps.zambian } }),
+  validateSearch: directorySchema.pick({ zambian: true, verified: true }),
+  loaderDeps: ({ search }) => ({ zambian: search.zambian, verified: search.verified }),
+  loader: ({ deps }) => getDirectory({ data: { kind: 'authors', zambian: deps.zambian, verified: deps.verified } }),
   pendingComponent: () => (
     <Placeholder
       mode="loading"
@@ -25,6 +25,6 @@ export const Route = createFileRoute('/authors/')({
 
 function AuthorsDirectory() {
   const entries = Route.useLoaderData()
-  const { zambian } = Route.useSearch()
-  return <DirectoryPage kind="authors" entries={entries} zambian={!!zambian} />
+  const { zambian, verified } = Route.useSearch()
+  return <DirectoryPage kind="authors" entries={entries} zambian={!!zambian} verified={!!verified} />
 }

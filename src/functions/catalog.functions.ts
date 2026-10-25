@@ -232,13 +232,14 @@ export const getPublisher = createServerFn({ method: 'GET' })
 export const directorySchema = z.object({
   q: z.string().trim().max(100).optional(),
   zambian: z.boolean().optional(),
+  verified: z.boolean().optional(),
 })
 
 export const getDirectory = createServerFn({ method: 'GET' })
   .validator(directorySchema.extend({ kind: z.enum(['authors', 'publishers']) }))
   .handler(async ({ data }) => {
     publicCache(120)
-    return listDirectory(getDb(), data.kind, { query: data.q, zambian: data.zambian })
+    return listDirectory(getDb(), data.kind, { query: data.q, zambian: data.zambian, verified: data.verified })
   })
 
 export const getSeller = createServerFn({ method: 'GET' })

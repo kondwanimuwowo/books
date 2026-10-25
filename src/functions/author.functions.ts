@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, desc, eq, exists, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import type { Db } from '#/db/client.server'
-import { authors, bookAuthors, books, categories } from '#/db/schema'
+import { authorMilestones, authors, bookAuthors, books, categories } from '#/db/schema'
+import type { AuthorLinks } from '#/db/schema'
 import { LANGUAGES } from '#/data/zambia'
 import { requireSellerMiddleware } from '#/server/auth'
 import { refreshSearchText, upsertPublisher } from '#/server/catalog.server'
@@ -35,7 +36,7 @@ export const getMyAuthorship = createServerFn({ method: 'GET' })
     const db = getDb()
     const [pages, bookRows, categoryRows] = await Promise.all([
       db
-        .select({ id: authors.id, slug: authors.slug, name: authors.name, bio: authors.bio, photoUrl: authors.photoUrl })
+        .select({ id: authors.id, slug: authors.slug, name: authors.name, bio: authors.bio, photoUrl: authors.photoUrl, links: authors.links })
         .from(authors)
         .where(eq(authors.verifiedSellerId, context.seller.id))
         .orderBy(asc(authors.name)),
@@ -59,7 +60,43 @@ export const getMyAuthorship = createServerFn({ method: 'GET' })
         .orderBy(desc(books.publishedYear), asc(books.title)),
       db.select({ slug: categories.slug, name: categories.name }).from(categories).orderBy(asc(categories.sortOrder)),
     ])
-    return { pages, books: bookRows, categories: categoryRows }
+    const plaques = pages.length
+      ? await db
+          .select({ authorId: authorMilestones.authorId, tier: authorMilestones.tier, reachedAt: authorMilestones.reachedAt, seen: sql<boolean>`${authorMilestones.seenAt} is not null` })
+          .from(authorMilestones)
+          .where(inArray(authorMilestones.authorId, pages.map((p) => p.id)))
+          .orderBy(asc(authorMilestones.reachedAt))
+      : []
+    return { pages: pages.map((p) => ({ ...p, plaques: plaques.filter((m) => m.authorId === p.id) })), books: bookRows, categories: categoryRows }
+  })
+
+/** Once the author has seen their new plaque, it stops celebrating. */
+export const markPlaquesSeen = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .validator(z.object({ authorId: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    const db = getDb()
+    const [mine] = await db.select({ id: authors.id }).from(authors).where(and(eq(authors.id, data.authorId), eq(authors.verifiedSellerId, context.seller.id))).limit(1)
+    if (!mine) return { ok: false }
+    await db.update(authorMilestones).set({ seenAt: new Date() }).where(and(eq(authorMilestones.authorId, mine.id), isNull(authorMilestones.seenAt)))
+    return { ok: true }
+  })
+
+// Typed without a scheme ("mwilabanda.com") is fine; anything that isn't a web address is refused.
+const linkSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .transform((value, ctx) => {
+    if (!value) return undefined
+    try {
+      const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
+      if (!url.hostname.includes('.')) throw new Error()
+      return url.toString()
+    } catch {
+      ctx.addIssue({ code: 'custom', message: `“${value}” isn’t a web address` })
+      return z.NEVER
+    }
   })
 
 export const saveAuthorProfile = createServerFn({ method: 'POST' })
@@ -69,13 +106,15 @@ export const saveAuthorProfile = createServerFn({ method: 'POST' })
       authorId: z.string().uuid(),
       bio: z.string().trim().max(2000),
       photoKey: z.string().max(64).optional(),
+      links: z.object({ website: linkSchema, facebook: linkSchema, instagram: linkSchema, x: linkSchema, tiktok: linkSchema }).partial(),
     }),
   )
   .handler(async ({ data, context }) => {
     const photoUrl = await uploadedCover(data.photoKey, context.user.id)
+    const links = Object.fromEntries(Object.entries(data.links).filter(([, v]) => v)) as AuthorLinks
     const [updated] = await getDb()
       .update(authors)
-      .set({ bio: data.bio || null, ...(photoUrl && { photoUrl }) })
+      .set({ bio: data.bio || null, links, ...(photoUrl && { photoUrl }) })
       .where(and(eq(authors.id, data.authorId), eq(authors.verifiedSellerId, context.seller.id)))
       .returning({ id: authors.id })
     if (!updated) throw new Error('Only the verified author can edit this page')

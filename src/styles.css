@@ -42,6 +42,13 @@
   --color-warning-soft: #f8edd5;
   --color-zambia: #994d2a;
   --color-zambia-soft: #f8e6dc;
+  /* Author plaques: the one place colour other than the accent carries meaning. */
+  --color-copper: #94532a;
+  --color-copper-soft: #f6e6d9;
+  --color-emerald: #1d6a4c;
+  --color-emerald-soft: #def0e6;
+  --color-gold: #846410;
+  --color-gold-soft: #f6eccb;
 
   /* Elevation only: a hairline that separates a surface, and lift for things you can press. */
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2a1e17 10%, transparent);
@@ -92,6 +99,12 @@
     --color-warning-soft: #33281a;
     --color-zambia: #eaa682;
     --color-zambia-soft: #3b251b;
+    --color-copper: #e3a47a;
+    --color-copper-soft: #3a2518;
+    --color-emerald: #86cfa9;
+    --color-emerald-soft: #173026;
+    --color-gold: #e6c766;
+    --color-gold-soft: #33290f;
 
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 4px 14px -4px rgb(0 0 0 / 0.55);

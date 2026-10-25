@@ -3,7 +3,7 @@ import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { authors, sellers, verificationRequests } from '#/db/schema'
-import { requireSellerMiddleware } from '#/server/auth'
+import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { ownsPrivate } from '#/server/private-files.server'
 
 const AUTHOR_MATCHES = 6
@@ -11,9 +11,11 @@ const AUTHOR_MATCHES = 6
 /** Catalogue author pages an author might be, so they claim theirs instead of starting a duplicate. */
 export const findAuthorPages = createServerFn({ method: 'GET' })
   .middleware([requireSellerMiddleware])
-  .validator(z.object({ name: z.string().trim().min(2).max(100) }))
+  .validator(z.object({ name: z.string().trim().min(2).max(100), include: z.string().uuid().optional() }))
   .handler(async ({ data, context }) => {
     const words = data.name.split(/\s+/).filter((w) => w.length > 1)
+    // The page they came from to claim always makes the list, whatever their shop is called.
+    const named = or(ilike(authors.name, `%${data.name}%`), ...words.map((w) => ilike(authors.name, `%${w}%`)))
     return getDb()
       .select({
         id: authors.id,
@@ -26,11 +28,24 @@ export const findAuthorPages = createServerFn({ method: 'GET' })
       .where(
         and(
           or(isNull(authors.verifiedSellerId), eq(authors.verifiedSellerId, context.seller.id)),
-          or(ilike(authors.name, `%${data.name}%`), ...words.map((w) => ilike(authors.name, `%${w}%`))),
+          data.include ? or(eq(authors.id, data.include), named) : named,
         ),
       )
-      .orderBy(sql`extensions.similarity(${authors.name}, ${data.name}) desc`)
+      .orderBy(...(data.include ? [sql`${authors.id} = ${data.include} desc`] : []), sql`extensions.similarity(${authors.name}, ${data.name}) desc`)
       .limit(AUTHOR_MATCHES)
+  })
+
+/** The page someone followed "Claim this page" from, so the flow can start as that author. */
+export const getClaimTarget = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const [page] = await getDb()
+      .select({ id: authors.id, name: authors.name, taken: sql<boolean>`${authors.verifiedSellerId} is not null` })
+      .from(authors)
+      .where(eq(authors.id, data.id))
+      .limit(1)
+    return page && !page.taken ? { id: page.id, name: page.name } : null
   })
 
 export const getMyVerification = createServerFn({ method: 'GET' })

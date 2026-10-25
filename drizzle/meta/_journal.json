@@ -99,6 +99,13 @@
       "when": 1792920474935,
       "tag": "0013_author_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792925626693,
+      "tag": "0014_author_tiers",
+      "breakpoints": true
     }
   ]
 }

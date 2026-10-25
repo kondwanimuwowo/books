@@ -1,9 +1,13 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { CheckBadgeIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid'
+import { CheckBadgeIcon, MagnifyingGlassIcon, TrophyIcon } from '@heroicons/react/16/solid'
 import { useMemo, useState } from 'react'
 import { DIRECTORY } from '#/data/directory'
 import type { DirectoryKind } from '#/data/directory'
 import { cn } from '#/lib/utils'
+import { tierInfo } from '#/data/tiers'
+import type { Tier } from '#/data/tiers'
+
+const TIER_INK: Record<Tier, string> = { copper: 'text-copper', emerald: 'text-emerald', gold: 'text-gold' }
 import { EmptyMessage, Placeholder, RowShapes } from './placeholder'
 
 export interface DirectoryEntry {
@@ -12,6 +16,7 @@ export interface DirectoryEntry {
   isZambian: boolean
   verified: boolean
   bookCount: number
+  tier: Tier | null
 }
 
 function initial(name: string) {
@@ -20,9 +25,12 @@ function initial(name: string) {
 }
 
 /** Authors or publishers A–Z. The whole list is loaded, so the name filter is instant. */
-export function DirectoryPage({ kind, entries, zambian }: { kind: DirectoryKind; entries: DirectoryEntry[]; zambian: boolean }) {
+/** `verified` is undefined where there's no such filter (publishers). */
+export function DirectoryPage({ kind, entries, zambian, verified }: { kind: DirectoryKind; entries: DirectoryEntry[]; zambian: boolean; verified?: boolean }) {
   const copy = DIRECTORY[kind]
   const navigate = useNavigate()
+  const setFilters = (next: { zambian: boolean; verified?: boolean }) =>
+    void navigate({ to: '.', search: { ...(next.zambian && { zambian: true }), ...(next.verified && { verified: true }) }, replace: true })
   const [filter, setFilter] = useState('')
   const groups = useMemo(() => {
     const term = filter.trim().toLowerCase()
@@ -50,11 +58,21 @@ export function DirectoryPage({ kind, entries, zambian }: { kind: DirectoryKind;
         <button
           type="button"
           aria-pressed={zambian}
-          onClick={() => void navigate({ to: '.', search: zambian ? {} : { zambian: true }, replace: true })}
+          onClick={() => setFilters({ zambian: !zambian, verified })}
           className={cn('btn btn-sm', zambian ? 'btn-primary' : 'btn-secondary')}
         >
           {copy.zambianFilter}
         </button>
+        {verified !== undefined && (
+          <button
+            type="button"
+            aria-pressed={verified}
+            onClick={() => setFilters({ zambian, verified: !verified })}
+            className={cn('btn btn-sm', verified ? 'btn-primary' : 'btn-secondary')}
+          >
+            Verified only
+          </button>
+        )}
       </div>
 
       {groups.length > 1 && (
@@ -82,6 +100,7 @@ export function DirectoryPage({ kind, entries, zambian }: { kind: DirectoryKind;
                         <span className="truncate font-medium">{entry.name}</span>
                         {entry.isZambian && <span className="size-1.5 shrink-0 rounded-full bg-zambia" title={copy.zambianLabel} aria-label={copy.zambianLabel} />}
                         {entry.verified && <CheckBadgeIcon className="size-4 shrink-0 text-accent-ink" role="img" aria-label="Verified" />}
+                        {entry.tier && <TrophyIcon className={cn('size-4 shrink-0', TIER_INK[entry.tier])} role="img" aria-label={`${tierInfo(entry.tier).label} author`} />}
                       </span>
                       <span className="shrink-0 text-sm text-subtle tabular-nums">{entry.bookCount}</span>
                     </Link>

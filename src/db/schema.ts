@@ -114,6 +114,7 @@ export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
   'bank_account',
 ])
+export const authorTier = pgEnum('author_tier', ['copper', 'emerald', 'gold'])
 export const verificationStatus = pgEnum('verification_status', [
   'pending',
   'approved',
@@ -229,6 +230,8 @@ export const authors = pgTable(
     name: text('name').notNull(),
     bio: text('bio'),
     photoUrl: text('photo_url'),
+    // The author's own website and social profiles, edited once verified.
+    links: jsonb('links').$type<AuthorLinks>().notNull().default({}),
     isZambian: boolean('is_zambian').notNull().default(false),
     // Set when a seller of kind 'author' has been verified as this author.
     verifiedSellerId: uuid('verified_seller_id').references(() => sellers.id, {
@@ -238,6 +241,31 @@ export const authors = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex('authors_slug_key').on(t.slug)],
+).enableRLS()
+
+export interface AuthorLinks {
+  website?: string
+  facebook?: string
+  instagram?: string
+  x?: string
+  tiktok?: string
+}
+
+// Plaques, kept once earned: the date an author first reached each tier.
+export const authorMilestones = pgTable(
+  'author_milestones',
+  {
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => authors.id, { onDelete: 'cascade' }),
+    tier: authorTier('tier').notNull(),
+    // Distinct readers at the moment the tier was reached.
+    readers: integer('readers').notNull(),
+    reachedAt: timestamp('reached_at', { withTimezone: true }).notNull().defaultNow(),
+    // When the author first saw it on their account, for the one-time celebration.
+    seenAt: timestamp('seen_at', { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.authorId, t.tier] })],
 ).enableRLS()
 
 export const publishers = pgTable(

@@ -9,6 +9,9 @@ import { Alert, Field, useAction } from '#/components/form'
 import { Select } from '#/components/select'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 import { LANGUAGES } from '#/data/zambia'
+import { AUTHOR_LINKS } from '#/data/tiers'
+import { Plaque } from '#/components/plaque'
+import { PlaqueMoment } from '#/components/plaque-moment'
 
 export const Route = createFileRoute('/_authed/account/author')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading your books" shapes={<RowShapes />} />,
@@ -67,18 +70,22 @@ function AuthorDesk() {
   )
 }
 
+type Links = Partial<Record<(typeof AUTHOR_LINKS)[number]['key'], string>>
+
 function ProfileEditor({ page }: { page: AuthorPage }) {
   const router = useRouter()
   const [bio, setBio] = useState(page.bio ?? '')
+  const [links, setLinks] = useState<Links>(page.links)
   const [photo, setPhoto] = useState<{ key: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const save = useAction(async () => {
-    await saveAuthorProfile({ data: { authorId: page.id, bio, photoKey: photo?.key } })
+    await saveAuthorProfile({ data: { authorId: page.id, bio, photoKey: photo?.key, links } })
     setSaved(true)
     await router.invalidate()
   })
-  const dirty = bio !== (page.bio ?? '') || !!photo
+  const dirty = bio !== (page.bio ?? '') || !!photo || AUTHOR_LINKS.some((l) => (links[l.key] ?? '') !== (page.links[l.key] ?? ''))
+  const fresh = page.plaques.filter((m) => !m.seen)
 
   return (
     <section aria-labelledby={`author-${page.id}`}>
@@ -90,6 +97,17 @@ function ProfileEditor({ page }: { page: AuthorPage }) {
           View page
         </Link>
       </div>
+      {fresh.length > 0 && <PlaqueMoment authorId={page.id} tier={fresh[fresh.length - 1].tier} reachedAt={fresh[fresh.length - 1].reachedAt} />}
+      {page.plaques.length > fresh.length && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          {page.plaques
+            .filter((m) => m.seen)
+            .reverse()
+            .map((m) => (
+              <Plaque key={m.tier} tier={m.tier} reachedAt={m.reachedAt} />
+            ))}
+        </div>
+      )}
       <form
         className="flex flex-col gap-6 sm:flex-row"
         onSubmit={(e) => {
@@ -102,6 +120,24 @@ function ProfileEditor({ page }: { page: AuthorPage }) {
           <Field label="About you" hint="Shown on your author page.">
             <textarea className="input min-h-36 py-3" maxLength={2000} value={bio} onChange={(e) => (setBio(e.target.value), setSaved(false))} />
           </Field>
+          <fieldset>
+            <legend className="field-label">Where else to find you</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {AUTHOR_LINKS.map((l) => (
+                <Field key={l.key} label={l.label}>
+                  <input
+                    className="input"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    maxLength={200}
+                    placeholder={l.placeholder}
+                    value={links[l.key] ?? ''}
+                    onChange={(e) => (setLinks((v) => ({ ...v, [l.key]: e.target.value })), setSaved(false))}
+                  />
+                </Field>
+              ))}
+            </div>
+          </fieldset>
           {save.error && <Alert>{save.error}</Alert>}
           <div className="flex items-center gap-3">
             <button type="submit" className="btn btn-primary" disabled={!dirty || busy || save.pending}>

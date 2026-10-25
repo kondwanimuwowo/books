@@ -2,6 +2,10 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { MapPinIcon } from '@heroicons/react/16/solid'
 import { getAuthor } from '#/functions/catalog.functions'
 import { ogMeta } from '#/lib/og'
+import { Plaque, PlaqueMark } from '#/components/plaque'
+import { ShareOnWhatsApp } from '#/components/share'
+import { SHARE_COPY } from '#/data/share'
+import { AUTHOR_LINKS, PLAQUE_COPY, topTier } from '#/data/tiers'
 import { BookGrid, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
@@ -34,7 +38,14 @@ export const Route = createFileRoute('/authors/$slug')({
 function AuthorPage() {
   const author = Route.useLoaderData()
   const inStock = author.books.filter((b) => b.offerCount > 0).length
-  const facts = [`${author.books.length} ${author.books.length === 1 ? 'book' : 'books'}`, author.years, inStock ? `${inStock} for sale` : null].filter(Boolean)
+  const facts = [
+    `${author.books.length} ${author.books.length === 1 ? 'book' : 'books'}`,
+    author.readers ? `${author.readers.toLocaleString('en')} readers` : null,
+    author.years,
+    inStock ? `${inStock} for sale` : null,
+  ].filter(Boolean)
+  const top = topTier(author.milestones.map((m) => m.tier))
+  const links = AUTHOR_LINKS.filter((l) => author.links[l.key])
 
   return (
     <div className="page py-10">
@@ -52,12 +63,46 @@ function AuthorPage() {
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {author.isZambian && <ZambianMark />}
               {author.shop && <VerifiedMark label="Verified author" />}
+              {top && <PlaqueMark tier={top.tier} />}
             </div>
           )}
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <ShareOnWhatsApp path={`/authors/${author.slug}`} text={SHARE_COPY.author({ name: author.name, books: author.books.length })} />
+            {links.map((l) => (
+              <a key={l.key} href={author.links[l.key]} target="_blank" rel="noopener noreferrer nofollow" className="text-sm">
+                {l.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
       {author.bio && <p className="mt-8 max-w-prose leading-relaxed whitespace-pre-line">{author.bio}</p>}
+
+      {author.milestones.length > 0 && (
+        <section aria-labelledby="plaques" className="mt-10">
+          <h2 id="plaques" className="mb-4 text-xl">
+            Plaques
+          </h2>
+          <div className="grid max-w-3xl gap-3 sm:grid-cols-2">
+            {[...author.milestones].reverse().map((m) => (
+              <Plaque key={m.tier} tier={m.tier} reachedAt={m.reachedAt} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!author.shop && (
+        <div className="card mt-8 flex max-w-xl flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+          <div className="min-w-0">
+            <p className="font-medium">{PLAQUE_COPY.claim(author.name)}</p>
+            <p className="mt-0.5 text-sm text-subtle">{PLAQUE_COPY.claimLine}</p>
+          </div>
+          <Link to="/start-selling" search={{ step: 'verify', author: author.id }} className="btn btn-secondary btn-sm">
+            Claim this page
+          </Link>
+        </div>
+      )}
 
       {author.shop && (
         <div className="card mt-8 flex max-w-xl flex-wrap items-center justify-between gap-4 p-4 sm:p-5">

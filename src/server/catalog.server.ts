@@ -1,11 +1,13 @@
 import { and, asc, desc, eq, gt, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
+import { authorMilestones, authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
 import type { DirectoryKind } from '#/data/directory'
 import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
 import type { BookCandidate } from './book-sources.server'
+import { authorReaders } from './tiers.server'
+import { TIERS } from '#/data/tiers'
 
 export interface BookCard {
   id: string
@@ -251,9 +253,20 @@ export async function getAuthorBySlug(db: Db, slug: string) {
     .leftJoin(offers, eq(offers.bookId, books.id))
     .where(eq(bookAuthors.authorId, author.id))
     .orderBy(sql`${offers.bookId} is null`, desc(books.publishedYear))
+  const [milestones, readers] = await Promise.all([
+    db
+      .select({ tier: authorMilestones.tier, reachedAt: authorMilestones.reachedAt })
+      .from(authorMilestones)
+      .where(eq(authorMilestones.authorId, author.id))
+      .orderBy(asc(authorMilestones.reachedAt)),
+    shop ? authorReaders(db, author.id) : 0,
+  ])
   const { verifiedSellerId: _seller, ...publicAuthor } = author
   return {
     ...publicAuthor,
+    milestones,
+    // Only shown once it's a number worth saying out loud.
+    readers: readers >= TIERS[0].readers ? readers : null,
     shop: shop ? { slug: shop.slug, storeName: shop.storeName, town: shop.town } : null,
     books: authorBooks.map(({ direct: _direct, publishedYear: _year, ...card }) => card),
     direct: authorBooks.filter((b) => b.direct).map(({ direct: _direct, publishedYear: _year, ...card }) => card),
@@ -286,18 +299,28 @@ export async function getPublisherBySlug(db: Db, slug: string) {
 }
 
 const directoryTables = {
-  authors: { table: authors, bookCount: sql<number>`(select count(*)::int from ${bookAuthors} ba where ba.author_id = ${authors}.id)` },
-  publishers: { table: publishers, bookCount: sql<number>`(select count(*)::int from ${books} b where b.publisher_id = ${publishers}.id)` },
+  authors: {
+    table: authors,
+    bookCount: sql<number>`(select count(*)::int from ${bookAuthors} ba where ba.author_id = ${authors}.id)`,
+    // The highest plaque: tiers are listed copper to gold, so the enum's order is the ranking.
+    tier: sql<'copper' | 'emerald' | 'gold' | null>`(select max(m.tier) from ${authorMilestones} m where m.author_id = ${authors}.id)`,
+  },
+  publishers: {
+    table: publishers,
+    bookCount: sql<number>`(select count(*)::int from ${books} b where b.publisher_id = ${publishers}.id)`,
+    tier: sql<null>`null`,
+  },
 }
 
 /** Authors or publishers with at least one book, A–Z; `query` matches any part of the name. */
-export async function listDirectory(db: Db, kind: DirectoryKind, params: { query?: string; zambian?: boolean; limit?: number }) {
-  const { table, bookCount } = directoryTables[kind]
+export async function listDirectory(db: Db, kind: DirectoryKind, params: { query?: string; zambian?: boolean; verified?: boolean; limit?: number }) {
+  const { table, bookCount, tier } = directoryTables[kind]
   const where = [sql`${bookCount} > 0`]
   if (params.query) where.push(ilike(table.name, `%${params.query}%`))
   if (params.zambian) where.push(eq(table.isZambian, true))
+  if (params.verified) where.push(sql`${table.verifiedSellerId} is not null`)
   return db
-    .select({ slug: table.slug, name: table.name, isZambian: table.isZambian, verified: sql<boolean>`${table.verifiedSellerId} is not null`, bookCount })
+    .select({ slug: table.slug, name: table.name, isZambian: table.isZambian, verified: sql<boolean>`${table.verifiedSellerId} is not null`, bookCount, tier })
     .from(table)
     .where(and(...where))
     .orderBy(asc(sql`lower(${table.name})`))
