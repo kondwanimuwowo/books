@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { createContext, useContext, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '#/lib/utils'
 
+const FieldLabel = createContext<string | undefined>(undefined)
+
+/** The id of the enclosing Field's label, for controls a wrapping <label> doesn't name (custom dropdowns). */
+export const useFieldLabelId = () => useContext(FieldLabel)
+
 export function Field({ label, hint, error, children, className }: { label: string; hint?: string; error?: string | null; children: ReactNode; className?: string }) {
+  const labelId = useId()
   return (
     <label className={cn('block', className)}>
-      <span className="field-label">{label}</span>
-      {children}
+      <span id={labelId} className="field-label">
+        {label}
+      </span>
+      <FieldLabel.Provider value={labelId}>{children}</FieldLabel.Provider>
       {error ? <span className="mt-1 block text-sm text-danger">{error}</span> : hint && <span className="mt-1 block text-xs text-subtle">{hint}</span>}
     </label>
   )

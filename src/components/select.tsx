@@ -1,6 +1,7 @@
 import { Select as Base } from '@base-ui/react/select'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/16/solid'
 import { cn } from '#/lib/utils'
+import { useFieldLabelId } from './form'
 
 export interface SelectOption<V extends string = string> {
   value: V
@@ -32,6 +33,7 @@ const TRIGGER = {
 
 /** Kuwala's dropdown: styled like the rest of the forms, with keyboard, typeahead and screen reader support from Base UI. */
 export function Select<V extends string>({ value, onChange, placeholder = 'Choose', required, name, variant = 'field', className, ...props }: Props<V>) {
+  const labelId = useFieldLabelId()
   const groups = props.groups ?? [{ label: '', options: props.options ?? [] }]
   const items = Object.fromEntries(groups.flatMap((g) => g.options.map((o) => [o.value, o.label])))
 
@@ -43,7 +45,7 @@ export function Select<V extends string>({ value, onChange, placeholder = 'Choos
       required={required}
       name={name}
     >
-      <Base.Trigger aria-label={props['aria-label']} className={cn(TRIGGER[variant], className)}>
+      <Base.Trigger aria-label={props['aria-label']} aria-labelledby={props['aria-label'] ? undefined : labelId} className={cn(TRIGGER[variant], className)}>
         <Base.Value placeholder={placeholder} className="min-w-0 truncate data-[placeholder]:text-subtle" />
         <Base.Icon className="shrink-0 text-subtle">
           <ChevronDownIcon className="size-4" aria-hidden />
