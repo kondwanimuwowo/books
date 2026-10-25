@@ -225,10 +225,17 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
             )}
             {/* The wait is told down here, so the list above doesn't shift as the line comes and goes. */}
             <div className="sticky bottom-0 flex min-h-[3.75rem] items-center justify-between gap-3 border-t border-line bg-surface px-4 py-3">
-              {loading ? <LoadingLine kind="find" className="flex-1" /> : <p className="text-sm text-muted">Not here?</p>}
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
-                Add it yourself
-              </button>
+              {/* Offered once the search has answered, so nobody gives up on a book that was about to turn up. */}
+              {loading ? (
+                <LoadingLine kind="find" className="flex-1" />
+              ) : (
+                <>
+                  <p className="rise text-sm text-muted">Not here?</p>
+                  <button type="button" className="rise btn btn-secondary btn-sm" onClick={() => onSelect({ kind: 'manual' })}>
+                    Add it yourself
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
