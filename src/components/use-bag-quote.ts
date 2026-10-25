@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { quoteBag } from '#/functions/orders.functions'
 import type { Province } from '#/data/zambia'
 import { useBag } from './providers'
@@ -36,5 +36,6 @@ export function useBagQuote(to: { town: string; province: Province } | null) {
     // `key` captures lines and destination by value.
   }, [key, ready])
 
-  return quote && { ...quote, problems: [...new Set([...notices, ...quote.problems])] }
+  // The same object until the quote or notices change: callers depend on it in effects.
+  return useMemo(() => quote && { ...quote, problems: [...new Set([...notices, ...quote.problems])] }, [quote, notices])
 }

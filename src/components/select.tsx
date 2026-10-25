@@ -1,5 +1,6 @@
 import { Select as Base } from '@base-ui/react/select'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/16/solid'
+import { useMemo } from 'react'
 import { cn } from '#/lib/utils'
 import { useFieldLabelId } from './form'
 
@@ -35,7 +36,9 @@ const TRIGGER = {
 export function Select<V extends string>({ value, onChange, placeholder = 'Choose', required, name, variant = 'field', className, ...props }: Props<V>) {
   const labelId = useFieldLabelId()
   const groups = props.groups ?? [{ label: '', options: props.options ?? [] }]
-  const items = Object.fromEntries(groups.flatMap((g) => g.options.map((o) => [o.value, o.label])))
+  // Base UI copies `items` into its store whenever the reference changes; callers often pass a fresh array each render.
+  const signature = JSON.stringify(groups)
+  const items = useMemo(() => Object.fromEntries(groups.flatMap((g) => g.options.map((o) => [o.value, o.label]))), [signature])
 
   return (
     <Base.Root<V>

@@ -70,7 +70,9 @@ function Checkout() {
         const keep = g.options.find((o) => o.method === prev[g.seller.id])
         if (g.options.length) next[g.seller.id] = keep ? keep.method : g.options[0].method
       }
-      return next
+      // Unchanged choices keep the same object, so this never re-renders for nothing.
+      const same = Object.keys(next).length === Object.keys(prev).length && Object.entries(next).every(([k, v]) => prev[k] === v)
+      return same ? prev : next
     })
   }, [quote])
 
