@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   customType,
   date,
   index,
@@ -523,6 +524,23 @@ export const offers = pgTable(
 ).enableRLS()
 
 // Each attempt to pay gets its own reference, so a failed prompt can be retried.
+// One rating each way per parcel, given after delivery: the buyer rates the shop, the shop rates the buyer.
+// Blind: neither counts until both have rated or the window to answer has passed.
+export const ratings = pgTable(
+  'ratings',
+  {
+    sellerOrderId: uuid('seller_order_id')
+      .notNull()
+      .references(() => sellerOrders.id, { onDelete: 'cascade' }),
+    // Who gave it.
+    rater: offerParty('rater').notNull(),
+    score: integer('score').notNull(),
+    tags: text('tags').array().notNull().default(sql`'{}'`),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.sellerOrderId, t.rater] }), check('ratings_score_range', sql`${t.score} between 1 and 5`)],
+).enableRLS()
+
 export const payments = pgTable(
   'payments',
   {

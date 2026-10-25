@@ -9,6 +9,8 @@ import { SAFETY } from '#/data/safety'
 import { PAYOUT_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
+import { RateParcel, ReaderStanding } from '#/components/reputation'
+import { READER_TAGS, REPUTATION_COPY, withinRatingWindow } from '#/data/reputation'
 
 export const Route = createFileRoute('/_authed/account/sales')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading sales" shapes={<RowShapes cover={false} />} />,
@@ -110,6 +112,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
           <p className="mt-1 text-sm text-subtle">
             <span className="tabular-nums">{sale.order.number}</span> · {formatDate(sale.order.createdAt)} · {shippingLabel(sale.shippingMethod)}
           </p>
+          <ReaderStanding standing={sale.buyer} className="mt-1.5" />
         </div>
         {status && <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', status.tone)}>{status.label}</span>}
       </div>
@@ -152,6 +155,11 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
         </div>
       )}
       {sale.trackingNote && sale.status !== 'to_ship' && <p className="mt-3 text-sm text-muted">{sale.trackingNote}</p>}
+      {sale.status === 'delivered' && sale.deliveredAt && (sale.myRating !== null || withinRatingWindow(sale.deliveredAt)) && (
+        <div className="mt-4 border-t border-line pt-4">
+          <RateParcel sellerOrderId={sale.id} title={REPUTATION_COPY.rateReader} tags={READER_TAGS} current={sale.myRating} />
+        </div>
+      )}
     </section>
   )
 }

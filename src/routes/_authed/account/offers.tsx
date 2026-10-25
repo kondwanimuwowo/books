@@ -9,6 +9,7 @@ import { MAX_COUNTERS, conditionLabel } from '#/data/listing-options'
 import { OFFER_STATUS } from '#/data/statuses'
 import { cn } from '#/lib/utils'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
+import { ReaderStanding } from '#/components/reputation'
 
 export const Route = createFileRoute('/_authed/account/offers')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading offers" shapes={<RowShapes />} />,
@@ -99,6 +100,7 @@ function OfferRow({ offer, side, who }: { offer: Made | Received; side: Side; wh
           {who}
           {open && <span suppressHydrationWarning>{deadline(offer)}</span>}
         </p>
+        {'buyer' in offer && <ReaderStanding standing={offer.buyer} className="mt-1" />}
         {offer.message && <p className="mt-2 rounded-lg bg-sunken px-3 py-2 text-sm whitespace-pre-line">{offer.message}</p>}
         {offer.status === 'pending' && offer.turn === side && <Answer offer={offer} side={side} />}
         {/* On the buyer's own turn, Decline does what Withdraw would. */}

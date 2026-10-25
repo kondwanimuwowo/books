@@ -10,6 +10,7 @@ import { formatMoney, toNgwee } from '#/lib/money'
 import { requireUserMiddleware } from '#/server/auth'
 import { escapeHtml, sendEmail } from '#/server/email.server'
 import { loadOfferParties } from '#/server/offers.server'
+import { readerStandings } from '#/server/reputation.server'
 
 const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
 
@@ -277,7 +278,7 @@ export const getMyOffers = createServerFn({ method: 'GET' })
         .limit(100),
       seller
         ? db
-            .select({ ...offerColumns, buyerName: profiles.displayName })
+            .select({ ...offerColumns, buyerName: profiles.displayName, buyerId: offers.buyerId })
             .from(offers)
             .innerJoin(listings, eq(listings.id, offers.listingId))
             .innerJoin(books, eq(books.id, listings.bookId))
@@ -288,5 +289,10 @@ export const getMyOffers = createServerFn({ method: 'GET' })
             .limit(100)
         : [],
     ])
-    return { made, received, isSeller: !!seller }
+    const standings = await readerStandings(db, received.map((o) => o.buyerId))
+    return {
+      made,
+      received: received.map(({ buyerId, ...o }) => ({ ...o, buyer: standings.get(buyerId) ?? null })),
+      isSeller: !!seller,
+    }
   })

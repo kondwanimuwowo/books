@@ -12,6 +12,8 @@ import { shippingLabel } from '#/data/shipping'
 import { SAFETY } from '#/data/safety'
 import { cn, formatDate } from '#/lib/utils'
 import { PageShapes, ParcelShapes, Placeholder } from '#/components/placeholder'
+import { RateParcel } from '#/components/reputation'
+import { REPUTATION_COPY, SHOP_TAGS, withinRatingWindow } from '#/data/reputation'
 
 export const Route = createFileRoute('/_authed/orders/$number')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading order" shapes={<PageShapes><ParcelShapes /></PageShapes>} />,
@@ -208,6 +210,11 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
             <p className="flex items-center gap-1.5 text-success">
               <CheckCircleIcon className="size-4" aria-hidden /> Received{part.deliveredAt ? ` ${formatDate(part.deliveredAt)}` : ''}
             </p>
+          )}
+          {part.status === 'delivered' && part.deliveredAt && (part.myRating !== null || withinRatingWindow(part.deliveredAt)) && (
+            <div className="border-t border-line pt-4">
+              <RateParcel sellerOrderId={part.id} title={REPUTATION_COPY.rateShop(part.seller.storeName)} tags={SHOP_TAGS} current={part.myRating} />
+            </div>
           )}
           {halted && <p className={halted.tone}>{halted.text}</p>}
           {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-subtle">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}

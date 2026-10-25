@@ -5,7 +5,8 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
-import { books, orderItems, orders, payments, profiles, sellerOrders, sellers } from '#/db/schema'
+import { books, orderItems, orders, payments, profiles, ratings, sellerOrders, sellers } from '#/db/schema'
+import { readerStandings } from '#/server/reputation.server'
 import { PROVINCES } from '#/data/zambia'
 import { normalizeLocalPhone } from '#/lib/phone'
 import { ngweeToAmount } from '#/lib/money'
@@ -102,6 +103,12 @@ export const getOrder = createServerFn({ method: 'GET' })
           .leftJoin(books, eq(books.id, orderItems.bookId))
           .where(inArray(orderItems.sellerOrderId, parts.map((p) => p.so.id)))
       : []
+    const given = parts.length
+      ? await db
+          .select({ sellerOrderId: ratings.sellerOrderId, score: ratings.score })
+          .from(ratings)
+          .where(and(inArray(ratings.sellerOrderId, parts.map((p) => p.so.id)), eq(ratings.rater, 'buyer')))
+      : []
     const [lastPayment] = await db
       .select({ reference: payments.reference, status: payments.status, method: payments.method, failureReason: payments.failureReason })
       .from(payments)
@@ -119,6 +126,8 @@ export const getOrder = createServerFn({ method: 'GET' })
           phone: order.status === 'pending_payment' ? null : p.seller.phone,
         },
         items: items.filter((i) => i.item.sellerOrderId === p.so.id).map((i) => ({ ...i.item, slug: i.book?.slug ?? null, coverUrl: i.book?.coverUrl ?? null })),
+        // The buyer's rating of this shop, if they've given one.
+        myRating: given.find((g) => g.sellerOrderId === p.so.id)?.score ?? null,
       })),
     }
   })
@@ -275,6 +284,7 @@ export const getMySales = createServerFn({ method: 'GET' })
       .select({
         so: sellerOrders,
         order: {
+          buyerId: orders.buyerId,
           number: orders.number,
           createdAt: orders.createdAt,
           shipName: orders.shipName,
@@ -289,10 +299,19 @@ export const getMySales = createServerFn({ method: 'GET' })
       .where(and(eq(sellerOrders.sellerId, context.seller.id), inArray(sellerOrders.status, ['to_ship', 'shipped', 'delivered', 'disputed'])))
       .orderBy(desc(orders.createdAt))
       .limit(200)
-    const items = parts.length
-      ? await db.select().from(orderItems).where(inArray(orderItems.sellerOrderId, parts.map((p) => p.so.id)))
-      : []
-    return parts.map((p) => ({ ...p.so, order: p.order, items: items.filter((i) => i.sellerOrderId === p.so.id) }))
+    const ids = parts.map((p) => p.so.id)
+    const [items, given, standings] = await Promise.all([
+      ids.length ? db.select().from(orderItems).where(inArray(orderItems.sellerOrderId, ids)) : [],
+      ids.length ? db.select({ sellerOrderId: ratings.sellerOrderId, score: ratings.score }).from(ratings).where(and(inArray(ratings.sellerOrderId, ids), eq(ratings.rater, 'seller'))) : [],
+      readerStandings(db, parts.map((p) => p.order.buyerId)),
+    ])
+    return parts.map(({ so, order: { buyerId, ...order } }) => ({
+      ...so,
+      order,
+      items: items.filter((i) => i.sellerOrderId === so.id),
+      myRating: given.find((g) => g.sellerOrderId === so.id)?.score ?? null,
+      buyer: standings.get(buyerId) ?? null,
+    }))
   })
 
 export const markShipped = createServerFn({ method: 'POST' })

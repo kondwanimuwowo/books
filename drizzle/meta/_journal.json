@@ -106,6 +106,13 @@
       "when": 1792925626693,
       "tag": "0014_author_tiers",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792927506891,
+      "tag": "0015_ratings",
+      "breakpoints": true
     }
   ]
 }

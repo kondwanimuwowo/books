@@ -9,6 +9,7 @@ import { cn, formatDate } from '#/lib/utils'
 import { ogMeta } from '#/lib/og'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
+import { RatingMark } from '#/components/reputation'
 
 export const Route = createFileRoute('/sellers/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
@@ -43,6 +44,7 @@ function SellerPage() {
       </div>
       <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
         {seller.verified && <VerifiedMark />}
+        <RatingMark rating={seller.rating} />
         <span className="inline-flex items-center gap-1">
           <MapPinIcon className="size-3.5" aria-hidden />
           {seller.town}, {seller.province}

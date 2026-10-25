@@ -7,6 +7,7 @@ import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
 import type { BookCandidate } from './book-sources.server'
 import { authorReaders } from './tiers.server'
+import { shopRatings } from './reputation.server'
 import { TIERS } from '#/data/tiers'
 
 export interface BookCard {
@@ -225,7 +226,8 @@ export async function getBookBySlug(db: Db, slug: string) {
   }
 
   const authorShops = new Set(bookAuthorRows.map((a) => a.shopSlug).filter(Boolean))
-  const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug) }))
+  const ratings = await shopRatings(db, [...new Set(offerRows.map((o) => o.seller.id))])
+  const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug), seller: { ...o.seller, rating: ratings.get(o.seller.id) ?? null } }))
   return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related }
 }
 
@@ -388,8 +390,11 @@ export async function getSellerBySlug(db: Db, slug: string) {
     .where(and(eq(listings.sellerId, seller.id), eq(listings.status, 'active'), gt(listings.quantity, 0)))
     .groupBy(listings.bookId)
     .as('offers')
-  const sellerBooks = await db.select(cardColumns(offers)).from(books).innerJoin(offers, eq(offers.bookId, books.id)).orderBy(desc(offers.latestAt))
-  return { ...seller, books: sellerBooks }
+  const [sellerBooks, ratings] = await Promise.all([
+    db.select(cardColumns(offers)).from(books).innerJoin(offers, eq(offers.bookId, books.id)).orderBy(desc(offers.latestAt)),
+    shopRatings(db, [seller.id]),
+  ])
+  return { ...seller, rating: ratings.get(seller.id) ?? null, books: sellerBooks }
 }
 
 // Towns that currently have books on sale, most stocked first: shows how far the shelves reach.
