@@ -11,6 +11,7 @@ import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getP
 import { getZmwPerUsd } from '#/server/fx.server'
 import { interpretSearch } from '#/server/ai.server'
 import { SEARCH_REQUEST_WORDS } from '#/data/ai'
+import { MIN_WALL_COVERS, WALL_TILES } from '#/data/home'
 import { toIsbn13 } from '#/lib/isbn'
 import { loadDeliveryRates } from '#/server/orders.server'
 import { loadChart } from '#/server/chart.server'
@@ -73,9 +74,30 @@ export const getHomeData = createServerFn({ method: 'GET' }).handler(async () =>
   ])
   publicCache(60)
   // The intro band's cover background reuses covers already loaded for the shelves.
-  const wall = [...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24)
+  const wall = coverWall([...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24))
   return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall, towns }
 })
+
+function shuffle<T>(items: T[]) {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+/** Every cover in a fresh random order each round, never the same one twice in a row. Empty when there are too few. */
+function coverWall(covers: string[]) {
+  if (covers.length < MIN_WALL_COVERS) return []
+  const tiles: string[] = []
+  while (tiles.length < WALL_TILES) {
+    const round = shuffle(covers)
+    if (round[0] === tiles.at(-1)) round.push(round.shift() as string)
+    tiles.push(...round)
+  }
+  return tiles.slice(0, WALL_TILES)
+}
 
 export const getChart = createServerFn({ method: 'GET' }).handler(async () => {
   const db = getDb()

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PROVINCES, TOWNS, listedTown } from '#/data/zambia'
 import type { Province } from '#/data/zambia'
 import { Field } from './form'
+import { Select } from './select'
 
 export interface Place {
   town: string
@@ -9,6 +10,12 @@ export interface Place {
 }
 
 const OTHER = 'other'
+
+const TOWN_GROUPS = [
+  ...PROVINCES.map((p) => ({ label: p, options: TOWNS[p].map((t) => ({ value: `${p}|${t}`, label: t })) })),
+  { label: '', options: [{ value: OTHER, label: 'Another town' }] },
+]
+const PROVINCE_OPTIONS = PROVINCES.map((p) => ({ value: p, label: p }))
 
 /** One pick sets both town and province; towns not on the list fall back to typing the town and choosing a province. */
 export function TownField({ label, value, onChange }: { label: string; value: Place; onChange: (place: Place) => void }) {
@@ -19,34 +26,21 @@ export function TownField({ label, value, onChange }: { label: string; value: Pl
   return (
     <>
       <Field label={label}>
-        <select
-          className="input"
+        <Select
           required
-          autoComplete="address-level2"
           value={selected}
-          onChange={(e) => {
-            if (e.target.value === OTHER) {
+          groups={TOWN_GROUPS}
+          onChange={(picked) => {
+            if (picked === OTHER) {
               setOther(true)
               onChange({ town: '', province: value.province })
               return
             }
             setOther(false)
-            const [province, town] = e.target.value.split('|') as [Province, string]
+            const [province, town] = picked.split('|') as [Province, string]
             onChange({ town, province })
           }}
-        >
-          <option value="">Choose</option>
-          {PROVINCES.map((p) => (
-            <optgroup key={p} label={p}>
-              {TOWNS[p].map((t) => (
-                <option key={t} value={`${p}|${t}`}>
-                  {t}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-          <option value={OTHER}>Another town</option>
-        </select>
+        />
       </Field>
       {other && (
         <>
@@ -54,12 +48,7 @@ export function TownField({ label, value, onChange }: { label: string; value: Pl
             <input className="input" required minLength={2} maxLength={60} value={value.town} onChange={(e) => onChange({ ...value, town: e.target.value })} />
           </Field>
           <Field label="Province">
-            <select className="input" required value={value.province} onChange={(e) => onChange({ ...value, province: e.target.value as Province })}>
-              <option value="">Choose</option>
-              {PROVINCES.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
+            <Select required value={value.province} options={PROVINCE_OPTIONS} onChange={(province) => onChange({ ...value, province })} />
           </Field>
         </>
       )}

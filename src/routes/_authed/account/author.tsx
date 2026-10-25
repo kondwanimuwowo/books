@@ -6,6 +6,7 @@ import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { SuggestInput, loadPublishers } from '#/components/suggest-input'
 import { Alert, Field, useAction } from '#/components/form'
+import { Select } from '#/components/select'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 import { LANGUAGES } from '#/data/zambia'
 
@@ -199,23 +200,14 @@ function BookEditor({ book, categories, onDone }: { book: Book; categories: Data
           </Field>
         </div>
         <Field label="Language">
-          <select className="input" value={form.language} onChange={set('language')}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.name}
-              </option>
-            ))}
-          </select>
+          <Select value={form.language} options={LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} onChange={(language) => setForm((f) => ({ ...f, language }))} />
         </Field>
         <Field label="Section">
-          <select className="input" value={form.categorySlug} onChange={set('categorySlug')}>
-            <option value="">None</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={form.categorySlug}
+            options={[{ value: '', label: 'None' }, ...categories.map((c) => ({ value: c.slug, label: c.name }))]}
+            onChange={(categorySlug) => setForm((f) => ({ ...f, categorySlug }))}
+          />
         </Field>
         {save.error && (
           <div className="sm:col-span-2">

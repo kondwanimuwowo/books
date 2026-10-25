@@ -2,8 +2,9 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { getHomeData } from '#/functions/catalog.functions'
 import { SectionShelf, Shelf } from '#/components/book'
 import { RecentlyViewed } from '#/components/recently-viewed'
-import { MIN_WALL_COVERS, QUICK_SEARCHES } from '#/data/home'
+import { QUICK_SEARCHES } from '#/data/home'
 import { EmptyMessage, PageShapes, Placeholder, ShelfShapes } from '#/components/placeholder'
+import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading" shapes={<PageShapes><ShelfShapes /></PageShapes>} />,
@@ -93,30 +94,34 @@ function townList(towns: string[]) {
 
 // Short band so the shelves stay above the fold; covers from the catalogue sit behind it once there are enough.
 function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
-  const tiles = wall.length >= MIN_WALL_COVERS ? Array.from({ length: 32 }, (_, i) => wall[i % wall.length]) : []
+  // Shuffled on the server, so the page and its hydration agree on the order.
+  const tiles = wall
 
   return (
     <section className="band relative overflow-hidden">
       {tiles.length > 0 && (
         <>
-          <div aria-hidden className="absolute -inset-6 grid -rotate-[4deg] grid-cols-[repeat(auto-fill,minmax(96px,1fr))] content-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(120px,1fr))]">
+          <div aria-hidden className="absolute -inset-6 grid -rotate-[4deg] grid-cols-[repeat(auto-fill,minmax(116px,1fr))] content-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(152px,1fr))]">
             {tiles.map((src, i) => (
               <img key={i} src={src} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-md object-cover" />
             ))}
           </div>
-          <div aria-hidden className="absolute inset-0 bg-deep/85" />
+          <div aria-hidden className="absolute inset-0 bg-deep/75" />
         </>
       )}
       <div className="page rise relative py-8 sm:py-12">
-        <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
-          Books across <span className="block font-bold">Zambia &amp; Beyond</span>
-        </h1>
-        <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
-        {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}
-        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Quick searches">
+        {/* Over the cover wall the words sit on frosted glass so they read; on the plain band they don't need it. */}
+        <div className={cn(tiles.length > 0 && 'frost -mx-1 w-fit max-w-2xl rounded-2xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
+          <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
+            Books across <span className="block font-bold">Zambia &amp; Beyond</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
+          {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}
+        </div>
+        <ul className="mt-5 flex flex-wrap gap-2" aria-label="Quick searches">
           {QUICK_SEARCHES.map((s) => (
             <li key={s.label}>
-              <Link to="/search" search={s.search} className="pill h-8 bg-on-accent/10 text-on-accent no-underline hover:bg-on-accent/20 hover:text-on-accent">
+              <Link to="/search" search={s.search} className="pill frost-pill h-8 text-on-accent no-underline hover:text-on-accent">
                 {s.label}
               </Link>
             </li>

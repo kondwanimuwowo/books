@@ -1,7 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/react/16/solid'
+import { AdjustmentsHorizontalIcon } from '@heroicons/react/16/solid'
 import { useCallback, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { z } from 'zod'
 import { searchBooksFn } from '#/functions/catalog.functions'
 import { BookGrid } from '#/components/book'
@@ -10,6 +9,7 @@ import { LANGUAGES } from '#/data/zambia'
 import { cn } from '#/lib/utils'
 import { CoverGridShapes, PageShapes, Placeholder } from '#/components/placeholder'
 import { LoadingLine } from '#/components/loading-line'
+import { Select } from '#/components/select'
 
 const searchParams = z.object({
   q: z.string().optional(),
@@ -170,24 +170,7 @@ function Interpreted({ applied, typed, categories }: { applied: NonNullable<Data
 function SortSelect({ value }: { value: SearchState['sort'] }) {
   const set = useSetSearch()
   return (
-    <SelectPill label="Sort" value={value ?? 'relevance'} onChange={(v) => set({ sort: v === 'relevance' ? undefined : (v as SearchState['sort']) })}>
-      {SORTS.map((s) => (
-        <option key={s.value} value={s.value}>
-          {s.label}
-        </option>
-      ))}
-    </SelectPill>
-  )
-}
-
-function SelectPill({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: ReactNode }) {
-  return (
-    <span className="relative inline-flex shrink-0">
-      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} className="pill appearance-none bg-sunken pr-8 text-ink hover:bg-sunken-strong">
-        {children}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-subtle" aria-hidden />
-    </span>
+    <Select variant="pill" aria-label="Sort" value={value ?? 'relevance'} options={[...SORTS]} onChange={(v) => set({ sort: v === 'relevance' ? undefined : v })} />
   )
 }
 

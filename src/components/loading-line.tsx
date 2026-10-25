@@ -14,7 +14,7 @@ function useLoadingLine(kind: LoadingKind) {
   // Random start, so the same search doesn't always open with the same joke. Set after mount to keep SSR stable.
   const [seed, setSeed] = useState(0)
   useEffect(() => {
-    setSeed(Math.floor(Math.random() * 12))
+    setSeed(Math.floor(Math.random() * 60))
     const timer = setInterval(() => setTick((t) => t + 1), LOADING_LINE_MS)
     return () => clearInterval(timer)
   }, [])

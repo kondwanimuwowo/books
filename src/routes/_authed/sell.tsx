@@ -10,6 +10,7 @@ import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-
 import { PhotoReader } from '#/components/photo-reader'
 import { LoadingLine, Spinner } from '#/components/loading-line'
 import { OptionShapes } from '#/components/placeholder'
+import { Select } from '#/components/select'
 import { SLOW_AFTER_MS } from '#/data/loading'
 import { suggestTidyName } from '#/functions/ai.functions'
 import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
@@ -446,13 +447,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
                 </Field>
               </div>
               <Field label="Language">
-                <select className="input" value={manual.language} onChange={setM('language')}>
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={manual.language} options={LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} onChange={(language) => setManual((m) => ({ ...m, language }))} />
               </Field>
               <Field label="Description" className="sm:col-span-2">
                 <textarea className="input" rows={4} value={manual.description} onChange={setM('description')} />
@@ -476,14 +471,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         {isNewToCatalogue && (
           <section className="grid gap-4 sm:grid-cols-2">
             <Field label="Section">
-              <select className="input" value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)}>
-                <option value="">Choose</option>
-                {categories.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={categorySlug} options={categories.map((c) => ({ value: c.slug, label: c.name }))} onChange={setCategorySlug} />
             </Field>
             <label className={cn(optionCard(zambianAuthor), 'flex items-center gap-3 self-end text-sm', zambianAuthor && 'bg-zambia-soft shadow-[inset_0_0_0_1.5px_var(--color-zambia)]')}>
               <input type="checkbox" className="size-4 accent-zambia" checked={zambianAuthor} onChange={(e) => setZambianAuthor(e.target.checked)} />

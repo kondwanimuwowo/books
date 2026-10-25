@@ -10,6 +10,7 @@ import type { Province } from '#/data/zambia'
 import { etaLabel } from '#/data/shipping'
 import type { ActiveShippingMethod, ShippingOption } from '#/data/shipping'
 import { TownField } from '#/components/town-field'
+import { Select } from '#/components/select'
 import { ShieldCheckIcon } from '@heroicons/react/20/solid'
 import { SAFETY } from '#/data/safety'
 
@@ -32,13 +33,12 @@ function DeliveryChoice({ options, value, onChange }: { options: ShippingOption[
   if (!options.length) return <p className="mt-2 text-sm text-danger">This shop doesn’t deliver to your town yet.</p>
   return (
     <div className="mt-2">
-      <select className="input" aria-label="Delivery" value={value ?? ''} onChange={(e) => onChange(e.target.value as ActiveShippingMethod)}>
-        {options.map((o) => (
-          <option key={o.method} value={o.method}>
-            {`${o.label} · ${o.totalNgwee ? format(o.totalNgwee) : 'Free'} · ${etaLabel(o.etaDays)}`}
-          </option>
-        ))}
-      </select>
+      <Select
+        aria-label="Delivery"
+        value={value ?? ''}
+        options={options.map((o) => ({ value: o.method, label: `${o.label} · ${o.totalNgwee ? format(o.totalNgwee) : 'Free'} · ${etaLabel(o.etaDays)}` }))}
+        onChange={onChange}
+      />
       {chosen && <p className="mt-2 text-sm text-muted">{chosen.description}</p>}
     </div>
   )

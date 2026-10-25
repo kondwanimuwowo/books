@@ -8,4 +8,5 @@ export const QUICK_SEARCHES = [
 
 // Below this many covers the cover background looks sparse, so a plain band is shown instead.
 export const MIN_WALL_COVERS = 6
+export const WALL_TILES = 32
 
