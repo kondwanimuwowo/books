@@ -1,14 +1,16 @@
-import { BuildingStorefrontIcon, UserIcon } from '@heroicons/react/24/solid'
+import { UserIcon } from '@heroicons/react/24/solid'
+import { shopFallback } from '#/data/brand'
 import { cn } from '#/lib/utils'
 
-const ICONS = { person: UserIcon, shop: BuildingStorefrontIcon } as const
-
-/** Stands in for a missing photo: a person for authors and readers, a shopfront for shops and publishers. Size and shape come from className. */
-export function PhotoFallback({ kind, className }: { kind: keyof typeof ICONS; className?: string }) {
-  const Icon = ICONS[kind]
+/**
+ * Stands in for a missing photo: a person icon for authors and readers, a photo of books for shops and
+ * publishers (picked by `seed`, so a shop keeps the same one). Size and shape come from className.
+ */
+export function PhotoFallback({ kind, seed = '', className }: { kind: 'person' | 'shop'; seed?: string; className?: string }) {
+  if (kind === 'shop') return <img src={shopFallback(seed)} alt="" loading="lazy" className={cn('shrink-0 bg-sunken object-cover', className)} />
   return (
     <span className={cn('band flex shrink-0 items-center justify-center overflow-hidden', className)} aria-hidden>
-      <Icon className="size-1/2 opacity-60" />
+      <UserIcon className="size-1/2 opacity-60" />
     </span>
   )
 }

@@ -7,6 +7,7 @@ import { SHARE_COPY } from '#/data/share'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { cn, formatDate } from '#/lib/utils'
 import { ogMeta } from '#/lib/og'
+import { shopFallback } from '#/data/brand'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
 import { RatingMark } from '#/components/reputation'
@@ -22,7 +23,8 @@ export const Route = createFileRoute('/sellers/$slug')({
             title: loaderData.storeName,
             description: loaderData.bio?.slice(0, 160) ?? SHARE_COPY.shop({ storeName: loaderData.storeName, inStock: loaderData.books.length }),
             path: `/sellers/${loaderData.slug}`,
-            image: loaderData.photoUrl,
+            // Shops without a logo share their book photo; people without a photo fall back to the kb mark.
+            image: loaderData.photoUrl ?? (loaderData.kind === 'bookshop' || loaderData.kind === 'publisher' ? shopFallback(loaderData.slug, 'share') : null),
           }),
         ]
       : [],
@@ -36,7 +38,7 @@ function SellerPage() {
   return (
     <div className="page rise py-10">
       <div className="flex items-end gap-5">
-        <SellerPhoto src={seller.photoUrl} portrait={seller.kind === 'author'} person={seller.kind === 'author' || seller.kind === 'individual'} />
+        <SellerPhoto src={seller.photoUrl} portrait={seller.kind === 'author'} person={seller.kind === 'author' || seller.kind === 'individual'} seed={seller.slug} />
         <div className="min-w-0">
           <p className="eyebrow">{kind}</p>
           <h1 className="mt-2 text-4xl sm:text-5xl">{seller.storeName}</h1>
@@ -67,11 +69,11 @@ function SellerPage() {
   )
 }
 
-function SellerPhoto({ src, portrait, person }: { src: string | null; portrait: boolean; person: boolean }) {
+function SellerPhoto({ src, portrait, person, seed }: { src: string | null; portrait: boolean; person: boolean; seed: string }) {
   const shape = portrait ? 'aspect-[2/3] w-20 rounded-md sm:w-24' : 'aspect-square w-20 rounded-xl sm:w-24'
   return src ? (
     <img src={src} alt="" className={cn('shrink-0 object-cover shadow-md', shape)} />
   ) : (
-    <PhotoFallback kind={person ? 'person' : 'shop'} className={cn('shadow-md', shape)} />
+    <PhotoFallback kind={person ? 'person' : 'shop'} seed={seed} className={cn('shadow-md', shape)} />
   )
 }

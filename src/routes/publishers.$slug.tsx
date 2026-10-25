@@ -34,7 +34,7 @@ function PublisherPage() {
   return (
     <div className="page py-10">
       <div className="rise flex flex-col gap-6 sm:flex-row sm:items-end">
-        <PhotoFallback kind="shop" className="aspect-square w-24 rounded-md shadow-md sm:w-28" />
+        <PhotoFallback kind="shop" seed={publisher.slug} className="aspect-square w-24 rounded-md shadow-md sm:w-28" />
         <div className="min-w-0">
           <p className="eyebrow">Publisher</p>
           <h1 className="mt-1 text-4xl sm:text-5xl">{publisher.name}</h1>

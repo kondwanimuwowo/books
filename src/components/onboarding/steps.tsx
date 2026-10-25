@@ -138,6 +138,7 @@ export function DoneStep({ seller, verification }: { seller: DoneSeller; verific
           ) : (
             <PhotoFallback
               kind={seller.kind === 'individual' || seller.kind === 'author' ? 'person' : 'shop'}
+              seed={seller.slug}
               className={cn('w-20', copy.photoShape === 'cover' ? 'aspect-[2/3] rounded-md' : 'aspect-square rounded-xl')}
             />
           )}

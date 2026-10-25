@@ -18,7 +18,7 @@ function render({ lines, action }: Message) {
     ? `<p style="margin:20px 0"><a href="${env.APP_ORIGIN}${action.path}" style="background:#722F37;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${action.label}</a></p>`
     : ''
   return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#2A1E17;max-width:520px">
-<p style="font-size:20px;font-weight:700;margin:0 0 20px">kuwala<span style="color:#722F37">books</span></p>${body}${button}
+<p style="margin:0 0 20px"><img src="${env.APP_ORIGIN}/brand/wordmark.png" width="160" height="32" alt="Kuwala Books" style="display:block;border:0"></p>${body}${button}
 <p style="margin-top:28px;font-size:13px;color:#776453">Kuwala Books, Zambia's book marketplace</p></div>`
 }
 
