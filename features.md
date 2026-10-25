@@ -54,7 +54,7 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Checkout delivery dropdown with books from two shops.
 
 ## Next (in order)
-1. Lost and undelivered books: the handover code and the rest of the plan below (automatic refund and proof of shipping are live).
+1. Lost and undelivered books: the rest of the plan below (automatic refund and proof of shipping are live). Buyers confirm delivery themselves for now.
 2. Legal pages: terms, privacy, refunds, seller agreement. Needs business name and address, PACRA number, contact email, refund policy; lawyer review.
 3. Designed share images for books, authors and shops.
 4. Sale prices ("Save 25%") and Coming soon / pre-order.
@@ -69,7 +69,6 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 9. Search: "Did you mean", barcode scan.
 
 ### Lost and undelivered books
-- Handover code: a 4-digit code on the buyer's order page, given to the courier, seller or collector at handover; the seller enters it, delivery is proven and the money released at once.
 - Who carries a loss:
   - No proof of shipping: refund the buyer; the seller isn't paid.
   - Proof plus handover code or tracking showing delivered: release to the seller.
@@ -81,6 +80,7 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Later: optional insured delivery for expensive books.
 
 ## Later
+- Handover code: a 4-digit code only the buyer sees, given at handover; the seller enters it to prove delivery and get paid at once. Deferred: buyers confirm delivery themselves for now.
 - Awards and events: awards on author profiles, events page, Readers' Choice; reader perks (early access, delivery credits).
 - Author launch pages and pre-orders.
 - Book clubs: profiles, join requests, meetups, group orders.
