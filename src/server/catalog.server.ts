@@ -1,13 +1,14 @@
-import { and, asc, desc, eq, gt, ilike, inArray, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authorDrafts, authorMilestones, authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
+import { authorDrafts, authorMilestones, authors, bookAuthors, books, categories, listings, offers, profiles, publishers, reviews, sellers } from '#/db/schema'
 import type { DirectoryKind } from '#/data/directory'
 import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
 import type { BookCandidate } from './book-sources.server'
 import { authorReaders } from './tiers.server'
-import { shopRatings } from './reputation.server'
+import { readerStandings, shopRatings } from './reputation.server'
+import { REVIEW_LIMITS } from '#/data/reputation'
 import { TIERS } from '#/data/tiers'
 
 export interface BookCard {
@@ -228,7 +229,37 @@ export async function getBookBySlug(db: Db, slug: string) {
   const authorShops = new Set(bookAuthorRows.map((a) => a.shopSlug).filter(Boolean))
   const ratings = await shopRatings(db, [...new Set(offerRows.map((o) => o.seller.id))])
   const offers = offerRows.map((o) => ({ ...o, fromAuthor: authorShops.has(o.seller.slug), seller: { ...o.seller, rating: ratings.get(o.seller.id) ?? null } }))
-  return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related }
+  const bookReviews = await getBookReviews(db, book.book.id)
+  return { ...book.book, category: book.category, publisherSlug: book.publisherSlug, authors: bookAuthorRows, offers, related, reviews: bookReviews }
+}
+
+/** Visible reviews, newest first, with each reviewer's first name and reader badge; plus the average over all of them. */
+async function getBookReviews(db: Db, bookId: string) {
+  const visible = and(eq(reviews.bookId, bookId), isNull(reviews.hiddenAt))
+  const [rows, [summary]] = await Promise.all([
+    db
+      .select({
+        id: reviews.id,
+        score: reviews.score,
+        body: reviews.body,
+        createdAt: reviews.createdAt,
+        profileId: reviews.profileId,
+        name: profiles.displayName,
+        verified: sql<boolean>`${reviews.sellerOrderId} is not null`,
+      })
+      .from(reviews)
+      .innerJoin(profiles, eq(profiles.id, reviews.profileId))
+      .where(visible)
+      .orderBy(sql`${reviews.body} is null`, desc(reviews.createdAt))
+      .limit(REVIEW_LIMITS.shown),
+    db.select({ average: sql<number | null>`round(avg(${reviews.score}), 1)::float`, count: sql<number>`count(*)::int` }).from(reviews).where(visible),
+  ])
+  const standings = await readerStandings(db, rows.map((r) => r.profileId))
+  return {
+    average: summary?.count ? summary.average : null,
+    count: summary?.count ?? 0,
+    items: rows.map(({ profileId, name, ...r }) => ({ ...r, reviewer: name.split(' ')[0], badge: standings.get(profileId)?.badge ?? null })),
+  }
 }
 
 export async function getAuthorBySlug(db: Db, slug: string) {
@@ -318,12 +349,14 @@ const directoryTables = {
 }
 
 /** Authors or publishers with at least one book, A–Z; `query` matches any part of the name. */
-export async function listDirectory(db: Db, kind: DirectoryKind, params: { query?: string; zambian?: boolean; verified?: boolean; limit?: number }) {
+export async function listDirectory(db: Db, kind: DirectoryKind, params: { query?: string; zambian?: boolean; verified?: boolean; tier?: 'copper' | 'emerald' | 'gold'; limit?: number }) {
   const { table, bookCount, tier } = directoryTables[kind]
   const where = [sql`${bookCount} > 0`]
   if (params.query) where.push(ilike(table.name, `%${params.query}%`))
   if (params.zambian) where.push(eq(table.isZambian, true))
   if (params.verified) where.push(sql`${table.verifiedSellerId} is not null`)
+  // "Emerald" means Emerald and up.
+  if (params.tier && kind === 'authors') where.push(sql`exists (select 1 from ${authorMilestones} m where m.author_id = ${authors}.id and m.tier >= ${params.tier}::author_tier)`)
   return db
     .select({ slug: table.slug, name: table.name, isZambian: table.isZambian, verified: sql<boolean>`${table.verifiedSellerId} is not null`, bookCount, tier })
     .from(table)

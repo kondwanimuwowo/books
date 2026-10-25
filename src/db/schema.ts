@@ -501,6 +501,8 @@ export const sellerOrders = pgTable(
     resolutionNote: text('resolution_note'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     payoutStatus: payoutStatus('payout_status').notNull().default('held'),
+    // The one nudge to rate and review, a few days after delivery.
+    ratingReminderAt: timestamp('rating_reminder_at', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -591,6 +593,32 @@ export const ratings = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.sellerOrderId, t.rater] }), check('ratings_score_range', sql`${t.score} between 1 and 5`)],
+).enableRLS()
+
+// A reader's review of a book they received. One per reader per book; admin can hide one.
+export const reviews = pgTable(
+  'reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    bookId: uuid('book_id')
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    // The delivered parcel that makes it a verified purchase.
+    sellerOrderId: uuid('seller_order_id').references(() => sellerOrders.id, { onDelete: 'set null' }),
+    score: integer('score').notNull(),
+    body: text('body'),
+    hiddenAt: timestamp('hidden_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex('reviews_book_profile_key').on(t.bookId, t.profileId),
+    index('reviews_book_idx').on(t.bookId, t.createdAt),
+    check('reviews_score_range', sql`${t.score} between 1 and 5`),
+  ],
 ).enableRLS()
 
 export const payments = pgTable(

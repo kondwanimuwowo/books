@@ -12,7 +12,7 @@ import { shippingLabel } from '#/data/shipping'
 import { SAFETY } from '#/data/safety'
 import { cn, formatDate } from '#/lib/utils'
 import { PageShapes, ParcelShapes, Placeholder } from '#/components/placeholder'
-import { RateParcel } from '#/components/reputation'
+import { RateParcel, ReviewBook } from '#/components/reputation'
 import { REPUTATION_COPY, SHOP_TAGS, withinRatingWindow } from '#/data/reputation'
 
 export const Route = createFileRoute('/_authed/orders/$number')({
@@ -216,6 +216,16 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
               <RateParcel sellerOrderId={part.id} title={REPUTATION_COPY.rateShop(part.seller.storeName)} tags={SHOP_TAGS} current={part.myRating} />
             </div>
           )}
+          {part.status === 'delivered' &&
+            part.items.map(
+              (item) =>
+                item.bookId &&
+                item.slug && (
+                  <div key={item.id} className="border-t border-line pt-4">
+                    <ReviewBook bookId={item.bookId} slug={item.slug} title={item.title} current={item.myReview} />
+                  </div>
+                ),
+            )}
           {halted && <p className={halted.tone}>{halted.text}</p>}
           {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-subtle">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}
           {(confirm.error || report.error) && <Alert>{confirm.error ?? report.error}</Alert>}

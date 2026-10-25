@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { DIRECTORY } from '#/data/directory'
 import type { DirectoryKind } from '#/data/directory'
 import { cn } from '#/lib/utils'
-import { tierInfo } from '#/data/tiers'
+import { TIERS, tierInfo } from '#/data/tiers'
+import { Select } from './select'
 import type { Tier } from '#/data/tiers'
 
 const TIER_INK: Record<Tier, string> = { copper: 'text-copper', emerald: 'text-emerald', gold: 'text-gold' }
@@ -26,11 +27,13 @@ function initial(name: string) {
 
 /** Authors or publishers A–Z. The whole list is loaded, so the name filter is instant. */
 /** `verified` is undefined where there's no such filter (publishers). */
-export function DirectoryPage({ kind, entries, zambian, verified }: { kind: DirectoryKind; entries: DirectoryEntry[]; zambian: boolean; verified?: boolean }) {
+export function DirectoryPage({ kind, entries, zambian, verified, tier }: { kind: DirectoryKind; entries: DirectoryEntry[]; zambian: boolean; verified?: boolean; tier?: Tier }) {
   const copy = DIRECTORY[kind]
   const navigate = useNavigate()
-  const setFilters = (next: { zambian: boolean; verified?: boolean }) =>
-    void navigate({ to: '.', search: { ...(next.zambian && { zambian: true }), ...(next.verified && { verified: true }) }, replace: true })
+  const setFilters = (next: { zambian: boolean; verified?: boolean; tier?: Tier }) =>
+    void navigate({ to: '.', search: { ...(next.zambian && { zambian: true }), ...(next.verified && { verified: true }), ...(next.tier && { tier: next.tier }) }, replace: true })
+  // Only offered once some author has a milestone; an empty filter would promise more than there is.
+  const showTier = verified !== undefined && (!!tier || entries.some((e) => e.tier))
   const [filter, setFilter] = useState('')
   const groups = useMemo(() => {
     const term = filter.trim().toLowerCase()
@@ -58,7 +61,7 @@ export function DirectoryPage({ kind, entries, zambian, verified }: { kind: Dire
         <button
           type="button"
           aria-pressed={zambian}
-          onClick={() => setFilters({ zambian: !zambian, verified })}
+          onClick={() => setFilters({ zambian: !zambian, verified, tier })}
           className={cn('btn btn-sm', zambian ? 'btn-primary' : 'btn-secondary')}
         >
           {copy.zambianFilter}
@@ -67,11 +70,20 @@ export function DirectoryPage({ kind, entries, zambian, verified }: { kind: Dire
           <button
             type="button"
             aria-pressed={verified}
-            onClick={() => setFilters({ zambian, verified: !verified })}
+            onClick={() => setFilters({ zambian, verified: !verified, tier })}
             className={cn('btn btn-sm', verified ? 'btn-primary' : 'btn-secondary')}
           >
             Verified only
           </button>
+        )}
+        {showTier && (
+          <Select
+            variant="pill"
+            aria-label="Milestone"
+            value={tier ?? 'any'}
+            options={[{ value: 'any', label: 'Any milestone' }, ...TIERS.map((t) => ({ value: t.tier, label: t.tier === 'gold' ? 'Gold' : `${t.label} and up` }))]}
+            onChange={(v) => setFilters({ zambian, verified, tier: v === 'any' ? undefined : (v as Tier) })}
+          />
         )}
       </div>
 

@@ -10,12 +10,15 @@ export interface TierInfo {
   line: string
 }
 
-// Named for what Zambia is known for. Thresholds suit the local market, where 1,000 copies is a bestseller.
+// Milestones, named for what Zambia is known for. Thresholds suit the local market, where 1,000 copies is a bestseller.
 export const TIERS: TierInfo[] = [
   { tier: 'copper', label: 'Copper', readers: 25, books: 1, line: 'Read by 25 people on Kuwala' },
   { tier: 'emerald', label: 'Emerald', readers: 250, books: 1, line: 'Read by 250 people on Kuwala' },
   { tier: 'gold', label: 'Gold', readers: 1000, books: 2, line: 'Read by 1,000 people on Kuwala' },
 ]
+
+/** Once an author has this many reviews, their average must reach MIN_AVERAGE for the next milestone. */
+export const REVIEW_GATE = { reviews: 10, average: 4 } as const
 
 export const tierInfo = (tier: Tier) => TIERS.find((t) => t.tier === tier) as TierInfo
 
@@ -33,9 +36,10 @@ export const AUTHOR_LINKS = [
 ] as const
 
 export const PLAQUE_COPY = {
+  heading: 'Milestones',
   reached: (label: string) => `You’ve reached ${label}`,
   email: (name: string, label: string, readers: number) =>
-    `Congratulations ${name}. ${readers.toLocaleString('en')} readers on Kuwala now have one of your books, which earns you the ${label} plaque. It shows on your author page from today.`,
+    `Congratulations ${name}. ${readers.toLocaleString('en')} readers on Kuwala now have one of your books, which makes you a ${label} author. It shows on your author page from today.`,
   claim: (name: string) => `Are you ${name}?`,
   claimLine: 'Claim this page to add your photo and story, and get verified.',
 } as const

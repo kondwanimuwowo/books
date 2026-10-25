@@ -5,7 +5,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { getDb } from '#/db/client.server'
-import { books, orderItems, orders, payments, profiles, ratings, sellerOrders, sellers } from '#/db/schema'
+import { books, orderItems, orders, payments, profiles, ratings, reviews, sellerOrders, sellers } from '#/db/schema'
 import { readerStandings } from '#/server/reputation.server'
 import { PROVINCES } from '#/data/zambia'
 import { normalizeLocalPhone } from '#/lib/phone'
@@ -103,6 +103,12 @@ export const getOrder = createServerFn({ method: 'GET' })
           .leftJoin(books, eq(books.id, orderItems.bookId))
           .where(inArray(orderItems.sellerOrderId, parts.map((p) => p.so.id)))
       : []
+    const reviewed = items.length
+      ? await db
+          .select({ bookId: reviews.bookId, score: reviews.score, body: reviews.body })
+          .from(reviews)
+          .where(and(eq(reviews.profileId, context.user.id), inArray(reviews.bookId, items.flatMap((i) => (i.item.bookId ? [i.item.bookId] : [])))))
+      : []
     const given = parts.length
       ? await db
           .select({ sellerOrderId: ratings.sellerOrderId, score: ratings.score })
@@ -125,7 +131,9 @@ export const getOrder = createServerFn({ method: 'GET' })
           // Seller contact is only shared once the buyer has paid.
           phone: order.status === 'pending_payment' ? null : p.seller.phone,
         },
-        items: items.filter((i) => i.item.sellerOrderId === p.so.id).map((i) => ({ ...i.item, slug: i.book?.slug ?? null, coverUrl: i.book?.coverUrl ?? null })),
+        items: items
+          .filter((i) => i.item.sellerOrderId === p.so.id)
+          .map((i) => ({ ...i.item, slug: i.book?.slug ?? null, coverUrl: i.book?.coverUrl ?? null, myReview: reviewed.find((r) => r.bookId === i.item.bookId) ?? null })),
         // The buyer's rating of this shop, if they've given one.
         myRating: given.find((g) => g.sellerOrderId === p.so.id)?.score ?? null,
       })),

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { PLAQUE_COPY, TIERS, tierInfo } from '#/data/tiers'
+import { PLAQUE_COPY, REVIEW_GATE, TIERS, tierInfo } from '#/data/tiers'
 import type { Tier } from '#/data/tiers'
 import { escapeHtml, sendEmail } from './email.server'
 
@@ -33,11 +33,17 @@ export async function awardPlaques(db: Db) {
   for (const { tier, readers, books } of TIERS) {
     const rows = await db.execute<{ author_id: string; readers: number }>(sql`
       with readers as (${readersQuery()}),
-      shelf as (select author_id, count(*)::int as books from book_authors group by author_id)
+      shelf as (select author_id, count(*)::int as books from book_authors group by author_id),
+      reviewed as (
+        select ba.author_id, count(*)::int as reviews, avg(v.score) as average
+        from reviews v join book_authors ba on ba.book_id = v.book_id
+        where v.hidden_at is null group by ba.author_id)
       insert into author_milestones (author_id, tier, readers)
       select r.author_id, ${tier}::author_tier, r.readers
-      from readers r join shelf on shelf.author_id = r.author_id
+      from readers r join shelf on shelf.author_id = r.author_id left join reviewed rv on rv.author_id = r.author_id
       where r.readers >= ${readers} and shelf.books >= ${books}
+        -- Enough readers isn't enough on its own once reviews say the books disappoint.
+        and (coalesce(rv.reviews, 0) < ${REVIEW_GATE.reviews} or rv.average >= ${REVIEW_GATE.average})
       on conflict do nothing
       returning author_id, readers`)
     for (const row of rows) {

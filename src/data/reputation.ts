@@ -32,6 +32,27 @@ export const TRUSTED = {
   unpaidDays: 90,
 } as const
 
+export const REVIEW_LIMITS = { body: 2000, shown: 20 } as const
+/** The reminder to rate and review goes out this long after delivery, and not for parcels older than the last bound. */
+export const REMINDER_AFTER_DAYS = 3
+export const REMINDER_UNTIL_DAYS = 14
+
+export const REVIEW_COPY = {
+  heading: 'Reviews',
+  write: (title: string) => `Review ${title}`,
+  placeholder: 'What did you think? No spoilers in the first line.',
+  verified: 'Verified purchase',
+  thanks: 'Thanks for your review.',
+  share: 'Share your review',
+  shareText: (title: string, score: number) => `I gave ${title} ${score}/5 on Kuwala Books`,
+  none: 'No reviews yet',
+  hidden: 'Hidden by Kuwala',
+  noContact: 'Leave out phone numbers and links. Reviews are for the book.',
+  reminderSubject: 'How were your books?',
+  reminderBuyer: (store: string) => `Your books from ${store} arrived a few days ago. A quick rating helps other readers, and a review helps the author.`,
+  reminderSeller: 'Your parcel arrived a few days ago. Rating the buyer helps other shops know who pays and collects on time.',
+} as const
+
 export const REPUTATION_COPY = {
   rateShop: (store: string) => `How was ${store}?`,
   rateReader: 'How was this buyer?',

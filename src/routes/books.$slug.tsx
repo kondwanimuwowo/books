@@ -20,6 +20,7 @@ import { cn } from '#/lib/utils'
 import { ogMeta } from '#/lib/og'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 import { RatingMark } from '#/components/reputation'
+import { BookReviews } from '#/components/book-reviews'
 
 export const Route = createFileRoute('/books/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading book" shapes={<BookPageShapes />} />,
@@ -112,6 +113,11 @@ function BookPage() {
         <div className="min-w-0">
           <h1 className="text-3xl leading-[1.1] sm:text-4xl">{book.title}</h1>
           {book.subtitle && <p className="mt-2 text-lg text-muted">{book.subtitle}</p>}
+          {book.reviews.average !== null && (
+            <a href="#reviews" className="mt-2 inline-flex no-underline">
+              <RatingMark rating={{ average: book.reviews.average, count: book.reviews.count }} />
+            </a>
+          )}
           {book.authors.length > 0 && (
             <p className="mt-3">
               {book.authors.map((a, i) => (
@@ -202,6 +208,7 @@ function BookPage() {
         </aside>
       </div>
 
+      <BookReviews slug={book.slug} title={book.title} reviews={book.reviews} />
       <Shelf title={`More in ${book.category?.name ?? 'this section'}`} books={book.related} />
       <RecentlyViewed exclude={book.slug} />
 

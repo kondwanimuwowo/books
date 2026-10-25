@@ -2,7 +2,9 @@ import { useRouter } from '@tanstack/react-router'
 import { CheckBadgeIcon, StarIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 import { rateParcel } from '#/functions/ratings.functions'
-import { REPUTATION_COPY, SCORE_LABELS } from '#/data/reputation'
+import { writeReview } from '#/functions/reviews.functions'
+import { REPUTATION_COPY, REVIEW_COPY, REVIEW_LIMITS, SCORE_LABELS } from '#/data/reputation'
+import { ShareOnWhatsApp } from './share'
 import { cn } from '#/lib/utils'
 import { Alert, useAction } from './form'
 
@@ -56,7 +58,6 @@ export function ReaderStanding({ standing, className }: { standing: Standing | n
 export function RateParcel({ sellerOrderId, title, tags, current }: { sellerOrderId: string; title: string; tags: readonly string[]; current: number | null }) {
   const router = useRouter()
   const [score, setScore] = useState(0)
-  const [hover, setHover] = useState(0)
   const [picked, setPicked] = useState<string[]>([])
   const [sent, setSent] = useState(false)
   const send = useAction(async () => {
@@ -73,31 +74,10 @@ export function RateParcel({ sellerOrderId, title, tags, current }: { sellerOrde
     )
   }
 
-  const shown = hover || score
   return (
     <div className="space-y-3">
       <p className="font-medium">{title}</p>
-      <div className="flex items-center gap-3">
-        <div role="radiogroup" aria-label="Rating" className="flex" onMouseLeave={() => setHover(0)}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={score === n}
-              aria-label={`${n} of 5, ${SCORE_LABELS[n]}`}
-              onClick={() => setScore(n)}
-              onMouseEnter={() => setHover(n)}
-              className="grid size-10 place-items-center rounded-full transition-transform duration-150 ease-out active:scale-90"
-            >
-              <StarIcon className={cn('size-7 transition-colors duration-150', n <= shown ? 'text-gold' : 'text-line-strong')} aria-hidden />
-            </button>
-          ))}
-        </div>
-        <span className="text-sm text-muted" aria-live="polite">
-          {SCORE_LABELS[shown]}
-        </span>
-      </div>
+      <StarPicker value={score} onChange={setScore} />
       {score > 0 && (
         <div className="rise flex flex-wrap gap-2">
           {tags.map((tag) => {
@@ -133,5 +113,90 @@ function Stars({ value }: { value: number }) {
         <StarIcon key={n} className={cn('size-4', n <= value ? 'text-gold' : 'text-line-strong')} aria-hidden />
       ))}
     </span>
+  )
+}
+
+/** Five tappable stars with the score's word beside them. */
+function StarPicker({ value, onChange }: { value: number; onChange: (score: number) => void }) {
+  const [hover, setHover] = useState(0)
+  const shown = hover || value
+  return (
+    <div className="flex items-center gap-3">
+      <div role="radiogroup" aria-label="Rating" className="flex" onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={value === n}
+            aria-label={`${n} of 5, ${SCORE_LABELS[n]}`}
+            onClick={() => onChange(n)}
+            onMouseEnter={() => setHover(n)}
+            className="grid size-10 place-items-center rounded-full transition-transform duration-150 ease-out active:scale-90"
+          >
+            <StarIcon className={cn('size-7 transition-colors duration-150', n <= shown ? 'text-gold' : 'text-line-strong')} aria-hidden />
+          </button>
+        ))}
+      </div>
+      <span className="text-sm text-muted" aria-live="polite">
+        {SCORE_LABELS[shown]}
+      </span>
+    </div>
+  )
+}
+
+/** A reader's review of a book they received: stars, a few words, then a way to share it. */
+export function ReviewBook({ bookId, slug, title, current }: { bookId: string; slug: string; title: string; current: { score: number; body: string | null } | null }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [score, setScore] = useState(current?.score ?? 0)
+  const [body, setBody] = useState(current?.body ?? '')
+  const [sent, setSent] = useState(false)
+  const send = useAction(async () => {
+    await writeReview({ data: { bookId, score, body } })
+    setSent(true)
+    setOpen(false)
+    await router.invalidate()
+  })
+
+  if (!open) {
+    return (
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        {current ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 text-muted">
+              You reviewed it <Stars value={current.score} />
+            </span>
+            {sent && <span className="rise text-xs text-success">{REVIEW_COPY.thanks}</span>}
+            <ShareOnWhatsApp path={`/books/${slug}`} text={REVIEW_COPY.shareText(title, current.score)} />
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>
+              Edit
+            </button>
+          </>
+        ) : (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(true)}>
+            {REVIEW_COPY.write(title)}
+          </button>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="rise space-y-3">
+      <StarPicker value={score} onChange={setScore} />
+      <label className="block">
+        <span className="sr-only">Your review</span>
+        <textarea className="input" rows={4} maxLength={REVIEW_LIMITS.body} placeholder={REVIEW_COPY.placeholder} value={body} onChange={(e) => setBody(e.target.value)} />
+      </label>
+      {send.error && <Alert>{send.error}</Alert>}
+      <div className="flex gap-2">
+        <button type="button" className="btn btn-primary btn-sm" disabled={!score || send.pending} onClick={() => void send.run()}>
+          {send.pending ? 'Posting…' : 'Post review'}
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </div>
   )
 }

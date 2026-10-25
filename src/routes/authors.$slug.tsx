@@ -95,9 +95,9 @@ function AuthorPage() {
       )}
 
       {author.milestones.length > 0 && (
-        <section aria-labelledby="plaques" className="mt-10">
-          <h2 id="plaques" className="mb-4 text-xl">
-            Plaques
+        <section aria-labelledby="milestones" className="mt-10">
+          <h2 id="milestones" className="mb-4 text-xl">
+            {PLAQUE_COPY.heading}
           </h2>
           <div className="grid max-w-3xl gap-3 sm:grid-cols-2">
             {[...author.milestones].reverse().map((m) => (

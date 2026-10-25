@@ -8,6 +8,11 @@ export const SAFETY = {
   phoneInMessage: 'Leave phone numbers out. They’re shared once an order is paid.',
 } as const
 
+// Web addresses, so reviews and messages can't send buyers off Kuwala.
+export function containsLink(text: string) {
+  return /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|co\.zm|zm|net|org|me|link|ly)\b/i.test(text)
+}
+
 // Zambian mobile numbers however they're typed: 097 123 4567, 0971-234567, +260 97 1234567.
 export function containsPhoneNumber(text: string) {
   // Not inside a longer run of digits, so ISBNs and prices pass.
