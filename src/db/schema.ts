@@ -510,6 +510,10 @@ export const sellerOrders = pgTable(
     autoReleaseAt: timestamp('auto_release_at', { withTimezone: true }),
     disputeNote: text('dispute_note'),
     disputedAt: timestamp('disputed_at', { withTimezone: true }),
+    // The seller's side of a dispute: what happened, and a photo (receipt, tracking, chat) in the private bucket.
+    sellerResponse: text('seller_response'),
+    sellerResponseKey: text('seller_response_key'),
+    sellerRespondedAt: timestamp('seller_responded_at', { withTimezone: true }),
     // Set by an admin when a dispute is closed, either way.
     resolutionNote: text('resolution_note'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),

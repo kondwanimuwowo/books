@@ -18,6 +18,7 @@ import { uniqueSlug } from '#/server/catalog.server'
 import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 import { payOutSeller } from '#/server/payouts.server'
 import { refundParcel } from '#/server/refunds.server'
+import { CLAIM_WINDOW_DAYS } from '#/data/fulfilment'
 
 const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
@@ -88,6 +89,16 @@ export const listDisputes = createServerFn({ method: 'GET' })
         shippedAt: sellerOrders.shippedAt,
         trackingNote: sellerOrders.trackingNote,
         proofKey: sellerOrders.proofKey,
+        sellerResponse: sellerOrders.sellerResponse,
+        sellerResponseKey: sellerOrders.sellerResponseKey,
+        sellerRespondedAt: sellerOrders.sellerRespondedAt,
+        // Patterns: how often this buyer reports problems, and how often this seller's parcels end in a refund.
+        buyerClaims: sql<number>`(select count(*)::int from seller_orders x join orders xo on xo.id = x.order_id
+          where xo.buyer_id = ${orders.buyerId} and x.disputed_at is not null and x.id <> ${sellerOrders.id}
+            and x.disputed_at > now() - make_interval(days => ${CLAIM_WINDOW_DAYS}))`,
+        sellerRefunds: sql<number>`(select count(*)::int from seller_orders x
+          where x.seller_id = ${sellerOrders.sellerId} and x.status = 'refunded' and x.id <> ${sellerOrders.id}
+            and x.resolved_at > now() - make_interval(days => ${CLAIM_WINDOW_DAYS}))`,
         shippingMethod: sellerOrders.shippingMethod,
         subtotalNgwee: sellerOrders.subtotalNgwee,
         shippingNgwee: sellerOrders.shippingNgwee,

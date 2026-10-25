@@ -8,6 +8,7 @@ import { shippingLabel } from '#/data/shipping'
 import { OPERATOR_LABELS } from '#/lib/phone'
 import { cn, formatDate } from '#/lib/utils'
 import { Placeholder, StatShapes } from '#/components/placeholder'
+import { CLAIM_FLAG_AT, CLAIM_WINDOW_DAYS, DISPUTE_REPLY_HOURS } from '#/data/fulfilment'
 
 export const Route = createFileRoute('/admin/_shell/')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading overview" shapes={<StatShapes />} />,
@@ -106,6 +107,13 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
           ) : (
             d.shippedAt && <p className="mt-2 text-sm text-subtle">No receipt photo.</p>
           )}
+          <SellerSide dispute={d} />
+          {(d.buyerClaims >= CLAIM_FLAG_AT || d.sellerRefunds >= CLAIM_FLAG_AT) && (
+            <div className="rounded-lg bg-warning-soft px-4 py-3 text-warning">
+              {d.buyerClaims >= CLAIM_FLAG_AT && <p>This buyer has reported {d.buyerClaims} other parcels in the last {CLAIM_WINDOW_DAYS} days.</p>}
+              {d.sellerRefunds >= CLAIM_FLAG_AT && <p>This seller has had {d.sellerRefunds} other parcels refunded in the last {CLAIM_WINDOW_DAYS} days.</p>}
+            </div>
+          )}
         </div>
 
         <dl className="grid grid-cols-2 gap-4 text-sm">
@@ -188,5 +196,29 @@ function DisputeCard({ dispute: d }: { dispute: Dispute }) {
         )}
       </footer>
     </article>
+  )
+}
+
+/** The seller's answer to the report, or how long they have left to give one. */
+function SellerSide({ dispute: d }: { dispute: { sellerResponse: string | null; sellerResponseKey: string | null; sellerRespondedAt: Date | string | null; disputedAt: Date | string | null } }) {
+  if (d.sellerResponse) {
+    return (
+      <blockquote className="rounded-lg bg-sunken px-4 py-3">
+        <p className="eyebrow">Seller says{d.sellerRespondedAt ? ` · ${formatDate(d.sellerRespondedAt)}` : ''}</p>
+        <p className="mt-1 whitespace-pre-line">{d.sellerResponse}</p>
+        {d.sellerResponseKey && (
+          <a href={`/admin-files/${d.sellerResponseKey}`} target="_blank" rel="noreferrer" className="mt-2 inline-block font-medium">
+            See the seller’s proof
+          </a>
+        )}
+      </blockquote>
+    )
+  }
+  const due = d.disputedAt ? new Date(new Date(d.disputedAt).getTime() + DISPUTE_REPLY_HOURS * 3_600_000) : null
+  const late = !!due && due.getTime() < Date.now()
+  return (
+    <p className={late ? 'font-medium text-danger' : 'text-subtle'} suppressHydrationWarning>
+      {late ? `No reply from the seller within ${DISPUTE_REPLY_HOURS} hours.` : `Waiting for the seller’s side until ${due ? formatDate(due) : 'soon'}.`}
+    </p>
   )
 }

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { BLIND_DAYS, TRUSTED, readerBadge } from '#/data/reputation'
+import { CLAIM_FLAG_AT, CLAIM_WINDOW_DAYS } from '#/data/fulfilment'
 
 export interface Rating {
   average: number
@@ -38,7 +39,7 @@ export async function readerStandings(db: Db, profileIds: string[]) {
   const standings = new Map<string, ReaderStanding>()
   const ids = [...new Set(profileIds)]
   if (!ids.length) return standings
-  const rows = await db.execute<{ id: string; books: number; parcels: number; average: number | null; count: number; unpaid: number }>(sql`
+  const rows = await db.execute<{ id: string; books: number; parcels: number; average: number | null; count: number; unpaid: number; claims: number }>(sql`
     select p.id,
       (select coalesce(sum(oi.quantity), 0)::int from orders o
         join seller_orders so on so.order_id = o.id and so.status = 'delivered'
@@ -48,7 +49,9 @@ export async function readerStandings(db: Db, profileIds: string[]) {
       rated.average, coalesce(rated.count, 0) as count,
       (select count(*)::int from offers f
         where f.buyer_id = p.id and f.status = 'expired' and f.agreed_ngwee is not null
-          and f.expires_at <= f.updated_at and f.updated_at > now() - make_interval(days => ${TRUSTED.unpaidDays})) as unpaid
+          and f.expires_at <= f.updated_at and f.updated_at > now() - make_interval(days => ${TRUSTED.unpaidDays})) as unpaid,
+      (select count(*)::int from orders o join seller_orders so on so.order_id = o.id
+        where o.buyer_id = p.id and so.disputed_at > now() - make_interval(days => ${CLAIM_WINDOW_DAYS})) as claims
     from profiles p
     left join lateral (
       select round(avg(r.score), 1)::float as average, count(*)::int as count
@@ -63,7 +66,8 @@ export async function readerStandings(db: Db, profileIds: string[]) {
       books: row.books,
       badge: readerBadge(row.books)?.label ?? null,
       rating,
-      trusted: row.parcels >= TRUSTED.orders && row.unpaid === 0 && ratedWell,
+      // Repeated "it never arrived" reports cost the mark, whatever else they've done.
+      trusted: row.parcels >= TRUSTED.orders && row.unpaid === 0 && ratedWell && row.claims < CLAIM_FLAG_AT,
     })
   }
   return standings

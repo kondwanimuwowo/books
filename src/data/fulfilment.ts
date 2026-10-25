@@ -39,3 +39,24 @@ export const FULFILMENT_COPY = {
     'We’ve paused the listing in case you’re out of copies. Switch it back on in Your listings if you still have it.',
   ],
 } as const
+
+/** A seller has this long to answer a problem report before admin decides without them. */
+export const DISPUTE_REPLY_HOURS = 48
+/** Problem reports by one buyer (or refunded ones against one seller) in this window that start to count against them. */
+export const CLAIM_WINDOW_DAYS = 180
+export const CLAIM_FLAG_AT = 2
+
+export const DISPUTE_COPY = {
+  sellerSubject: (number: string) => `A buyer reported a problem with order ${number}`,
+  sellerLines: (note: string, hours: number) => [
+    'The buyer says:',
+    note,
+    `Reply within ${hours} hours with what happened and a photo of your courier receipt or tracking. If we don’t hear from you, we decide on what the buyer told us.`,
+  ],
+  replyHeading: 'Your side',
+  replyHint: (due: string) => `Reply by ${due}: what happened, with a photo of the receipt, tracking or chat.`,
+  replyPlaceholder: 'Sent with Platinum on Monday, waybill 12345. The tracking says it reached Kitwe on Wednesday.',
+  proofLabel: 'Photo of your proof',
+  proofHint: 'Receipt, tracking screen or chat. Only Kuwala sees it.',
+  sent: 'Thanks. We’ll look at both sides and decide within 3 working days.',
+} as const

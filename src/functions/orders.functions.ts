@@ -14,9 +14,9 @@ import { randomCode } from '#/lib/utils'
 import { optionalUserMiddleware, requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { initiateMobileMoneyCollection } from '#/server/lenco.server'
 import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
-import { sendEmail } from '#/server/email.server'
+import { escapeHtml, sendEmail } from '#/server/email.server'
 import { ownsPrivate } from '#/server/private-files.server'
-import { FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
+import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
 
 const linesSchema = z
   .array(z.object({ listingId: z.string().uuid(), quantity: z.number().int().min(1).max(50) }))
@@ -287,6 +287,38 @@ export const reportProblem = createServerFn({ method: 'POST' })
       subject: 'A buyer reported a problem with an order',
       lines: [`Buyer ${context.user.email} reported a problem:`, data.note, `Resolve it at ${env.APP_ORIGIN}/admin`],
     })
+    // The seller hears straight away and has a window to give their side.
+    const [seller] = await getDb()
+      .select({ email: profiles.email, number: orders.number })
+      .from(sellerOrders)
+      .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+      .innerJoin(profiles, eq(profiles.id, sellers.profileId))
+      .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+      .where(eq(sellerOrders.id, part.id))
+      .limit(1)
+    if (seller) {
+      await sendEmail({
+        to: seller.email,
+        subject: DISPUTE_COPY.sellerSubject(seller.number),
+        lines: DISPUTE_COPY.sellerLines(data.note, DISPUTE_REPLY_HOURS).map(escapeHtml),
+        action: { label: 'Reply', path: '/account/sales' },
+      })
+    }
+    return { ok: true }
+  })
+
+/** The seller's side of a problem report: what happened, with a photo as proof. Can be updated until admin decides. */
+export const respondToDispute = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .validator(z.object({ sellerOrderId: z.string().uuid(), note: z.string().trim().min(10, 'Say what happened').max(1000), proofKey: z.string().max(64).optional() }))
+  .handler(async ({ data, context }) => {
+    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new Error('The photo didn’t upload. Add it again.')
+    const [row] = await getDb()
+      .update(sellerOrders)
+      .set({ sellerResponse: data.note, sellerResponseKey: data.proofKey ?? null, sellerRespondedAt: new Date() })
+      .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.sellerId, context.seller.id), eq(sellerOrders.status, 'disputed')))
+      .returning({ id: sellerOrders.id })
+    if (!row) throw new Error('This problem has already been decided')
     return { ok: true }
   })
 

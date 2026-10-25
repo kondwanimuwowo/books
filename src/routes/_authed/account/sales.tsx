@@ -1,11 +1,11 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
-import { getMySales, markShipped } from '#/functions/orders.functions'
+import { getMySales, markShipped, respondToDispute } from '#/functions/orders.functions'
 import { getMyBalance, payMeNow } from '#/functions/sell.functions'
 import { INSTANT_MIN_NGWEE, PAYOUT_COPY, WEEKLY_MIN_NGWEE } from '#/data/payouts'
 import { formatMoney } from '#/lib/money'
 import { DocumentUpload } from '#/components/document-upload'
-import { FULFILMENT_COPY, PROOF_REQUIRED, SHIP_FORM, SHIP_FORM_DEFAULT, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
+import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED, SHIP_FORM, SHIP_FORM_DEFAULT, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
@@ -166,6 +166,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
         </div>
       )}
       {sale.trackingNote && sale.status !== 'to_ship' && <p className="mt-3 text-sm text-muted">{sale.trackingNote}</p>}
+      {sale.status === 'disputed' && <DisputeReply sale={sale} />}
       {sale.status === 'delivered' && sale.deliveredAt && (sale.myRating !== null || withinRatingWindow(sale.deliveredAt)) && (
         <div className="mt-4 border-t border-line pt-4">
           <RateParcel sellerOrderId={sale.id} title={REPUTATION_COPY.rateReader} tags={READER_TAGS} current={sale.myRating} />
@@ -218,5 +219,50 @@ function Balance({ balance }: { balance: BalanceData }) {
       {payNow.error && <Alert>{payNow.error}</Alert>}
       {paid && <Alert tone="success">{paid}</Alert>}
     </section>
+  )
+}
+
+/** A buyer reported a problem: their words, and the seller's chance to answer with proof before admin decides. */
+function DisputeReply({ sale }: { sale: Sale }) {
+  const router = useRouter()
+  const [editing, setEditing] = useState(!sale.sellerResponse)
+  const [note, setNote] = useState(sale.sellerResponse ?? '')
+  const [proof, setProof] = useState<string | null>(sale.sellerResponseKey)
+  const reply = useAction(async () => {
+    await respondToDispute({ data: { sellerOrderId: sale.id, note, proofKey: proof ?? undefined } })
+    setEditing(false)
+    await router.invalidate()
+  })
+  const due = sale.disputedAt ? new Date(new Date(sale.disputedAt).getTime() + DISPUTE_REPLY_HOURS * 3_600_000) : null
+  const dueLabel = due?.toLocaleString('en-GB', { weekday: 'long', hour: '2-digit', minute: '2-digit' }) ?? ''
+
+  return (
+    <div className="mt-4 space-y-3 rounded-lg bg-danger-soft/50 p-4 text-sm">
+      <p className="font-medium text-danger">The buyer reported a problem</p>
+      {sale.disputeNote && <p className="whitespace-pre-line">“{sale.disputeNote}”</p>}
+      {editing ? (
+        <div className="space-y-3 border-t border-line pt-3">
+          <p className="font-medium">{DISPUTE_COPY.replyHeading}</p>
+          <p className="text-subtle" suppressHydrationWarning>
+            {DISPUTE_COPY.replyHint(dueLabel)}
+          </p>
+          <textarea className="input" rows={3} maxLength={1000} placeholder={DISPUTE_COPY.replyPlaceholder} value={note} onChange={(e) => setNote(e.target.value)} />
+          <DocumentUpload label={DISPUTE_COPY.proofLabel} hint={DISPUTE_COPY.proofHint} value={proof} onChange={setProof} />
+          {reply.error && <Alert>{reply.error}</Alert>}
+          <button type="button" className="btn btn-primary btn-sm" disabled={reply.pending || note.trim().length < 10} onClick={() => void reply.run()}>
+            {reply.pending ? 'Sending…' : 'Send your side'}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2 border-t border-line pt-3">
+          <p className="font-medium">{DISPUTE_COPY.replyHeading}</p>
+          <p className="whitespace-pre-line text-muted">{sale.sellerResponse}</p>
+          <p className="text-success">{DISPUTE_COPY.sent}</p>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+            Change your reply
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

@@ -169,6 +169,13 @@
       "when": 1792957592384,
       "tag": "0023_refunds_and_proof",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792958929022,
+      "tag": "0024_dispute_response",
+      "breakpoints": true
     }
   ]
 }
