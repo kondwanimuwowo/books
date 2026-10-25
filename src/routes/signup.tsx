@@ -90,6 +90,17 @@ function SignupPage() {
         <button type="submit" className="btn btn-primary w-full" disabled={action.pending}>
           {action.pending ? 'Creating…' : 'Create account'}
         </button>
+        <p className="text-xs text-subtle">
+          By creating an account you agree to the{' '}
+          <Link to="/legal/$page" params={{ page: 'terms' }}>
+            Terms
+          </Link>{' '}
+          and{' '}
+          <Link to="/legal/$page" params={{ page: 'privacy' }}>
+            Privacy
+          </Link>{' '}
+          policy.
+        </p>
       </form>
     </AuthShell>
   )

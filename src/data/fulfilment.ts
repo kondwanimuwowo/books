@@ -45,6 +45,10 @@ export const DISPUTE_REPLY_HOURS = 48
 /** Problem reports by one buyer (or refunded ones against one seller) in this window that start to count against them. */
 export const CLAIM_WINDOW_DAYS = 180
 export const CLAIM_FLAG_AT = 2
+/** Kuwala Books' promise for deciding a problem report. */
+export const DECISION_WORKING_DAYS = 3
+/** An uncollected bus parcel gets this long to be sorted out at the station before admin decides. */
+export const BUS_PARCEL_GRACE_DAYS = 7
 
 export const DISPUTE_COPY = {
   sellerSubject: (number: string) => `A buyer reported a problem with order ${number}`,
@@ -58,5 +62,5 @@ export const DISPUTE_COPY = {
   replyPlaceholder: 'Sent with Platinum on Monday, waybill 12345. The tracking says it reached Kitwe on Wednesday.',
   proofLabel: 'Photo of your proof',
   proofHint: 'Receipt, tracking screen or chat. Only Kuwala sees it.',
-  sent: 'Thanks. We’ll look at both sides and decide within 3 working days.',
+  sent: `Thanks. We’ll look at both sides and decide within ${DECISION_WORKING_DAYS} working days.`,
 } as const

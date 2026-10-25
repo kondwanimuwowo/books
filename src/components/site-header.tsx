@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV } from '#/data/navigation'
+import { LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
 import { quickSearch } from '#/functions/catalog.functions'
 import { BookCover } from './book'
 import { LoadingLine, Spinner } from './loading-line'
@@ -402,13 +403,12 @@ export function SiteFooter() {
           &copy; {new Date().getFullYear()} Kuwala Books
           <RateNote usdOnly className="mt-1 block" />
         </p>
-        <nav aria-label="Legal" className="flex gap-5">
-          <Link to="/terms" className={footerLink}>
-            Terms
-          </Link>
-          <Link to="/privacy" className={footerLink}>
-            Privacy
-          </Link>
+        <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+          {LEGAL_ORDER.map((page) => (
+            <Link key={page} to="/legal/$page" params={{ page }} className={footerLink}>
+              {LEGAL_PAGES[page].title}
+            </Link>
+          ))}
         </nav>
       </div>
     </footer>

@@ -1,7 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { LegalStub } from '#/components/legal'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
+// The legal pages live under /legal; this short address is kept for links already shared.
 export const Route = createFileRoute('/terms')({
-  head: () => ({ meta: [{ title: 'Terms of use | Kuwala Books' }] }),
-  component: () => <LegalStub title="Terms of use" />,
+  beforeLoad: () => {
+    throw redirect({ to: '/legal/$page', params: { page: 'terms' }, statusCode: 301 })
+  },
 })

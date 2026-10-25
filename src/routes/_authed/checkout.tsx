@@ -165,6 +165,9 @@ function Checkout() {
               </div>
             )}
           </section>
+          <div className="lg:hidden">
+            <Agreement />
+          </div>
         </div>
 
         <aside className="hidden lg:block">
@@ -172,6 +175,7 @@ function Checkout() {
             <Totals subtotal={subtotal} shipping={destination ? shipping : null} />
             {action.error && <Alert>{action.error}</Alert>}
             {submit}
+            <Agreement />
           </div>
         </aside>
       </div>
@@ -208,5 +212,21 @@ function Totals({ subtotal, shipping }: { subtotal: number; shipping: number | n
         <Price ngwee={subtotal + (shipping ?? 0)} className="text-xl font-bold tracking-[-0.02em] tabular-nums" />
       </div>
     </>
+  )
+}
+
+function Agreement() {
+  return (
+    <p className="text-xs text-subtle">
+      By paying you agree to the{' '}
+      <Link to="/legal/$page" params={{ page: 'terms' }}>
+        Terms
+      </Link>{' '}
+      and{' '}
+      <Link to="/legal/$page" params={{ page: 'buyer-protection' }}>
+        Buyer protection
+      </Link>
+      .
+    </p>
   )
 }

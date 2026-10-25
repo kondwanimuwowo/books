@@ -91,6 +91,13 @@ export function SetupStep({ kind, draft, update, onSaved }: { kind: SellerKind; 
         <button type="submit" className="btn btn-primary" disabled={uploading || save.pending}>
           {uploading ? 'Uploading photo…' : save.pending ? 'Saving…' : 'Continue'}
         </button>
+        <p className="text-xs text-subtle">
+          By opening a shop you agree to the{' '}
+          <Link to="/legal/$page" params={{ page: 'seller-agreement' }}>
+            Seller agreement
+          </Link>
+          .
+        </p>
       </div>
     </form>
   )

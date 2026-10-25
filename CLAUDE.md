@@ -22,6 +22,7 @@ Book marketplace for Zambia (kuwalabooks.com). Anyone can sell new or used books
 - Publicly cached pages decide per-user UI on the client.
 - Don't run Prettier over existing files; most aren't Prettier-formatted.
 - Content and copy lists live in `src/data/`.
+- The legal pages (`src/data/legal.ts`) describe how the site actually behaves and say only "Kuwala Books". Any change to fees, delivery, payouts, refunds, disputes, offers, reviews or how personal data is handled must update that text and `LEGAL_UPDATED` in the same change. Numbers come from the constants the code uses; never type a number there by hand.
 
 ## Design
 One burgundy accent on semantic tokens, Plus Jakarta Sans 400/500/700, Heroicons solid used sparingly, minimal copy, no decorative effects, ghost empty states and skeletons, light and dark mode, separate mobile and desktop layouts.

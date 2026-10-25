@@ -34,6 +34,7 @@ import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as BooksSlugRouteImport } from './routes/books.$slug'
 import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as CoversKeyRouteImport } from './routes/covers.$key'
+import { Route as LegalPageRouteImport } from './routes/legal.$page'
 import { Route as PublishersIndexRouteImport } from './routes/publishers.index'
 import { Route as PublishersSlugRouteImport } from './routes/publishers.$slug'
 import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
@@ -182,6 +183,11 @@ const CoversKeyRoute = CoversKeyRouteImport.update({
   path: '/covers/$key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LegalPageRoute = LegalPageRouteImport.update({
+  id: '/legal/$page',
+  path: '/legal/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PublishersIndexRoute = PublishersIndexRouteImport.update({
   id: '/publishers/',
   path: '/publishers/',
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/legal/$page': typeof LegalPageRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors/': typeof AuthorsIndexRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/legal/$page': typeof LegalPageRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors': typeof AuthorsIndexRoute
@@ -425,6 +433,7 @@ export interface FileRoutesById {
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
+  '/legal/$page': typeof LegalPageRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors/': typeof AuthorsIndexRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
+    | '/legal/$page'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors/'
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
+    | '/legal/$page'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors'
@@ -574,6 +585,7 @@ export interface FileRouteTypes {
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
+    | '/legal/$page'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors/'
@@ -620,6 +632,7 @@ export interface RootRouteChildren {
   BooksSlugRoute: typeof BooksSlugRoute
   ClaimTokenRoute: typeof ClaimTokenRoute
   CoversKeyRoute: typeof CoversKeyRoute
+  LegalPageRoute: typeof LegalPageRoute
   PublishersSlugRoute: typeof PublishersSlugRoute
   SellersSlugRoute: typeof SellersSlugRoute
   AuthorsIndexRoute: typeof AuthorsIndexRoute
@@ -802,6 +815,13 @@ declare module '@tanstack/react-router' {
       path: '/covers/$key'
       fullPath: '/covers/$key'
       preLoaderRoute: typeof CoversKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/$page': {
+      id: '/legal/$page'
+      path: '/legal/$page'
+      fullPath: '/legal/$page'
+      preLoaderRoute: typeof LegalPageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publishers/': {
@@ -1083,6 +1103,7 @@ const rootRouteChildren: RootRouteChildren = {
   BooksSlugRoute: BooksSlugRoute,
   ClaimTokenRoute: ClaimTokenRoute,
   CoversKeyRoute: CoversKeyRoute,
+  LegalPageRoute: LegalPageRoute,
   PublishersSlugRoute: PublishersSlugRoute,
   SellersSlugRoute: SellersSlugRoute,
   AuthorsIndexRoute: AuthorsIndexRoute,
