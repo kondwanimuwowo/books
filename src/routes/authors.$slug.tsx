@@ -92,7 +92,8 @@ function AuthorPage() {
         </section>
       )}
 
-      {!author.shop && (
+      {/* Zambian authors only: they're who Kuwala is for, and it keeps claims on famous names out of the queue. */}
+      {!author.shop && author.isZambian && (
         <div className="card mt-8 flex max-w-xl flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
           <div className="min-w-0">
             <p className="font-medium">{PLAQUE_COPY.claim(author.name)}</p>
