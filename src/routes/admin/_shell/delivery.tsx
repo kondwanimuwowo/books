@@ -20,7 +20,7 @@ function Delivery() {
     <div className="space-y-8">
       <PageHeader
         title="Delivery"
-        description={`Prices buyers pay, by how far the parcel travels. Sellers can switch methods off or deliver free, never charge more. Yango runs only within ${YANGO_TOWNS.join(', ')}.`}
+        description={`What buyers pay: in town, or out of town (plus the extra per book). Sellers can switch methods off or deliver free, never charge more. Yango runs only within ${YANGO_TOWNS.join(', ')}.`}
       />
       {rates.length ? (
         DELIVERY_BANDS.map((band) => {
@@ -63,7 +63,8 @@ function RateRow({ rate }: { rate: DeliveryRate & { method: ActiveShippingMethod
     await saveDeliveryRate({
       data: {
         method: rate.method,
-        band: rate.band,
+        // Only the two current bands are listed (DELIVERY_BANDS), so this is never the retired one.
+        band: rate.band === 'same_town' ? 'same_town' : 'other_province',
         feeKwacha: Number(form.fee),
         extraItemKwacha: Number(form.extra),
         etaMinDays: Number(form.min),

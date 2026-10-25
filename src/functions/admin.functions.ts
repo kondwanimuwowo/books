@@ -245,7 +245,7 @@ export const saveDeliveryRate = createServerFn({ method: 'POST' })
     z
       .object({
         method: z.enum(SHIPPING_METHODS),
-        band: z.enum(['same_town', 'same_province', 'other_province']),
+        band: z.enum(['same_town', 'other_province']),
         feeKwacha: z.number().min(0).max(5000),
         extraItemKwacha: z.number().min(0).max(1000),
         etaMinDays: z.number().int().min(0).max(60),

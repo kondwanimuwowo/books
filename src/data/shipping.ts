@@ -6,14 +6,15 @@ export type ActiveShippingMethod = Exclude<ShippingMethod, 'courier' | 'zampost'
 /** What sellers can offer today, cheapest first within each kind of trip. */
 export const SHIPPING_METHODS: readonly ActiveShippingMethod[] = ['yango', 'platinum', 'mercury', 'bus_parcel', 'collect']
 
-// Priced by how far a parcel travels, not by town: fares move too often to keep a price per town.
+// Two prices: within the seller's town, or to anywhere else. 'other_province' is the stored name for
+// "out of town"; 'same_province' only appears on past orders, from when there were three bands.
 export type DeliveryBand = 'same_town' | 'same_province' | 'other_province'
-export const DELIVERY_BANDS: readonly DeliveryBand[] = ['same_town', 'same_province', 'other_province']
+export const DELIVERY_BANDS: readonly DeliveryBand[] = ['same_town', 'other_province']
 
 export const BAND_LABELS: Record<DeliveryBand, string> = {
-  same_town: 'Same town',
+  same_town: 'In town',
   same_province: 'Same province',
-  other_province: 'Other province',
+  other_province: 'Out of town',
 }
 
 /** One row of the admin-editable price list (delivery_rates). */
@@ -58,8 +59,7 @@ const METHODS: Record<ActiveShippingMethod, { label: string; describe: (from: Pl
 const isActive = (method: ShippingMethod): method is ActiveShippingMethod => (SHIPPING_METHODS as readonly string[]).includes(method)
 
 export function deliveryBand(from: Place, to: Place): DeliveryBand {
-  if (from.province === to.province && sameTown(from.town, to.town)) return 'same_town'
-  return from.province === to.province ? 'same_province' : 'other_province'
+  return from.province === to.province && sameTown(from.town, to.town) ? 'same_town' : 'other_province'
 }
 
 export function shippingOptions(
