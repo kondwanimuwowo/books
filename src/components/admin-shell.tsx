@@ -3,13 +3,12 @@ import { ArrowRightStartOnRectangleIcon, ArrowTopRightOnSquareIcon } from '@hero
 import type { ReactNode } from 'react'
 import { signOut } from '#/functions/auth.functions'
 import { ADMIN_NAV } from '#/data/admin'
+import { Wordmark } from './wordmark'
 
-function Wordmark() {
+function AdminMark() {
   return (
-    <Link to="/admin" className="flex items-baseline gap-2 text-ink no-underline hover:text-ink">
-      <span className="text-xl leading-none font-bold tracking-[-0.04em]">
-        kuwala<span className="font-normal text-accent-ink">books</span>
-      </span>
+    <Link to="/admin" className="flex items-center gap-2 text-ink no-underline hover:text-ink">
+      <Wordmark className="h-5" />
       <span className="eyebrow">Admin</span>
     </Link>
   )
@@ -32,7 +31,7 @@ export function AdminShell({ email, storeUrl, children }: { email: string; store
     <div className="min-h-dvh lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="glass-bar sticky top-0 hidden h-dvh flex-col px-4 py-6 lg:flex">
         <div className="px-3">
-          <Wordmark />
+          <AdminMark />
         </div>
         <nav className="mt-8 space-y-1" aria-label="Admin">
           {ADMIN_NAV.map(({ to, label, icon: Icon, exact }) => (
@@ -67,7 +66,7 @@ export function AdminShell({ email, storeUrl, children }: { email: string; store
       <div className="min-w-0">
         <header className="glass-bar sticky top-0 z-30 lg:hidden">
           <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <Wordmark />
+            <AdminMark />
             <button type="button" onClick={() => void signOutAndLeave()} className="btn btn-ghost btn-sm" aria-label="Sign out">
               <ArrowRightStartOnRectangleIcon className="size-5" aria-hidden />
             </button>

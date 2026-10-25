@@ -10,6 +10,8 @@ export const BARE_ROUTES: readonly string[] = ['/login', '/signup', '/forgot-pas
 // Brand files in public/: the kb mark (favicons, app icons, share fallback) and the wordmark for emails.
 export const BRAND = {
   wordmark: '/brand/wordmark.png',
+  // Recoloured for dark backgrounds: the burgundy header and dark mode.
+  wordmarkLight: '/brand/wordmark-light.png',
   mark: '/icon-512.png',
 } as const
 

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { signIn, signOut } from '#/functions/auth.functions'
 import { Alert, Field, useAction } from '#/components/form'
 import { safeNext } from '#/lib/utils'
+import { Wordmark } from '#/components/wordmark'
 
 export const Route = createFileRoute('/admin/login')({
   validateSearch: z.object({ next: z.string().optional() }),
@@ -34,9 +35,9 @@ function AdminLogin() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="rise w-full max-w-sm">
-        <p className="text-center text-3xl leading-none font-bold tracking-[-0.04em]">
-          kuwala<span className="font-normal text-accent-ink">books</span>
-        </p>
+        <h1 className="flex justify-center">
+          <Wordmark className="h-8" />
+        </h1>
         <p className="eyebrow mt-2 text-center">Admin</p>
 
         <div className="card mt-8 p-6 sm:p-8">

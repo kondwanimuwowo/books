@@ -9,6 +9,7 @@ import { useHideOnScroll } from './use-hide-on-scroll'
 import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
 import { PhotoFallback } from './photo-fallback'
+import { Wordmark } from './wordmark'
 
 interface HeaderUser {
   displayName: string
@@ -17,17 +18,9 @@ interface HeaderUser {
 }
 
 export function Logo({ className, tone = 'default' }: { className?: string; tone?: 'default' | 'inverse' }) {
-  const inverse = tone === 'inverse'
   return (
-    <Link
-      to="/"
-      className={cn(
-        'text-2xl leading-none font-bold tracking-[-0.04em] no-underline',
-        inverse ? 'text-on-accent hover:text-on-accent' : 'text-ink hover:text-ink',
-        className,
-      )}
-    >
-      kuwala<span className={cn('font-normal', inverse ? 'text-on-deep-muted' : 'text-accent-ink')}>books</span>
+    <Link to="/" className="shrink-0 no-underline">
+      <Wordmark tone={tone} className={className} />
     </Link>
   )
 }
@@ -388,7 +381,7 @@ export function SiteFooter() {
   return (
     <footer className="band mt-20">
       <div className="page grid gap-10 py-12 text-sm sm:grid-cols-[1.4fr_1fr_1fr]">
-        <Logo tone="inverse" className="text-xl" />
+        <Logo tone="inverse" className="h-5" />
         {FOOTER_NAV.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">
             <p className="eyebrow text-on-deep-muted">{group.title}</p>
