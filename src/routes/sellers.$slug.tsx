@@ -8,6 +8,7 @@ import { SELLER_KINDS } from '#/data/listing-options'
 import { cn, formatDate } from '#/lib/utils'
 import { ogMeta } from '#/lib/og'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
+import { PhotoFallback } from '#/components/photo-fallback'
 
 export const Route = createFileRoute('/sellers/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
@@ -34,7 +35,7 @@ function SellerPage() {
   return (
     <div className="page rise py-10">
       <div className="flex items-end gap-5">
-        <SellerPhoto name={seller.storeName} src={seller.photoUrl} portrait={seller.kind === 'author'} />
+        <SellerPhoto src={seller.photoUrl} portrait={seller.kind === 'author'} person={seller.kind === 'author' || seller.kind === 'individual'} />
         <div className="min-w-0">
           <p className="eyebrow">{kind}</p>
           <h1 className="mt-2 text-4xl sm:text-5xl">{seller.storeName}</h1>
@@ -64,13 +65,11 @@ function SellerPage() {
   )
 }
 
-function SellerPhoto({ name, src, portrait }: { name: string; src: string | null; portrait: boolean }) {
+function SellerPhoto({ src, portrait, person }: { src: string | null; portrait: boolean; person: boolean }) {
   const shape = portrait ? 'aspect-[2/3] w-20 rounded-md sm:w-24' : 'aspect-square w-20 rounded-xl sm:w-24'
   return src ? (
     <img src={src} alt="" className={cn('shrink-0 object-cover shadow-md', shape)} />
   ) : (
-    <div className={cn('band flex shrink-0 items-end p-2.5 text-4xl leading-none font-bold shadow-md', shape)} aria-hidden>
-      {name.charAt(0)}
-    </div>
+    <PhotoFallback kind={person ? 'person' : 'shop'} className={cn('shadow-md', shape)} />
   )
 }

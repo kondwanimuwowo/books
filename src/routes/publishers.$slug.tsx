@@ -3,6 +3,7 @@ import { ArrowTopRightOnSquareIcon, MapPinIcon } from '@heroicons/react/16/solid
 import { getPublisher } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
+import { PhotoFallback } from '#/components/photo-fallback'
 
 export const Route = createFileRoute('/publishers/$slug')({
   pendingComponent: () => (
@@ -33,9 +34,7 @@ function PublisherPage() {
   return (
     <div className="page py-10">
       <div className="rise flex flex-col gap-6 sm:flex-row sm:items-end">
-        <div className="band flex aspect-square w-24 items-end rounded-md p-3 text-4xl leading-none font-bold shadow-md sm:w-28" aria-hidden>
-          {publisher.name.charAt(0)}
-        </div>
+        <PhotoFallback kind="shop" className="aspect-square w-24 rounded-md shadow-md sm:w-28" />
         <div className="min-w-0">
           <p className="eyebrow">Publisher</p>
           <h1 className="mt-1 text-4xl sm:text-5xl">{publisher.name}</h1>

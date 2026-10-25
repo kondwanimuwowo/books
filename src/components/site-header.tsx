@@ -8,6 +8,7 @@ import { LoadingLine, Spinner } from './loading-line'
 import { useHideOnScroll } from './use-hide-on-scroll'
 import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
+import { PhotoFallback } from './photo-fallback'
 
 interface HeaderUser {
   displayName: string
@@ -217,9 +218,7 @@ function QuickResults({
         {result.authors.length > 0 && <li role="presentation" className="eyebrow px-4 pt-3 pb-1">Authors</li>}
         {result.authors.map((a, i) => (
           <li key={a.slug} {...row(authorStart + i)}>
-            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sunken text-sm font-bold" aria-hidden>
-              {a.name.charAt(0)}
-            </span>
+            <PhotoFallback kind="person" className="size-9 rounded-md" />
             <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{a.name}</span>
             <span className="shrink-0 text-sm text-subtle tabular-nums">
               {a.bookCount} {a.bookCount === 1 ? 'book' : 'books'}

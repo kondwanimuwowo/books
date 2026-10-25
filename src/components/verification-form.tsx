@@ -6,6 +6,7 @@ import { DocumentUpload } from './document-upload'
 import { Alert, Field, useAction } from './form'
 import { RowShapes } from './placeholder'
 import type { VerifyDraft } from './onboarding/draft'
+import { PhotoFallback } from './photo-fallback'
 
 type Match = Awaited<ReturnType<typeof findAuthorPages>>[number]
 
@@ -116,12 +117,10 @@ export function VerificationForm({
   )
 }
 
-function Portrait({ name, src }: { name: string; src: string | null }) {
+function Portrait({ src }: { name: string; src: string | null }) {
   return src ? (
     <img src={src} alt="" className="aspect-[2/3] w-9 shrink-0 rounded-sm object-cover" />
   ) : (
-    <span className="band flex aspect-[2/3] w-9 shrink-0 items-end rounded-sm p-1 text-sm leading-none font-bold" aria-hidden>
-      {name.charAt(0)}
-    </span>
+    <PhotoFallback kind="person" className="aspect-[2/3] w-9 rounded-sm" />
   )
 }

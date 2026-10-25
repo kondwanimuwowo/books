@@ -11,7 +11,7 @@ export interface KindCopy {
   bioLabel: string
   bioPlaceholder: string
   photoLabel: string
-  /** Authors must add a photo; everyone else falls back to their initial. */
+  /** Authors must add a photo; everyone else falls back to an icon. */
   photoRequired: boolean
   photoShape: 'cover' | 'square'
   doneTitle: string

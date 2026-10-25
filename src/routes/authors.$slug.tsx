@@ -4,6 +4,7 @@ import { getAuthor } from '#/functions/catalog.functions'
 import { ogMeta } from '#/lib/og'
 import { BookGrid, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
+import { PhotoFallback } from '#/components/photo-fallback'
 
 export const Route = createFileRoute('/authors/$slug')({
   pendingComponent: () => (
@@ -42,9 +43,7 @@ function AuthorPage() {
         {author.photoUrl ? (
           <img src={author.photoUrl} alt="" className="aspect-[2/3] w-28 rounded-md object-cover shadow-md sm:w-36" />
         ) : (
-          <div className="band flex aspect-[2/3] w-28 items-end rounded-md p-3 text-5xl leading-none font-bold shadow-md sm:w-36" aria-hidden>
-            {author.name.charAt(0)}
-          </div>
+          <PhotoFallback kind="person" className="aspect-[2/3] w-28 rounded-md shadow-md sm:w-36" />
         )}
         <div className="min-w-0">
           <h1 className="text-4xl sm:text-5xl">{author.name}</h1>

@@ -12,6 +12,7 @@ import { Alert, Field, useAction } from '../form'
 import { ShareOnWhatsApp } from '../share'
 import { TownField } from '../town-field'
 import type { Draft } from './draft'
+import { PhotoFallback } from '../photo-fallback'
 
 export function RoleStep({ selected, onPick }: { selected: SellerKind | null; onPick: (kind: SellerKind) => void }) {
   return (
@@ -63,7 +64,7 @@ export function SetupStep({ kind, draft, update, onSaved }: { kind: SellerKind; 
           onBusy={setUploading}
           onChange={(p) => update({ photo: p && { key: p.key, url: p.url } })}
         />
-        <p className="mt-2 max-w-32 text-xs text-subtle">{copy.photoRequired ? 'Required. A clear photo of your face.' : 'Optional. We’ll use your initial.'}</p>
+        <p className="mt-2 max-w-32 text-xs text-subtle">{copy.photoRequired ? 'Required. A clear photo of your face.' : 'Optional. You can add one later.'}</p>
       </div>
       <div className="min-w-0 flex-1 space-y-5">
         <Field label={copy.nameLabel} hint={copy.nameHint}>
@@ -135,9 +136,10 @@ export function DoneStep({ seller, verification }: { seller: DoneSeller; verific
           {seller.photoUrl ? (
             <img src={seller.photoUrl} alt="" className={cn('w-20 shrink-0 object-cover shadow-md', copy.photoShape === 'cover' ? 'aspect-[2/3] rounded-md' : 'aspect-square rounded-xl')} />
           ) : (
-            <span className="band flex aspect-square w-20 shrink-0 items-end rounded-xl p-2.5 text-3xl leading-none font-bold" aria-hidden>
-              {seller.storeName.charAt(0)}
-            </span>
+            <PhotoFallback
+              kind={seller.kind === 'individual' || seller.kind === 'author' ? 'person' : 'shop'}
+              className={cn('w-20', copy.photoShape === 'cover' ? 'aspect-[2/3] rounded-md' : 'aspect-square rounded-xl')}
+            />
           )}
           <div className="min-w-0">
             <p className="eyebrow">{copy.label}</p>
