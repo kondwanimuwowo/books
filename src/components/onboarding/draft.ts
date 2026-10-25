@@ -57,6 +57,8 @@ export function useDraft(userId: string, initial: Draft) {
   }, [draft, ready, userId])
 
   const update = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }))
+  // Uploads finish in any order, so each merges into the latest draft, not the one it started from.
+  const updateVerify = (patch: Partial<VerifyDraft>) => setDraft((d) => ({ ...d, verify: { ...d.verify, ...patch } }))
   const clear = () => {
     try {
       localStorage.removeItem(key(userId))
@@ -64,5 +66,5 @@ export function useDraft(userId: string, initial: Draft) {
       // Nothing to clear.
     }
   }
-  return { draft, update, clear, ready }
+  return { draft, update, updateVerify, clear, ready }
 }

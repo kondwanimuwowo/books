@@ -43,7 +43,7 @@ function StartSelling() {
   const requested = Route.useSearch().step ?? 'role'
   const navigate = useNavigate({ from: Route.fullPath })
   const router = useRouter()
-  const { draft, update, clear, ready } = useDraft(user?.id ?? 'guest', {
+  const { draft, update, updateVerify, clear, ready } = useDraft(user?.id ?? 'guest', {
     kind: null,
     name: profile?.displayName ?? '',
     bio: '',
@@ -134,7 +134,7 @@ function StartSelling() {
                 <VerificationForm
                   storeName={seller.storeName}
                   value={draft.verify}
-                  onChange={(patch) => update({ verify: { ...draft.verify, ...patch } })}
+                  onChange={updateVerify}
                   onSubmitted={() => void finish('done')}
                   aside={
                     <button type="button" className="btn btn-ghost" onClick={() => void finish('done')}>
