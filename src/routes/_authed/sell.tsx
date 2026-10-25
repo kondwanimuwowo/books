@@ -146,7 +146,7 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
   }, [term, searching])
 
   const current = searching && found?.query === term ? found.result : null
-  const loading = searching ? !current && !error : !all
+  const loading = searching ? !current && !error : open && !all
   const slow = useSlow(loading)
   // The last answer stays, dimmed and out of reach, until the next one lands: no blank flash between keys.
   const stale = searching && loading && found ? found.result : null
