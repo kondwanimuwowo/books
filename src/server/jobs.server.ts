@@ -1,11 +1,11 @@
 import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authors, bookAuthors, books, listings, offers, payments, payouts, sellerOrders, sellers } from '#/db/schema'
+import { authors, bookAuthors, books, listings, offers, payments, payouts, sellerOrders } from '#/db/schema'
 import { findCoverUrls, googleCoverUrl, googleVolumeId } from './book-sources.server'
 import { mirrorCover } from './covers.server'
 import { summariseDescription } from './ai.server'
-import { getTransferStatus } from './lenco.server'
-import { attemptPayout, releaseToSeller, settlePayment } from './orders.server'
+import { releaseToSeller, settlePayment } from './orders.server'
+import { reconcilePayout, weeklyPayouts } from './payouts.server'
 import { notifyLapsed } from './offers.server'
 import { snapshotChart } from './chart.server'
 import { awardPlaques } from './tiers.server'
@@ -13,7 +13,6 @@ import { remindToRate } from './reminders.server'
 
 // Runs from the Worker's cron trigger (see src/server.ts and wrangler.jsonc).
 const BATCH = 50
-const MAX_PAYOUT_ATTEMPTS = 3
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000)
 
@@ -57,42 +56,7 @@ async function reconcilePayouts(db: Db) {
     .from(payouts)
     .where(and(eq(payouts.status, 'processing'), lt(payouts.createdAt, minutesAgo(5))))
     .limit(BATCH)
-  return each(open, 'reconcilePayouts', async (row) => {
-    const transfer = await getTransferStatus(row.reference)
-    if (transfer.status === 'pending') return
-    const status = transfer.status === 'successful' ? 'paid' : 'failed'
-    await db
-      .update(payouts)
-      .set({ status, lencoReference: transfer.lencoReference, failureReason: transfer.reasonForFailure ?? null })
-      .where(eq(payouts.id, row.id))
-    await db
-      .update(sellerOrders)
-      .set({ payoutStatus: status })
-      .where(and(eq(sellerOrders.id, row.sellerOrderId), eq(sellerOrders.payoutStatus, 'processing')))
-  })
-}
-
-// Released money waits for the seller's payout details; failed transfers get a few more tries.
-async function retryPayouts(db: Db) {
-  const attempts = sql<number>`(select count(*)::int from ${payouts} p where p.seller_order_id = ${sellerOrders.id})`
-  const rows = await db
-    .select({ id: sellerOrders.id, payoutStatus: sellerOrders.payoutStatus })
-    .from(sellerOrders)
-    .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
-    .where(
-      and(
-        isNotNull(sellers.lencoRecipientId),
-        eq(sellers.payoutMethod, 'mobile_money'),
-        or(eq(sellerOrders.payoutStatus, 'released'), and(eq(sellerOrders.payoutStatus, 'failed'), lt(attempts, MAX_PAYOUT_ATTEMPTS))),
-      ),
-    )
-    .limit(BATCH)
-  return each(rows, 'retryPayouts', async (row) => {
-    if (row.payoutStatus === 'failed') {
-      await db.update(sellerOrders).set({ payoutStatus: 'released' }).where(and(eq(sellerOrders.id, row.id), eq(sellerOrders.payoutStatus, 'failed')))
-    }
-    await attemptPayout(db, row.id)
-  })
+  return each(open, 'reconcilePayouts', (row) => reconcilePayout(db, row))
 }
 
 // Silence declines an offer, unpaid holds go back on sale, and offers on copies taken down close.
@@ -171,7 +135,7 @@ async function summariseBooks(db: Db) {
   })
 }
 
-const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, retryPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate }
+const JOBS = { releaseOverdue, settleStalePayments, reconcilePayouts, weeklyPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

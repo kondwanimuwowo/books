@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
   boolean,
   check,
@@ -111,6 +112,9 @@ export const payoutStatus = pgEnum('payout_status', [
   // Dispute resolved in the buyer's favour; nothing is paid to the seller.
   'refunded',
 ])
+// per_order: one transfer per parcel (before weekly payouts). weekly: free, the whole balance on payout day.
+// instant: the seller's "Pay me now", the transfer fee deducted.
+export const payoutKind = pgEnum('payout_kind', ['per_order', 'weekly', 'instant'])
 export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
   'bank_account',
@@ -501,6 +505,8 @@ export const sellerOrders = pgTable(
     resolutionNote: text('resolution_note'),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     payoutStatus: payoutStatus('payout_status').notNull().default('held'),
+    // The transfer that paid this parcel out; several parcels share one since weekly payouts.
+    payoutId: uuid('payout_id').references((): AnyPgColumn => payouts.id, { onDelete: 'set null' }),
     // The one nudge to rate and review, a few days after delivery.
     ratingReminderAt: timestamp('rating_reminder_at', { withTimezone: true }),
     createdAt: createdAt(),
@@ -509,6 +515,7 @@ export const sellerOrders = pgTable(
   (t) => [
     index('seller_orders_order_idx').on(t.orderId),
     index('seller_orders_seller_idx').on(t.sellerId, t.status),
+    index('seller_orders_payout_idx').on(t.payoutId),
   ],
 ).enableRLS()
 
@@ -650,13 +657,16 @@ export const payouts = pgTable(
   'payouts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    sellerOrderId: uuid('seller_order_id')
-      .notNull()
-      .references(() => sellerOrders.id),
+    // Only set on per_order payouts; batched ones are found through seller_orders.payout_id.
+    sellerOrderId: uuid('seller_order_id').references(() => sellerOrders.id),
     sellerId: uuid('seller_id')
       .notNull()
       .references(() => sellers.id),
+    kind: payoutKind('kind').notNull().default('per_order'),
+    // What reached the seller, after any fee.
     amountNgwee: integer('amount_ngwee').notNull(),
+    // Charged to the seller on instant payouts; Kuwala pays it on weekly ones.
+    feeNgwee: integer('fee_ngwee').notNull().default(0),
     reference: text('reference').notNull(),
     status: payoutStatus('status').notNull().default('processing'),
     lencoReference: text('lenco_reference'),
@@ -667,6 +677,7 @@ export const payouts = pgTable(
   (t) => [
     uniqueIndex('payouts_reference_key').on(t.reference),
     index('payouts_seller_order_idx').on(t.sellerOrderId),
+    index('payouts_seller_idx').on(t.sellerId, t.createdAt),
   ],
 ).enableRLS()
 

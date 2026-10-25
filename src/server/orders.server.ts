@@ -1,12 +1,12 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { deliveryRates, listings, offers, orderItems, orders, payments, payouts, profiles, sellerOrders, sellers, books } from '#/db/schema'
+import { deliveryRates, listings, offers, orderItems, orders, payments, profiles, sellerOrders, sellers, books } from '#/db/schema'
 import { AUTO_RELEASE_DAYS, shippingOptions } from '#/data/shipping'
 import type { DeliveryRate, ShippingMethod } from '#/data/shipping'
 import { COMMISSION_RATE } from '#/data/listing-options'
-import { formatMoney, ngweeToAmount } from '#/lib/money'
+import { formatMoney } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
-import { getCollectionStatus, initiateMobileMoneyTransfer, isPendingStatus } from './lenco.server'
+import { getCollectionStatus, isPendingStatus } from './lenco.server'
 import { sendEmail } from './email.server'
 import { notifySoldElsewhere } from './offers.server'
 
@@ -325,7 +325,7 @@ export async function releaseToSeller(db: Db, sellerOrderId: string, from: Selle
   if (!row) return false
 
   await completeOrderIfSettled(db, row.orderId)
-  await attemptPayout(db, sellerOrderId)
+  // The money joins the seller's balance, paid out on payout day or when they ask (see payouts.server).
   return true
 }
 
@@ -337,43 +337,6 @@ export async function completeOrderIfSettled(db: Db, orderId: string) {
     .where(and(eq(sellerOrders.orderId, orderId), inArray(sellerOrders.status, ['awaiting_payment', 'to_ship', 'shipped', 'disputed'])))
     .limit(1)
   if (!open.length) await db.update(orders).set({ status: 'completed' }).where(eq(orders.id, orderId))
-}
-
-export async function attemptPayout(db: Db, sellerOrderId: string) {
-  const [row] = await db
-    .select({ so: sellerOrders, seller: sellers })
-    .from(sellerOrders)
-    .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
-    .where(eq(sellerOrders.id, sellerOrderId))
-  if (!row || row.so.payoutStatus !== 'released') return
-  // Without a payout destination the money stays "released" until the seller adds one.
-  if (!row.seller.lencoRecipientId || row.seller.payoutMethod !== 'mobile_money') return
-
-  // One reference per attempt, so a failed payout can be retried.
-  const reference = `po-${sellerOrderId.slice(0, 8)}-${randomCode(6)}`
-  const [claimed] = await db
-    .update(sellerOrders)
-    .set({ payoutStatus: 'processing' })
-    .where(and(eq(sellerOrders.id, sellerOrderId), eq(sellerOrders.payoutStatus, 'released')))
-    .returning({ id: sellerOrders.id })
-  if (!claimed) return
-
-  await db.insert(payouts).values({ sellerOrderId, sellerId: row.seller.id, amountNgwee: row.so.payoutNgwee, reference, status: 'processing' })
-  try {
-    const transfer = await initiateMobileMoneyTransfer({
-      recipientId: row.seller.lencoRecipientId,
-      amount: ngweeToAmount(row.so.payoutNgwee),
-      reference,
-      narration: 'Kuwala Books sale',
-    })
-    const status = transfer.status === 'successful' ? 'paid' : transfer.status === 'failed' ? 'failed' : 'processing'
-    await db.update(payouts).set({ status, lencoReference: transfer.lencoReference, failureReason: transfer.reasonForFailure ?? null }).where(eq(payouts.reference, reference))
-    await db.update(sellerOrders).set({ payoutStatus: status }).where(eq(sellerOrders.id, sellerOrderId))
-  } catch (error) {
-    console.error('Payout failed', sellerOrderId, error)
-    await db.update(payouts).set({ status: 'failed', failureReason: String(error) }).where(eq(payouts.reference, reference))
-    await db.update(sellerOrders).set({ payoutStatus: 'failed' }).where(eq(sellerOrders.id, sellerOrderId))
-  }
 }
 
 export function autoReleaseDate() {

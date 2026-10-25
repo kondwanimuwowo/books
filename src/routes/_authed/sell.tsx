@@ -19,6 +19,7 @@ import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, conditionLabel } from '#/data/listing-options'
+import { instantFee } from '#/data/payouts'
 import type { Condition, Format } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
 import { formatMoney } from '#/lib/money'
@@ -611,11 +612,15 @@ function PayoutReceipt({ priceNgwee }: { priceNgwee: number }) {
         <dt className="text-muted">Kuwala fee ({Math.round(COMMISSION_RATE * 100)}%)</dt>
         <dd className="text-muted">&minus;{formatMoney(fee)}</dd>
       </div>
+      <div className="flex justify-between">
+        <dt className="text-muted">Payout</dt>
+        <dd className="text-muted">Free on Fridays</dd>
+      </div>
       <div className="flex items-baseline justify-between border-t border-dashed border-line-strong pt-2">
         <dt className="font-medium">You get</dt>
         <dd className="text-xl font-bold tracking-[-0.02em]">{formatMoney(priceNgwee - fee)}</dd>
       </div>
-      <p className="pt-1 text-xs text-subtle">Plus delivery, paid by the buyer.</p>
+      <p className="pt-1 text-xs text-subtle">Plus delivery, paid by the buyer. Want it sooner? Pay me now sends your balance at once for Lenco’s {formatMoney(instantFee(priceNgwee))} fee.</p>
     </dl>
   )
 }

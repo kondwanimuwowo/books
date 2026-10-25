@@ -23,7 +23,7 @@ export const SELLER_ORDER_STATUS: Record<SellerOrderStatus, { label: string; ton
 
 export const PAYOUT_STATUS: Record<PayoutStatus, { label: string; tone: string }> = {
   held: { label: 'Held until delivery', tone: NEUTRAL },
-  released: { label: 'Ready to pay out', tone: WARN },
+  released: { label: 'In balance', tone: WARN },
   processing: { label: 'Paying out', tone: ACTIVE },
   paid: { label: 'Paid', tone: GOOD },
   failed: { label: 'Payout failed', tone: BAD },

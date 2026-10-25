@@ -1,6 +1,9 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getMySales, markShipped } from '#/functions/orders.functions'
+import { getMyBalance, payMeNow } from '#/functions/sell.functions'
+import { INSTANT_MIN_NGWEE, PAYOUT_COPY, WEEKLY_MIN_NGWEE } from '#/data/payouts'
+import { formatMoney } from '#/lib/money'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
@@ -14,7 +17,10 @@ import { READER_TAGS, REPUTATION_COPY, withinRatingWindow } from '#/data/reputat
 
 export const Route = createFileRoute('/_authed/account/sales')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading sales" shapes={<RowShapes cover={false} />} />,
-  loader: () => getMySales(),
+  loader: async () => {
+    const [sales, balance] = await Promise.all([getMySales(), getMyBalance()])
+    return { sales, balance }
+  },
   component: Sales,
 })
 
@@ -28,10 +34,11 @@ const STATUS: Partial<Record<Sale['status'], { label: string; tone: string }>> =
   refunded: { label: 'Refunded', tone: 'bg-sunken text-muted' },
 }
 
-const COMING: Sale['payoutStatus'][] = ['held', 'released', 'processing']
+// On its way: still in escrow, or being transferred. The balance (released) has its own card.
+const COMING: Sale['payoutStatus'][] = ['held', 'processing']
 
 function Sales() {
-  const sales = Route.useLoaderData()
+  const { sales, balance } = Route.useLoaderData()
   if (!sales.length) {
     return (
       <Placeholder mode="empty" label="Sales" shapes={<RowShapes cover={false} />}>
@@ -49,7 +56,6 @@ function Sales() {
 
   const paid = sales.filter((s) => s.payoutStatus === 'paid').reduce((n, s) => n + s.payoutNgwee, 0)
   const coming = sales.filter((s) => COMING.includes(s.payoutStatus)).reduce((n, s) => n + s.payoutNgwee, 0)
-  const waiting = sales.some((s) => s.payoutStatus === 'released' || s.payoutStatus === 'failed')
   // Parcels to ship lead; only the first gets the loud button.
   const ordered = [...sales].sort((a, b) => Number(b.status === 'to_ship') - Number(a.status === 'to_ship'))
   const firstToShip = ordered.find((s) => s.status === 'to_ship')?.id
@@ -69,14 +75,7 @@ function Sales() {
         )}
       </section>
 
-      {waiting && (
-        <Alert tone="info">
-          Money waiting.{' '}
-          <Link to="/account/shop" className="font-medium">
-            Add your mobile money number
-          </Link>
-        </Alert>
-      )}
+      {balance.readyNgwee > 0 && <Balance balance={balance} />}
 
       <div className="space-y-4">
         {ordered.map((sale) => (
@@ -160,6 +159,52 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
           <RateParcel sellerOrderId={sale.id} title={REPUTATION_COPY.rateReader} tags={READER_TAGS} current={sale.myRating} />
         </div>
       )}
+    </section>
+  )
+}
+
+type BalanceData = Awaited<ReturnType<typeof getMyBalance>>
+
+/** Delivered money not yet paid out: free on payout day, or now for Lenco's fee. Nothing shows until a sale is delivered. */
+function Balance({ balance }: { balance: BalanceData }) {
+  const router = useRouter()
+  const [paid, setPaid] = useState<string | null>(null)
+  const payNow = useAction(async () => {
+    const result = await payMeNow()
+    setPaid(result.status === 'paid' ? `Sent ${formatMoney(result.amountNgwee)} to your mobile money.` : `Sending ${formatMoney(result.amountNgwee)}. It usually arrives within minutes.`)
+    await router.invalidate()
+  })
+  const day = new Date(balance.nextPayoutDay).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  const net = balance.readyNgwee - balance.instantFeeNgwee
+  const canInstant = balance.hasDestination && balance.readyNgwee >= INSTANT_MIN_NGWEE
+
+  return (
+    <section className="card space-y-4 p-4 sm:p-5" aria-label={PAYOUT_COPY.balance}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{PAYOUT_COPY.balance}</p>
+          <Price ngwee={balance.readyNgwee} className="mt-1 block text-3xl font-bold tracking-[-0.03em] tabular-nums" />
+          <p className="mt-1 text-sm text-subtle" suppressHydrationWarning>
+            {balance.readyNgwee >= WEEKLY_MIN_NGWEE ? PAYOUT_COPY.weekly(day) : PAYOUT_COPY.belowMinimum(formatMoney(WEEKLY_MIN_NGWEE), day)}
+          </p>
+        </div>
+        {canInstant && !paid && (
+          <button type="button" className="btn btn-secondary" disabled={payNow.pending} onClick={() => void payNow.run()}>
+            {payNow.pending ? 'Sending…' : PAYOUT_COPY.instant}
+          </button>
+        )}
+      </div>
+      {canInstant && !paid && <p className="text-xs text-subtle">{PAYOUT_COPY.instantNote(formatMoney(balance.instantFeeNgwee), formatMoney(net))}</p>}
+      {!balance.hasDestination && (
+        <Alert tone="info">
+          {PAYOUT_COPY.noDestination}{' '}
+          <Link to="/account/shop" className="font-medium">
+            Add it
+          </Link>
+        </Alert>
+      )}
+      {payNow.error && <Alert>{payNow.error}</Alert>}
+      {paid && <Alert tone="success">{paid}</Alert>}
     </section>
   )
 }

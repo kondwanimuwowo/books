@@ -2,18 +2,19 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { books, categories, listings, profiles, sellerOrders, sellers } from '#/db/schema'
+import { books, categories, listings, profiles, sellers } from '#/db/schema'
 import { PROVINCES } from '#/data/zambia'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { normalizeLocalPhone } from '#/lib/phone'
-import { toNgwee } from '#/lib/money'
+import { formatMoney, toNgwee } from '#/lib/money'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { findDescription, lookupIsbn, searchExternal } from '#/server/book-sources.server'
 import { findCatalogueMatches, findOrCreateBook, suggestNames } from '#/server/catalog.server'
-import { attemptPayout } from '#/server/orders.server'
 import { createMobileMoneyRecipient, resolveMobileMoney } from '#/server/lenco.server'
 import { toIsbn13 } from '#/lib/isbn'
 import { ownedCoverUrl } from '#/server/covers.server'
+import { payOutSeller, sellerBalance } from '#/server/payouts.server'
+import { INSTANT_MIN_NGWEE, instantFee, nextPayoutDay } from '#/data/payouts'
 import { writeSellerProfile } from '#/server/sellers.server'
 
 const phoneSchema = z.string().transform((value, ctx) => {
@@ -325,15 +326,33 @@ export const savePayoutDetails = createServerFn({ method: 'POST' })
         lencoRecipientId: recipient.id,
       })
       .where(eq(sellers.id, context.seller.id))
-
-    // Anything that was waiting on payout details (or failed before) can go now.
-    const waiting = await db
-      .select({ id: sellerOrders.id })
-      .from(sellerOrders)
-      .where(and(eq(sellerOrders.sellerId, context.seller.id), inArray(sellerOrders.payoutStatus, ['released', 'failed'])))
-    for (const row of waiting) {
-      await db.update(sellerOrders).set({ payoutStatus: 'released' }).where(eq(sellerOrders.id, row.id))
-      await attemptPayout(db, row.id)
-    }
+    // Anything waiting is paid on the next payout day, or now if they tap Pay me now.
     return { accountName: resolved.accountName }
+  })
+
+/** "Pay me now": the whole balance at once, Lenco's transfer fee taken from it. Only delivered sales are in a balance. */
+export const payMeNow = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .handler(async ({ context }) => {
+    const db = getDb()
+    const { readyNgwee } = await sellerBalance(db, context.seller.id)
+    if (readyNgwee < INSTANT_MIN_NGWEE) throw new Error(`Pay me now works from ${formatMoney(INSTANT_MIN_NGWEE)}`)
+    const result = await payOutSeller(db, context.seller.id, 'instant')
+    if (!result) throw new Error('Nothing is ready to pay out')
+    if (result.status === 'failed') throw new Error('The transfer didn’t go through. Your balance is safe; try again later.')
+    return result
+  })
+
+/** The seller's balance: delivered sales not yet paid out, and how and when they will be. */
+export const getMyBalance = createServerFn({ method: 'GET' })
+  .middleware([requireSellerMiddleware])
+  .handler(async ({ context }) => {
+    const { readyNgwee, oldest } = await sellerBalance(getDb(), context.seller.id)
+    return {
+      readyNgwee,
+      oldest,
+      hasDestination: !!context.seller.lencoRecipientId && context.seller.payoutMethod === 'mobile_money',
+      nextPayoutDay: nextPayoutDay(),
+      instantFeeNgwee: instantFee(readyNgwee),
+    }
   })

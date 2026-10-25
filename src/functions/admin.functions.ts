@@ -15,7 +15,8 @@ import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
 import { escapeHtml, sendEmail } from '#/server/email.server'
 import { deletePrivate } from '#/server/private-files.server'
 import { uniqueSlug } from '#/server/catalog.server'
-import { attemptPayout, completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
+import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
+import { payOutSeller } from '#/server/payouts.server'
 
 const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
@@ -452,11 +453,13 @@ export const retryPayout = createServerFn({ method: 'POST' })
     const db = getDb()
     const [row] = await db
       .update(sellerOrders)
-      .set({ payoutStatus: 'released' })
-      .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.payoutStatus, 'failed')))
-      .returning({ id: sellerOrders.id })
-    if (!row) throw new Error('This payout is not in a failed state')
-    await attemptPayout(db, data.sellerOrderId)
+      .set({ payoutStatus: 'released', payoutId: null })
+      .where(and(eq(sellerOrders.id, data.sellerOrderId), inArray(sellerOrders.payoutStatus, ['failed', 'released'])))
+      .returning({ sellerId: sellerOrders.sellerId })
+    if (!row) throw new Error('This payout is not waiting or failed')
+    // Admin retries are free, like a weekly payout, and take the seller's whole balance with them.
+    const result = await payOutSeller(db, row.sellerId, 'weekly')
+    if (result?.status === 'failed') throw new Error('Lenco refused the transfer again. Check the seller’s number.')
     return { ok: true }
   })
 
