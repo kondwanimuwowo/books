@@ -6,6 +6,7 @@ import { Plaque, PlaqueMark } from '#/components/plaque'
 import { ShareOnWhatsApp } from '#/components/share'
 import { SHARE_COPY } from '#/data/share'
 import { AUTHOR_LINKS, PLAQUE_COPY, topTier } from '#/data/tiers'
+import { CLAIM_COPY } from '#/data/claims'
 import { BookGrid, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
@@ -78,6 +79,20 @@ function AuthorPage() {
       </div>
 
       {author.bio && <p className="mt-8 max-w-prose leading-relaxed whitespace-pre-line">{author.bio}</p>}
+      {author.sources && (
+        <details className="mt-3 max-w-prose text-xs text-subtle">
+          <summary className="cursor-pointer">{CLAIM_COPY.unclaimedLabel}</summary>
+          <ul className="mt-2 space-y-1">
+            {author.sources.map((s) => (
+              <li key={s.url}>
+                <a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="break-all">
+                  {s.title || s.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {author.milestones.length > 0 && (
         <section aria-labelledby="plaques" className="mt-10">

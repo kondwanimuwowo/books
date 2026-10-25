@@ -269,6 +269,49 @@ export const authorMilestones = pgTable(
   (t) => [primaryKey({ columns: [t.authorId, t.tier] })],
 ).enableRLS()
 
+export interface DraftBook {
+  title: string
+  year: number | null
+  publisher: string | null
+  isbn: string | null
+}
+
+export interface DraftContact {
+  email?: string
+  emailSource?: string
+  phone?: string
+  phoneSource?: string
+}
+
+/**
+ * An author page Kuwala researched before the author joined. Admin-only: the sources, contact details and
+ * invite never reach the public page. Publishing creates (or fills) the authors row; the author then claims it.
+ */
+export const authorDrafts = pgTable(
+  'author_drafts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // Set once published.
+    authorId: uuid('author_id').references(() => authors.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    isZambian: boolean('is_zambian').notNull().default(true),
+    bio: text('bio').notNull().default(''),
+    links: jsonb('links').$type<AuthorLinks>().notNull().default({}),
+    books: jsonb('books').$type<DraftBook[]>().notNull().default([]),
+    sources: jsonb('sources').$type<{ url: string; title: string }[]>().notNull().default([]),
+    contact: jsonb('contact').$type<DraftContact>().notNull().default({}),
+    invite: jsonb('invite').$type<{ subject: string; body: string; whatsapp: string }>(),
+    // Only the hash is kept; the link in the invite carries the token.
+    inviteTokenHash: text('invite_token_hash'),
+    invitedAt: timestamp('invited_at', { withTimezone: true }),
+    optedOutAt: timestamp('opted_out_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('author_drafts_author_key').on(t.authorId), uniqueIndex('author_drafts_token_key').on(t.inviteTokenHash)],
+).enableRLS()
+
 export const publishers = pgTable(
   'publishers',
   {

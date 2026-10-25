@@ -32,6 +32,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthorsIndexRouteImport } from './routes/authors.index'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as BooksSlugRouteImport } from './routes/books.$slug'
+import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as CoversKeyRouteImport } from './routes/covers.$key'
 import { Route as PublishersIndexRouteImport } from './routes/publishers.index'
 import { Route as PublishersSlugRouteImport } from './routes/publishers.$slug'
@@ -47,6 +48,7 @@ import { Route as AuthedOrdersNumberRouteImport } from './routes/_authed/orders.
 import { Route as AdminShellIndexRouteImport } from './routes/admin/_shell/index'
 import { Route as AdminShellAuthorsRouteImport } from './routes/admin/_shell/authors'
 import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/delivery'
+import { Route as AdminShellDraftsRouteImport } from './routes/admin/_shell/drafts'
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
 import { Route as AdminShellPublishersRouteImport } from './routes/admin/_shell/publishers'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
@@ -166,6 +168,11 @@ const BooksSlugRoute = BooksSlugRouteImport.update({
   path: '/books/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClaimTokenRoute = ClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CoversKeyRoute = CoversKeyRouteImport.update({
   id: '/covers/$key',
   path: '/covers/$key',
@@ -241,6 +248,11 @@ const AdminShellDeliveryRoute = AdminShellDeliveryRouteImport.update({
   path: '/delivery',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const AdminShellDraftsRoute = AdminShellDraftsRouteImport.update({
+  id: '/drafts',
+  path: '/drafts',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 const AdminShellOrdersRoute = AdminShellOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -288,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
@@ -302,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
+  '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
@@ -330,6 +344,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
@@ -344,6 +359,7 @@ export interface FileRoutesByTo {
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/authors': typeof AdminShellAuthorsRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
+  '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
   '/admin/publishers': typeof AdminShellPublishersRoute
   '/admin/sellers': typeof AdminShellSellersRoute
@@ -375,6 +391,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
@@ -389,6 +406,7 @@ export interface FileRoutesById {
   '/_authed/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/_shell/authors': typeof AdminShellAuthorsRoute
   '/admin/_shell/delivery': typeof AdminShellDeliveryRoute
+  '/admin/_shell/drafts': typeof AdminShellDraftsRoute
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
   '/admin/_shell/publishers': typeof AdminShellPublishersRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
@@ -420,6 +438,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/claim/$token'
     | '/covers/$key'
     | '/publishers/$slug'
     | '/sellers/$slug'
@@ -434,6 +453,7 @@ export interface FileRouteTypes {
     | '/orders/$number'
     | '/admin/authors'
     | '/admin/delivery'
+    | '/admin/drafts'
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
@@ -462,6 +482,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/claim/$token'
     | '/covers/$key'
     | '/publishers/$slug'
     | '/sellers/$slug'
@@ -476,6 +497,7 @@ export interface FileRouteTypes {
     | '/orders/$number'
     | '/admin/authors'
     | '/admin/delivery'
+    | '/admin/drafts'
     | '/admin/orders'
     | '/admin/publishers'
     | '/admin/sellers'
@@ -506,6 +528,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
+    | '/claim/$token'
     | '/covers/$key'
     | '/publishers/$slug'
     | '/sellers/$slug'
@@ -520,6 +543,7 @@ export interface FileRouteTypes {
     | '/_authed/orders/$number'
     | '/admin/_shell/authors'
     | '/admin/_shell/delivery'
+    | '/admin/_shell/drafts'
     | '/admin/_shell/orders'
     | '/admin/_shell/publishers'
     | '/admin/_shell/sellers'
@@ -546,6 +570,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
+  ClaimTokenRoute: typeof ClaimTokenRoute
   CoversKeyRoute: typeof CoversKeyRoute
   PublishersSlugRoute: typeof PublishersSlugRoute
   SellersSlugRoute: typeof SellersSlugRoute
@@ -717,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BooksSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/claim/$token': {
+      id: '/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/claim/$token'
+      preLoaderRoute: typeof ClaimTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/covers/$key': {
       id: '/covers/$key'
       path: '/covers/$key'
@@ -822,6 +854,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellDeliveryRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/admin/_shell/drafts': {
+      id: '/admin/_shell/drafts'
+      path: '/drafts'
+      fullPath: '/admin/drafts'
+      preLoaderRoute: typeof AdminShellDraftsRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
     '/admin/_shell/orders': {
       id: '/admin/_shell/orders'
       path: '/orders'
@@ -906,6 +945,7 @@ const AuthedRouteWithChildren =
 interface AdminShellRouteChildren {
   AdminShellAuthorsRoute: typeof AdminShellAuthorsRoute
   AdminShellDeliveryRoute: typeof AdminShellDeliveryRoute
+  AdminShellDraftsRoute: typeof AdminShellDraftsRoute
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
   AdminShellPublishersRoute: typeof AdminShellPublishersRoute
   AdminShellSellersRoute: typeof AdminShellSellersRoute
@@ -916,6 +956,7 @@ interface AdminShellRouteChildren {
 const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellAuthorsRoute: AdminShellAuthorsRoute,
   AdminShellDeliveryRoute: AdminShellDeliveryRoute,
+  AdminShellDraftsRoute: AdminShellDraftsRoute,
   AdminShellOrdersRoute: AdminShellOrdersRoute,
   AdminShellPublishersRoute: AdminShellPublishersRoute,
   AdminShellSellersRoute: AdminShellSellersRoute,
@@ -956,6 +997,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,
+  ClaimTokenRoute: ClaimTokenRoute,
   CoversKeyRoute: CoversKeyRoute,
   PublishersSlugRoute: PublishersSlugRoute,
   SellersSlugRoute: SellersSlugRoute,

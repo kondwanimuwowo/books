@@ -3,19 +3,25 @@ import { EnvelopeIcon } from '@heroicons/react/20/solid'
 import { useState } from 'react'
 import { z } from 'zod'
 import { signUp } from '#/functions/auth.functions'
+import { getClaim } from '#/functions/claims.functions'
 import { AuthShell } from '#/components/auth-shell'
 import { Alert, Field, useAction } from '#/components/form'
 import { safeNext } from '#/lib/utils'
 
 export const Route = createFileRoute('/signup')({
-  validateSearch: z.object({ next: z.string().optional() }),
+  validateSearch: z.object({ next: z.string().optional(), invite: z.string().max(64).optional() }),
+  // An author invited to claim their page arrives with their name and the address we wrote to already filled in.
+  loaderDeps: ({ search }) => ({ invite: search.invite }),
+  loader: ({ deps }) => (deps.invite ? getClaim({ data: { token: deps.invite } }) : null),
   head: () => ({ meta: [{ title: 'Create an account | Kuwala Books' }] }),
   component: SignupPage,
 })
 
 function SignupPage() {
   const { next } = Route.useSearch()
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const invite = Route.useLoaderData()
+  const invited = invite?.state === 'open' ? invite : null
+  const [form, setForm] = useState({ name: invited?.author.name ?? '', email: invited?.email ?? '', password: '' })
   const [sentTo, setSentTo] = useState<string | null>(null)
   const action = useAction(async () => {
     const result = await signUp({ data: { ...form, next: next ? safeNext(next) : undefined } })

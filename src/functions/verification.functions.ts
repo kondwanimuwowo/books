@@ -41,11 +41,11 @@ export const getClaimTarget = createServerFn({ method: 'GET' })
   .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ data }) => {
     const [page] = await getDb()
-      .select({ id: authors.id, name: authors.name, taken: sql<boolean>`${authors.verifiedSellerId} is not null` })
+      .select({ id: authors.id, name: authors.name, bio: authors.bio, taken: sql<boolean>`${authors.verifiedSellerId} is not null` })
       .from(authors)
       .where(eq(authors.id, data.id))
       .limit(1)
-    return page && !page.taken ? { id: page.id, name: page.name } : null
+    return page && !page.taken ? { id: page.id, name: page.name, bio: page.bio } : null
   })
 
 export const getMyVerification = createServerFn({ method: 'GET' })

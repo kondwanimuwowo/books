@@ -71,7 +71,8 @@ function StartSelling() {
     claimed.current = true
     updateVerify({ authorId: claim.id })
     if (!seller) {
-      update({ kind: 'author', name: claim.name })
+      // The page's bio is a draft of their story: theirs to edit, not to write from scratch.
+      update({ kind: 'author', name: claim.name, ...(claim.bio && !draft.bio && { bio: claim.bio }) })
       void navigate({ search: { step: 'setup', author: claim.id }, replace: true })
     }
   }, [ready, claim])

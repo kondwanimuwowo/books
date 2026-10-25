@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { authorMilestones, authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
+import { authorDrafts, authorMilestones, authors, bookAuthors, books, categories, listings, offers, publishers, sellers } from '#/db/schema'
 import type { DirectoryKind } from '#/data/directory'
 import { toIsbn13 } from '#/lib/isbn'
 import { randomCode, slugify } from '#/lib/utils'
@@ -255,18 +255,21 @@ export async function getAuthorBySlug(db: Db, slug: string) {
     .leftJoin(offers, eq(offers.bookId, books.id))
     .where(eq(bookAuthors.authorId, author.id))
     .orderBy(sql`${offers.bookId} is null`, desc(books.publishedYear))
-  const [milestones, readers] = await Promise.all([
+  const [milestones, readers, research] = await Promise.all([
     db
       .select({ tier: authorMilestones.tier, reachedAt: authorMilestones.reachedAt })
       .from(authorMilestones)
       .where(eq(authorMilestones.authorId, author.id))
       .orderBy(asc(authorMilestones.reachedAt)),
     shop ? authorReaders(db, author.id) : 0,
+    // Pages Kuwala researched say so, with sources, until the author claims them.
+    shop ? [] : db.select({ sources: authorDrafts.sources }).from(authorDrafts).where(eq(authorDrafts.authorId, author.id)).limit(1),
   ])
   const { verifiedSellerId: _seller, ...publicAuthor } = author
   return {
     ...publicAuthor,
     milestones,
+    sources: research[0]?.sources ?? null,
     // Only shown once it's a number worth saying out loud.
     readers: readers >= TIERS[0].readers ? readers : null,
     shop: shop ? { slug: shop.slug, storeName: shop.storeName, town: shop.town } : null,

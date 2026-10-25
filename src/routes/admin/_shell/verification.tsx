@@ -86,6 +86,7 @@ function RequestCard({ request: r }: { request: Request }) {
             )}
             <span className="text-subtle"> · {r.listings} active listings</span>
           </p>
+          {r.invitedEmail && <p className="font-medium text-success">Signed up with the email we invited (found on their own site)</p>}
         </div>
       </div>
 

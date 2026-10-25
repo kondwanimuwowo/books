@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { BetaContentBlockParam, MessageCreateParams as BetaMessageCreateParams } from '@anthropic-ai/sdk/resources/beta/messages/messages'
+import type { BetaContentBlockParam, BetaMessageParam, BetaTool, BetaToolUnion, MessageCreateParams as BetaMessageCreateParams } from '@anthropic-ai/sdk/resources/beta/messages/messages'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { env } from 'cloudflare:workers'
 import { and, count, eq, gt } from 'drizzle-orm'
@@ -227,4 +227,95 @@ function toBase64(bytes: Uint8Array) {
   let binary = ''
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
   return btoa(binary)
+}
+
+const authorDraft = z.object({
+  found: z.boolean().describe('False if no real author by this name could be identified with confidence.'),
+  name: z.string().describe('The name as printed on their books.'),
+  isZambian: z.boolean().describe('True only if sources say the author is Zambian or Zambia-based.'),
+  bio: z.string().describe('Third person, warm and plain, 60 to 120 words, only facts the sources support. Empty if found is false.'),
+  books: z
+    .array(
+      z.object({
+        title: z.string(),
+        year: z.number().int().nullable(),
+        publisher: z.string().nullable(),
+        isbn: z.string().nullable().describe('ISBN-10 or ISBN-13 exactly as a source gives it; null if no source gives one.'),
+      }),
+    )
+    .describe('Books the author wrote, most recent first.'),
+  links: z
+    .object({ website: nullableText, facebook: nullableText, instagram: nullableText, x: nullableText, tiktok: nullableText })
+    .describe('Profiles that are clearly the author’s own, as full URLs.'),
+  contactEmail: nullableText.describe('An email the author publishes for enquiries on their own site, publisher page or official profile. Never a guess.'),
+  contactEmailSource: nullableText.describe('URL of the page that shows contactEmail.'),
+  contactPhone: nullableText.describe('A phone or WhatsApp number the author publishes for bookings or enquiries on their own site or official profile, in international format.'),
+  contactPhoneSource: nullableText.describe('URL of the page that shows contactPhone.'),
+  sources: z.array(z.object({ url: z.string(), title: z.string() })).describe('Every page a fact above came from.'),
+  inviteSubject: z.string().describe('Email subject line inviting them to claim their page, under 70 characters.'),
+  inviteBody: z
+    .string()
+    .describe(
+      'Plain-text email, 90 to 140 words, from "The Kuwala Books team". Mention one of their books by name, say we made them a free author page on Kuwala Books (Zambia’s book marketplace), and that claiming it lets them add their photo and story, get verified, and sell copies directly. No links or placeholders; we add the link.',
+    ),
+  inviteWhatsapp: z.string().describe('The same invite as a short, friendly WhatsApp message under 60 words. No links; we add the link.'),
+})
+
+export type AuthorDraftReading = z.infer<typeof authorDraft>
+
+const AUTHOR_SYSTEM = `You research an author for Kuwala Books, a Zambian book marketplace, so the team can prepare a free author page and invite the author to claim it.
+Search the web and read the author's own site and profiles. Only record facts that a source states; when sources disagree or you are unsure, leave it out. Never invent books, ISBNs, links or contact details.
+Contact details: record an email or phone number only when the author (or their publisher, for them) publishes it for enquiries or bookings on a page they control. Never take personal numbers from news stories, comments, directories or other people's posts.
+Do not describe the author's appearance, family or private life. When done, call record_author once.`
+
+const RECORD_TOOL = 'record_author'
+const AUTHOR_ROUNDS = 5
+
+/** Researches an author on the web and drafts their page and invite. Admin reviews everything before it goes anywhere. */
+export async function draftAuthor(db: Db, userId: string, input: { name: string; hints: string }) {
+  const anthropic = claude()
+  if (!anthropic) return null
+  const tools: BetaToolUnion[] = [
+    { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', country: 'ZM' } },
+    { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 },
+    { name: RECORD_TOOL, description: 'Record what you found about the author. Call once, at the end.', input_schema: z.toJSONSchema(authorDraft) as BetaTool.InputSchema },
+  ]
+  const messages: BetaMessageParam[] = [{ role: 'user', content: `Author: ${input.name}${input.hints ? `\nWhat we know: ${input.hints}` : ''}` }]
+  let usage = { input_tokens: 0, output_tokens: 0 }
+  let result: AuthorDraftReading | null = null
+  try {
+    for (let round = 0; round < AUTHOR_ROUNDS && !result; round++) {
+      // If Claude stopped without recording, the last round makes it record what it has.
+      const force = round === AUTHOR_ROUNDS - 1 || (messages.length > 1 && messages[messages.length - 1].role === 'user')
+      const response = await anthropic.beta.messages.create(
+        {
+          model: AI_MODELS.reader,
+          max_tokens: 8000,
+          system: AUTHOR_SYSTEM,
+          tools,
+          messages,
+          ...(force && { tool_choice: { type: 'tool', name: RECORD_TOOL } }),
+        },
+        { timeout: 180_000 },
+      )
+      usage = { input_tokens: usage.input_tokens + response.usage.input_tokens, output_tokens: usage.output_tokens + response.usage.output_tokens }
+      const recorded = response.content.find((b) => b.type === 'tool_use' && b.name === RECORD_TOOL)
+      if (recorded && recorded.type === 'tool_use') {
+        const parsed = authorDraft.safeParse(recorded.input)
+        if (parsed.success) result = parsed.data
+        break
+      }
+      if (response.stop_reason === 'refusal') break
+      messages.push({ role: 'assistant', content: response.content })
+      // A paused server-side search resumes on its own; anything else gets a nudge to record.
+      if (response.stop_reason !== 'pause_turn') messages.push({ role: 'user', content: `Record what you found with ${RECORD_TOOL}.` })
+    }
+  } catch (error) {
+    console.error('[ai] author failed', error instanceof Anthropic.APIError ? `${error.status} ${error.message}` : error)
+  }
+  await db
+    .insert(aiRequests)
+    .values({ userId, kind: 'author', model: AI_MODELS.reader, inputTokens: usage.input_tokens, outputTokens: usage.output_tokens, ok: result !== null })
+    .catch((error: unknown) => console.error('[ai] usage log failed', error))
+  return result
 }

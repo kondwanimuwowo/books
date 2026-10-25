@@ -1,4 +1,4 @@
-export type LoadingKind = 'find' | 'read' | 'list'
+export type LoadingKind = 'find' | 'read' | 'list' | 'research'
 
 /** How long each line stays before the next one rolls in. */
 export const LOADING_LINE_MS = 2800
@@ -113,6 +113,34 @@ export const LOADING_LINES: Record<LoadingKind, { after: number; lines: string[]
     },
     { after: 25000, lines: SLOW_NETWORK },
   ],
+  // Researching an author takes a minute or two of web searches.
+  research: [
+    {
+      after: 0,
+      lines: [
+        'Looking them up online…',
+        'Reading their author bio…',
+        'Asking the publishers about them…',
+        'Checking the Lusaka Book Fair programme…',
+        'Finding every book they’ve written…',
+        'Reading the back covers…',
+        'Checking that the ISBNs are real…',
+        'Looking for their website…',
+      ],
+    },
+    {
+      after: 30000,
+      lines: [
+        'Proper research takes a minute…',
+        'Checking a second source, to be sure…',
+        'Leaving out anything we can’t confirm…',
+        'Writing their invite letter…',
+        'Making the invite sound like us, not a robot…',
+        'Nearly done. Polishing the bio…',
+      ],
+    },
+    { after: 90000, lines: SLOW_NETWORK },
+  ],
 }
 
 /** What screen readers hear once, instead of every rolling line. */
@@ -120,4 +148,5 @@ export const LOADING_LABEL: Record<LoadingKind, string> = {
   find: 'Searching',
   read: 'Reading your photos',
   list: 'Reading your list',
+  research: 'Researching the author',
 }

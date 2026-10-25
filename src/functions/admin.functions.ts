@@ -482,6 +482,9 @@ export const listVerifications = createServerFn({ method: 'GET' })
           else json_build_object('slug', ${authors.slug}, 'name', ${authors.name},
             'books', (select count(*)::int from book_authors ba where ba.author_id = ${authors.id})) end`,
         listings: sql<number>`(select count(*)::int from listings l where l.seller_id = ${sellers.id} and l.status = 'active')`,
+        // They signed up with the address we found on the author's own site and invited: they control it.
+        invitedEmail: sql<boolean>`exists (select 1 from author_drafts d join profiles p on p.id = ${sellers.profileId}
+          where d.author_id = ${verificationRequests.authorId} and lower(d.contact->>'email') = lower(p.email))`,
       })
       .from(verificationRequests)
       .innerJoin(sellers, eq(sellers.id, verificationRequests.sellerId))
