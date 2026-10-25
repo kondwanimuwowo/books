@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestUrl } from '@tanstack/react-start/server'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { SHIPPING_METHODS } from '#/data/shipping'
@@ -561,5 +562,55 @@ export const decideVerification = createServerFn({ method: 'POST' })
             action: { label: data.decision === 'needs_more' ? 'Send it again' : 'Your shop', path: '/account/shop' },
           },
     )
+    return { ok: true }
+  })
+
+/** True while a book has an order or offer in flight: deleting it then would break that sale. */
+const bookInUse = (bookId: SQL) => sql<boolean>`exists (select 1 from order_items oi join seller_orders so on so.id = oi.seller_order_id
+    where oi.book_id = ${bookId} and so.status in ('awaiting_payment', 'to_ship', 'shipped', 'disputed'))
+  or exists (select 1 from offers o join listings l on l.id = o.listing_id where l.book_id = ${bookId} and o.status in ('pending', 'accepted'))`
+
+export const listBooks = createServerFn({ method: 'GET' })
+  .middleware([requireAdminMiddleware])
+  .validator(searchInput)
+  .handler(async ({ data }) => {
+    const like = data.q ? `%${data.q}%` : null
+    return getDb()
+      .select({
+        id: books.id,
+        slug: books.slug,
+        title: books.title,
+        coverUrl: books.coverUrl,
+        isbn13: books.isbn13,
+        authors: sql<string | null>`(select string_agg(a.name, ', ' order by ba.position) from book_authors ba join authors a on a.id = ba.author_id where ba.book_id = ${books.id})`,
+        listings: sql<number>`(select count(*)::int from listings l where l.book_id = ${books.id} and l.status = 'active')`,
+        sold: sql<number>`(select count(*)::int from order_items oi where oi.book_id = ${books.id})`,
+        busy: bookInUse(sql`${books.id}`),
+        createdAt: books.createdAt,
+      })
+      .from(books)
+      .where(like ? or(ilike(books.title, like), ilike(books.searchText, like), eq(books.isbn13, data.q ?? '')) : undefined)
+      .orderBy(desc(books.createdAt))
+      .limit(100)
+  })
+
+/**
+ * Removes a book with its listings, offers and author links. Past orders keep their title and price.
+ * Its cover goes too, unless another book shares the image.
+ */
+export const deleteBook = createServerFn({ method: 'POST' })
+  .middleware([requireAdminMiddleware])
+  .validator(z.object({ bookId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const db = getDb()
+    const [busy] = await db.execute<{ busy: boolean }>(sql`select ${bookInUse(sql`${data.bookId}::uuid`)} as busy`)
+    if (busy?.busy) throw new Error('It has an order or offer in progress. Wait until that’s settled.')
+    const [deleted] = await db.delete(books).where(eq(books.id, data.bookId)).returning({ coverUrl: books.coverUrl })
+    if (!deleted) throw new Error('Already deleted')
+    const key = deleted.coverUrl?.startsWith('/covers/') ? deleted.coverUrl.slice('/covers/'.length) : null
+    if (key) {
+      const [shared] = await db.select({ id: books.id }).from(books).where(eq(books.coverUrl, deleted.coverUrl as string)).limit(1)
+      if (!shared) await env.COVERS.delete(key)
+    }
     return { ok: true }
   })

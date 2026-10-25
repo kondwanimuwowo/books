@@ -47,6 +47,7 @@ import { Route as AuthedAccountShopRouteImport } from './routes/_authed/account/
 import { Route as AuthedOrdersNumberRouteImport } from './routes/_authed/orders.$number'
 import { Route as AdminShellIndexRouteImport } from './routes/admin/_shell/index'
 import { Route as AdminShellAuthorsRouteImport } from './routes/admin/_shell/authors'
+import { Route as AdminShellBooksRouteImport } from './routes/admin/_shell/books'
 import { Route as AdminShellDeliveryRouteImport } from './routes/admin/_shell/delivery'
 import { Route as AdminShellDraftsRouteImport } from './routes/admin/_shell/drafts'
 import { Route as AdminShellOrdersRouteImport } from './routes/admin/_shell/orders'
@@ -243,6 +244,11 @@ const AdminShellAuthorsRoute = AdminShellAuthorsRouteImport.update({
   path: '/authors',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const AdminShellBooksRoute = AdminShellBooksRouteImport.update({
+  id: '/books',
+  path: '/books',
+  getParentRoute: () => AdminShellRoute,
+} as any)
 const AdminShellDeliveryRoute = AdminShellDeliveryRouteImport.update({
   id: '/delivery',
   path: '/delivery',
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/account/shop': typeof AuthedAccountShopRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/authors': typeof AdminShellAuthorsRoute
+  '/admin/books': typeof AdminShellBooksRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/account/shop': typeof AuthedAccountShopRoute
   '/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/authors': typeof AdminShellAuthorsRoute
+  '/admin/books': typeof AdminShellBooksRoute
   '/admin/delivery': typeof AdminShellDeliveryRoute
   '/admin/drafts': typeof AdminShellDraftsRoute
   '/admin/orders': typeof AdminShellOrdersRoute
@@ -405,6 +413,7 @@ export interface FileRoutesById {
   '/_authed/account/shop': typeof AuthedAccountShopRoute
   '/_authed/orders/$number': typeof AuthedOrdersNumberRoute
   '/admin/_shell/authors': typeof AdminShellAuthorsRoute
+  '/admin/_shell/books': typeof AdminShellBooksRoute
   '/admin/_shell/delivery': typeof AdminShellDeliveryRoute
   '/admin/_shell/drafts': typeof AdminShellDraftsRoute
   '/admin/_shell/orders': typeof AdminShellOrdersRoute
@@ -452,6 +461,7 @@ export interface FileRouteTypes {
     | '/account/shop'
     | '/orders/$number'
     | '/admin/authors'
+    | '/admin/books'
     | '/admin/delivery'
     | '/admin/drafts'
     | '/admin/orders'
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/account/shop'
     | '/orders/$number'
     | '/admin/authors'
+    | '/admin/books'
     | '/admin/delivery'
     | '/admin/drafts'
     | '/admin/orders'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authed/account/shop'
     | '/_authed/orders/$number'
     | '/admin/_shell/authors'
+    | '/admin/_shell/books'
     | '/admin/_shell/delivery'
     | '/admin/_shell/drafts'
     | '/admin/_shell/orders'
@@ -847,6 +859,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellAuthorsRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/admin/_shell/books': {
+      id: '/admin/_shell/books'
+      path: '/books'
+      fullPath: '/admin/books'
+      preLoaderRoute: typeof AdminShellBooksRouteImport
+      parentRoute: typeof AdminShellRoute
+    }
     '/admin/_shell/delivery': {
       id: '/admin/_shell/delivery'
       path: '/delivery'
@@ -944,6 +963,7 @@ const AuthedRouteWithChildren =
 
 interface AdminShellRouteChildren {
   AdminShellAuthorsRoute: typeof AdminShellAuthorsRoute
+  AdminShellBooksRoute: typeof AdminShellBooksRoute
   AdminShellDeliveryRoute: typeof AdminShellDeliveryRoute
   AdminShellDraftsRoute: typeof AdminShellDraftsRoute
   AdminShellOrdersRoute: typeof AdminShellOrdersRoute
@@ -955,6 +975,7 @@ interface AdminShellRouteChildren {
 
 const AdminShellRouteChildren: AdminShellRouteChildren = {
   AdminShellAuthorsRoute: AdminShellAuthorsRoute,
+  AdminShellBooksRoute: AdminShellBooksRoute,
   AdminShellDeliveryRoute: AdminShellDeliveryRoute,
   AdminShellDraftsRoute: AdminShellDraftsRoute,
   AdminShellOrdersRoute: AdminShellOrdersRoute,

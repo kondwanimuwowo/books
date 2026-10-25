@@ -256,9 +256,9 @@ const authorDraft = z.object({
   inviteBody: z
     .string()
     .describe(
-      'Plain-text email, 90 to 140 words, from "The Kuwala Books team". Mention one of their books by name, say we made them a free author page on Kuwala Books (Zambia’s book marketplace), and that claiming it lets them add their photo and story, get verified, and sell copies directly. No links or placeholders; we add the link.',
+      'Plain-text email, 90 to 140 words, from "The Kuwala Books team". Mention one of their books by name, say we made them a free author page on Kuwala Books (Zambia’s book marketplace), and that claiming it lets them add their photo and story, get verified, and sell copies directly. A button to claim the page follows the message, so end by pointing to it ("use the button below"); never ask them to reply for a link. No URLs or placeholders.',
     ),
-  inviteWhatsapp: z.string().describe('The same invite as a short, friendly WhatsApp message under 60 words. No links; we add the link.'),
+  inviteWhatsapp: z.string().describe('The same invite as a short, friendly WhatsApp message under 60 words. The claim link is added straight after it, so end by pointing to it ("tap the link below"); never ask them to reply for it. No URLs.'),
 })
 
 export type AuthorDraftReading = z.infer<typeof authorDraft>

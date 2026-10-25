@@ -189,6 +189,13 @@ function DraftCard({ row }: { row: DraftRow }) {
                   ))}
                   {!form.books.length && <li className="p-3 text-sm text-subtle">None found.</li>}
                 </ul>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm mt-2"
+                  onClick={() => setForm({ ...form, books: [...form.books, { title: '', year: '', publisher: null, isbn: null }] })}
+                >
+                  Add a book
+                </button>
               </fieldset>
             </>
           )}
