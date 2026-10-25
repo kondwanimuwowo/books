@@ -276,7 +276,8 @@ export async function draftAuthor(db: Db, userId: string, input: { name: string;
   const anthropic = claude()
   if (!anthropic) return null
   const tools: BetaToolUnion[] = [
-    { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', country: 'ZM' } },
+    // No user_location: web search doesn't support Zambia as a country; the prompt carries the context.
+    { type: 'web_search_20260209', name: 'web_search', max_uses: 6 },
     { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6 },
     { name: RECORD_TOOL, description: 'Record what you found about the author. Call once, at the end.', input_schema: z.toJSONSchema(authorDraft) as BetaTool.InputSchema },
   ]
