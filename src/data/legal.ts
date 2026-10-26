@@ -8,8 +8,8 @@ import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee } from '
 import { BLIND_DAYS, RATING_WINDOW_DAYS } from './reputation'
 import { formatMoney } from '#/lib/money'
 
-export const LEGAL_UPDATED = '2026-10-25'
-export const LEGAL_CONTACT = 'orders@kuwalabooks.com'
+export const LEGAL_UPDATED = '2026-10-26'
+export const LEGAL_CONTACT = 'support@kuwalabooks.com'
 /** How quickly Kuwala Books answers a request about someone's personal data. */
 export const DATA_REQUEST_DAYS = 30
 
