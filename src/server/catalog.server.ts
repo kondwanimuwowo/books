@@ -452,19 +452,6 @@ export async function getSellerBySlug(db: Db, slug: string) {
   return { ...seller, rating: ratings.get(seller.id) ?? null, books: sellerBooks }
 }
 
-// Towns that currently have books on sale, most stocked first: shows how far the shelves reach.
-export async function sellerTowns(db: Db, limit = 8) {
-  const rows = await db
-    .select({ town: sellers.town, n: sql<number>`count(*)::int` })
-    .from(listings)
-    .innerJoin(sellers, eq(sellers.id, listings.sellerId))
-    .where(and(eq(listings.status, 'active'), gt(listings.quantity, 0)))
-    .groupBy(sellers.town)
-    .orderBy(sql`count(*) desc`)
-    .limit(limit)
-  return rows.map((r) => r.town)
-}
-
 export async function categoriesWithCounts(db: Db) {
   return db
     .select({

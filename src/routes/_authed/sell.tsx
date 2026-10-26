@@ -18,7 +18,7 @@ import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import type { OfferSettingsValue } from '#/components/seller-forms'
-import { COMMISSION_RATE, CONDITIONS, FORMATS, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
+import { COMMISSION_RATE, CONDITIONS, FORMATS, LISTING_RULES, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
 import { ListingPhotos } from '#/components/listing-photos'
 import type { ListingPhoto } from '#/components/listing-photos'
 import { instantFee } from '#/data/payouts'
@@ -509,6 +509,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
           </h2>
           <p className="mt-1 mb-4 text-sm text-subtle">{used ? PHOTOS_COPY.used : PHOTOS_COPY.new}</p>
           <ListingPhotos value={copyPhotos} onChange={setCopyPhotos} onBusy={setPhotosBusy} />
+          <p className="mt-4 text-sm text-muted">{LISTING_RULES}</p>
         </section>
 
         <section className="grid gap-4 sm:grid-cols-[1fr_140px]">

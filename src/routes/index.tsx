@@ -13,12 +13,12 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const { chart, zambian, recent, bargains, categories, wall, towns } = Route.useLoaderData()
+  const { chart, zambian, recent, bargains, categories, wall } = Route.useLoaderData()
   const isEmpty = !zambian.length && !recent.length
 
   return (
     <>
-      <Intro wall={wall} towns={towns} />
+      <Intro wall={wall} />
 
       <div className="page">
         {isEmpty && (
@@ -87,13 +87,9 @@ function Home() {
   )
 }
 
-function townList(towns: string[]) {
-  if (towns.length <= 1) return towns.join('')
-  return `${towns.slice(0, -1).join(', ')} and ${towns.at(-1)}`
-}
 
 // Short band so the shelves stay above the fold; covers from the catalogue sit behind it once there are enough.
-function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
+function Intro({ wall }: { wall: string[] }) {
   // Shuffled on the server, so the page and its hydration agree on the order.
   const tiles = wall
 
@@ -116,7 +112,6 @@ function Intro({ wall, towns }: { wall: string[]; towns: string[] }) {
             Books across <span className="block font-bold">Zambia &amp; Beyond</span>
           </h1>
           <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
-          {towns.length > 0 && <p className="mt-2 text-sm text-on-deep-muted">On the shelves now from {townList(towns)}.</p>}
         </div>
         <ul className="mt-5 flex flex-wrap gap-2" aria-label="Quick searches">
           {QUICK_SEARCHES.map((s) => (

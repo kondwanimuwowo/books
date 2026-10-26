@@ -52,3 +52,26 @@ export const PHOTOS_COPY = {
   thisCopy: 'This copy',
   backToCover: 'Back to the cover',
 } as const
+
+export const LISTING_RULES = 'Don’t list photocopies, or books marked as government, school, library or donated property, or not for sale.'
+
+export const REPORT_REASONS = [
+  { value: 'copy', label: 'It’s a photocopy or pirated copy' },
+  { value: 'not_for_sale', label: 'It’s marked government, school, library or donated property' },
+  { value: 'misdescribed', label: 'The photos or details are wrong' },
+  { value: 'other', label: 'Something else' },
+] as const
+
+export type ReportReason = (typeof REPORT_REASONS)[number]['value']
+
+export const REPORT_COPY = {
+  link: 'Report this copy',
+  heading: 'What’s wrong with this copy?',
+  placeholder: 'Anything that helps us check (optional)',
+  thanks: 'Thanks. We’ll look at it and take it down if it breaks the rules.',
+  removedSubject: (title: string) => `We took down your listing of ${title}`,
+  removedLines: (title: string) => [
+    `We removed your listing of ${title} after a report that it breaks the listing rules: no photocopies, and no books marked as government, school, library or donated property, or not for sale.`,
+    'If you think we got it wrong, reply to this email.',
+  ],
+} as const

@@ -118,6 +118,8 @@ export const payoutKind = pgEnum('payout_kind', ['per_order', 'weekly', 'instant
 // automatic: sent back to the payer's mobile money. manual: card payments, refunded by admin in the Lenco dashboard.
 export const refundStatus = pgEnum('refund_status', ['processing', 'paid', 'failed', 'manual', 'done_manually'])
 export const refundReason = pgEnum('refund_reason', ['not_shipped', 'dispute'])
+export const reportReason = pgEnum('report_reason', ['copy', 'not_for_sale', 'misdescribed', 'other'])
+export const reportStatus = pgEnum('report_status', ['open', 'removed', 'dismissed'])
 export const payoutMethod = pgEnum('payout_method', [
   'mobile_money',
   'bank_account',
@@ -139,9 +141,28 @@ export const profiles = pgTable('profiles', {
   town: text('town'),
   province: text('province'),
   isAdmin: boolean('is_admin').notNull().default(false),
+  // The terms version last accepted (see consents for the full record).
+  termsVersion: text('terms_version'),
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS()
+
+// Every time someone accepts the terms: which version, when and from what browser. Never updated or deleted.
+export const consents = pgTable(
+  'consents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    document: text('document').notNull(),
+    version: text('version').notNull(),
+    userAgent: text('user_agent'),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('consents_profile_idx').on(t.profileId, t.acceptedAt)],
+).enableRLS()
 
 export const sellers = pgTable(
   'sellers',
@@ -662,6 +683,24 @@ export const refunds = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex('refunds_seller_order_key').on(t.sellerOrderId), uniqueIndex('refunds_reference_key').on(t.reference), index('refunds_status_idx').on(t.status)],
+).enableRLS()
+
+// A reader flags a copy: a photocopy, a book not for sale (government, school, library, donated), or misdescribed.
+export const listingReports = pgTable(
+  'listing_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    reporterId: uuid('reporter_id').references(() => profiles.id, { onDelete: 'set null' }),
+    reason: reportReason('reason').notNull(),
+    note: text('note'),
+    status: reportStatus('status').notNull().default('open'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('listing_reports_status_idx').on(t.status, t.createdAt), uniqueIndex('listing_reports_once_key').on(t.listingId, t.reporterId)],
 ).enableRLS()
 
 export const payments = pgTable(

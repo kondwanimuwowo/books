@@ -5,6 +5,8 @@ import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
 import { SiteFooter, SiteHeader } from '#/components/site-header'
+import { TermsGate } from '#/components/terms-consent'
+import { CookieNotice } from '#/components/cookie-notice'
 import { BARE_ROUTES } from '#/data/brand'
 import appCss from '../styles.css?url'
 
@@ -82,6 +84,8 @@ function RootLayout() {
               <Outlet />
             </main>
             <SiteFooter />
+            <TermsGate />
+            <CookieNotice />
           </div>
         )}
       </BagProvider>

@@ -8,7 +8,9 @@ import { makeOffer } from '#/functions/offers.functions'
 import { Alert, useAction } from '#/components/form'
 import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
 import { Price, useBag, useCurrency } from '#/components/providers'
-import { OFFER_REPLY_HOURS, PHOTOS_COPY, conditionLabel, formatLabel } from '#/data/listing-options'
+import { OFFER_REPLY_HOURS, PHOTOS_COPY, REPORT_COPY, REPORT_REASONS, conditionLabel, formatLabel } from '#/data/listing-options'
+import type { ReportReason } from '#/data/listing-options'
+import { reportListing } from '#/functions/reports.functions'
 import { languageName } from '#/data/zambia'
 import { cheapestDelivery, etaLabel } from '#/data/shipping'
 import type { DeliveryRate } from '#/data/shipping'
@@ -207,6 +209,7 @@ function BookPage() {
                     <span className="truncate">View {selected.seller.storeName}&rsquo;s shop</span>
                   </Link>
                 )}
+                {selected && !ownCopy && <ReportCopy key={selected.id} listingId={selected.id} signedIn={!!user} next={`/books/${book.slug}`} />}
               </>
             )}
           </div>
@@ -543,5 +546,52 @@ function AboutTheAuthors({ authors }: { authors: BookAuthor[] }) {
         ))}
       </div>
     </section>
+  )
+}
+
+/** Readers flag photocopies and books that aren't the seller's to sell; admin checks and takes them down. */
+function ReportCopy({ listingId, signedIn, next }: { listingId: string; signedIn: boolean; next: string }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState<ReportReason | null>(null)
+  const [note, setNote] = useState('')
+  const [sent, setSent] = useState(false)
+  const send = useAction(async () => {
+    if (!reason) return
+    await reportListing({ data: { listingId, reason, note } })
+    setSent(true)
+  })
+  if (sent) return <p className="rise mt-3 text-xs text-subtle">{REPORT_COPY.thanks}</p>
+  if (!open) {
+    return signedIn ? (
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 text-xs text-subtle underline-offset-4 hover:text-ink hover:underline">
+        {REPORT_COPY.link}
+      </button>
+    ) : (
+      <Link to="/login" search={{ next }} className="mt-3 inline-block text-xs text-subtle">
+        {REPORT_COPY.link}
+      </Link>
+    )
+  }
+  return (
+    <fieldset className="rise mt-4 space-y-2 border-t border-line pt-4 text-sm">
+      <legend className="sr-only">{REPORT_COPY.heading}</legend>
+      <p className="font-medium">{REPORT_COPY.heading}</p>
+      {REPORT_REASONS.map((r) => (
+        <label key={r.value} className="flex cursor-pointer items-start gap-2">
+          <input type="radio" name={`report-${listingId}`} className="mt-1 accent-[var(--color-accent)]" checked={reason === r.value} onChange={() => setReason(r.value)} />
+          <span>{r.label}</span>
+        </label>
+      ))}
+      <textarea className="input" rows={2} maxLength={500} placeholder={REPORT_COPY.placeholder} value={note} onChange={(e) => setNote(e.target.value)} />
+      {send.error && <Alert>{send.error}</Alert>}
+      <div className="flex gap-2">
+        <button type="button" className="btn btn-secondary btn-sm" disabled={!reason || send.pending} onClick={() => void send.run()}>
+          {send.pending ? 'Sending…' : 'Send report'}
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </fieldset>
   )
 }

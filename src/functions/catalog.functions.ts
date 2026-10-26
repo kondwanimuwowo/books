@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
-import { categoriesWithCounts, sellerTowns, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
+import { categoriesWithCounts, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
 import { interpretSearch } from '#/server/ai.server'
 import { SEARCH_REQUEST_WORDS } from '#/data/ai'
@@ -35,6 +35,7 @@ export const getSiteContext = createServerFn({ method: 'GET' })
       .select({
         displayName: profiles.displayName,
         isAdmin: profiles.isAdmin,
+        termsVersion: profiles.termsVersion,
         sellerSlug: sellers.slug,
         town: profiles.town,
         province: profiles.province,
@@ -59,6 +60,8 @@ export const getSiteContext = createServerFn({ method: 'GET' })
         // Where they usually receive books, for delivery estimates on book pages.
         place: row?.town && row.province ? { town: row.town, province: row.province } : null,
         isAuthor: row?.isAuthor ?? false,
+        // Compared with TERMS_VERSION to ask for acceptance once.
+        termsVersion: row?.termsVersion ?? null,
         // Everyone starts as a reader; opening a shop gives them its kind.
         role: { kind: row?.sellerKind ?? null, verified: row?.sellerVerified ?? false, pending: row?.verificationPending ?? false },
       },
@@ -69,18 +72,17 @@ export const getSiteContext = createServerFn({ method: 'GET' })
 
 export const getHomeData = createServerFn({ method: 'GET' }).handler(async () => {
   const db = getDb()
-  const [chart, zambian, recent, bargains, categories, towns] = await Promise.all([
+  const [chart, zambian, recent, bargains, categories] = await Promise.all([
     loadChart(db),
     shelf(db, 'zambian'),
     shelf(db, 'recent'),
     shelf(db, 'bargains'),
     categoriesWithCounts(db),
-    sellerTowns(db),
   ])
   publicCache(60)
   // The intro band's cover background reuses covers already loaded for the shelves.
   const wall = coverWall([...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24))
-  return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall, towns }
+  return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall }
 })
 
 function shuffle<T>(items: T[]) {

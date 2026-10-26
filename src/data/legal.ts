@@ -7,8 +7,14 @@ import { BUS_PARCEL_GRACE_DAYS, CLAIM_FLAG_AT, CLAIM_WINDOW_DAYS, DECISION_WORKI
 import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee } from './payouts'
 import { BLIND_DAYS, RATING_WINDOW_DAYS } from './reputation'
 import { formatMoney } from '#/lib/money'
+import { COOKIE_CATEGORIES, OPTIONAL_CATEGORIES } from './cookies'
 
 export const LEGAL_UPDATED = '2026-10-26'
+/**
+ * The version of the terms people tick to accept. Bump it only for a material change (new obligations, fees,
+ * liability): everyone signed in is then asked to accept again. Wording and number fixes don't need it.
+ */
+export const TERMS_VERSION = '2026-10-26'
 export const LEGAL_CONTACT = 'support@kuwalabooks.com'
 /** How quickly Kuwala Books answers a request about someone's personal data. */
 export const DATA_REQUEST_DAYS = 30
@@ -42,6 +48,7 @@ const terms: LegalPage = {
       blocks: [
         { p: 'Kuwala Books is an online marketplace for books in Zambia at kuwalabooks.com. Readers, authors, bookshops and publishers list books for sale, and buyers buy them from those sellers.' },
         { p: 'Kuwala Books is not the seller of books listed by others. The contract for each book is between the buyer and the seller. Kuwala Books runs the marketplace, holds payments until delivery and steps in when something goes wrong, as these terms and the Buyer protection page describe.' },
+        { p: 'Kuwala Books does not own, inspect or check the books sellers list, and does not guarantee that a listing is accurate, lawful or that a seller will perform. Each seller is responsible for what they list and sell.' },
       ],
     },
     {
@@ -97,21 +104,24 @@ const terms: LegalPage = {
       blocks: [
         {
           list: [
-            'Pirated, photocopied or counterfeit books, and books you don’t have the right to sell.',
+            'Pirated, photocopied, scanned or counterfeit books, and books you don’t have the right to sell.',
+            'Books marked as the property of the government, a school, a library or a donor, or marked not for sale, such as government school textbooks.',
             'Listings that misdescribe a book or its condition.',
             'Taking a sale, payment or conversation off Kuwala Books to avoid fees or protection.',
             'Fake reviews, ratings, accounts or problem reports.',
             'Harassing other users, or using the site to break Zambian law.',
           ],
         },
-        { p: 'Kuwala Books may remove listings or reviews, hold payments while we look into a problem, and suspend or close accounts that break these terms.' },
+        { p: 'Anyone can report a listing they think breaks these rules. Kuwala Books may remove listings or reviews, hold payments and payouts while we look into a problem, and suspend or close accounts that break these terms.' },
+        { p: 'Where we believe the law has been broken, such as stolen or pirated books or fraud, we may share information with the police or other authorities.' },
       ],
     },
     {
       heading: 'Our responsibility',
       blocks: [
         { p: 'We work to keep Kuwala Books running and safe, but we can’t promise it will always be available or free of mistakes. Books are described by their sellers; we don’t check every listing.' },
-        { p: 'Nothing in these terms takes away rights you have under Zambian consumer law. Beyond those, our responsibility for any order is limited to the amount paid for it on Kuwala Books.' },
+        { p: 'Kuwala Books is not responsible for what a seller or buyer does or fails to do: the condition, legality or delivery of a book, or anything agreed outside Kuwala Books. When an order goes wrong, Buyer protection is how we put it right.' },
+        { p: 'Nothing in these terms takes away rights you have under Zambian consumer law. Beyond those, our responsibility for any order is limited to the amount paid for it on Kuwala Books, and we are not responsible for indirect losses such as lost profit or opportunity.' },
       ],
     },
     {
@@ -214,7 +224,8 @@ const sellerAgreement: LegalPage = {
       blocks: [
         {
           list: [
-            'List only books you have and have the right to sell. Pirated and photocopied books are not allowed.',
+            'List only books you have and have the right to sell. Pirated, photocopied and scanned books are not allowed.',
+            'Don’t list books marked as the property of the government, a school, a library or a donor, or marked not for sale. Government school textbooks belong to the school, not the person holding them.',
             'Describe the condition honestly. Used copies need at least one photo of the actual copy (up to ' + MAX_LISTING_PHOTOS + ').',
             'Keep your stock up to date; pause listings you can’t send.',
           ],
@@ -274,6 +285,14 @@ const sellerAgreement: LegalPage = {
       heading: 'Contact with buyers',
       blocks: [{ p: 'You see the buyer’s phone number once they’ve paid, to arrange delivery. Never ask a buyer to pay you outside Kuwala Books; it isn’t protected, and doing it can close your shop.' }],
     },
+    {
+      heading: 'Your promises, and our protection',
+      blocks: [
+        { p: 'Each time you list or sell a book, you promise that you own it and may sell it, that it is genuine and not a copy, that it isn’t marked as anyone else’s property or not for sale, and that your description and photos are accurate.' },
+        { p: 'You are responsible for your listings and sales. If Kuwala Books faces a claim, loss, fine or cost because of a book you listed, something you did, or a promise you broke, you agree to cover it. Kuwala Books may recover it from your balance or future payouts.' },
+        { p: 'Kuwala Books may remove a listing, hold your balance and payouts while a report or problem is looked into, and share information with the police or other authorities where the law may have been broken.' },
+      ],
+    },
     { heading: 'Closing a shop', blocks: [{ p: `You can stop selling at any time; orders already paid must still be sent. Kuwala Books may pause or close shops that break these terms. Questions: ${LEGAL_CONTACT}.` }] },
   ],
 }
@@ -327,7 +346,10 @@ const privacy: LegalPage = {
     },
     {
       heading: 'Cookies and your device',
-      blocks: [{ p: 'We use cookies to keep you signed in and remember your currency. Your bag, recently viewed books and unfinished forms are kept on your device. We don’t use advertising trackers.' }],
+      blocks: [
+        { list: COOKIE_CATEGORIES.filter((c) => c.required || c.services.length).map((c) => `${c.label}${c.required ? ' (always on)' : ''}: ${c.description} ${c.services.map((sv) => sv.name).join(', ')}.`) },
+        { p: OPTIONAL_CATEGORIES.length ? 'Optional cookies are only used if you allow them. Change your choice any time under Cookie settings at the bottom of every page.' : 'We don’t use advertising or tracking cookies. If we ever add optional ones, we’ll ask first, and you can change your choice under Cookie settings at the bottom of every page.' },
+      ],
     },
     {
       heading: 'How long we keep it',

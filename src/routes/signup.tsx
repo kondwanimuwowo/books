@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { signUp } from '#/functions/auth.functions'
 import { getClaim } from '#/functions/claims.functions'
+import { TermsCheckbox } from '#/components/terms-consent'
 import { AuthShell } from '#/components/auth-shell'
 import { Alert, Field, useAction } from '#/components/form'
 import { safeNext } from '#/lib/utils'
@@ -22,9 +23,11 @@ function SignupPage() {
   const invite = Route.useLoaderData()
   const invited = invite?.state === 'open' ? invite : null
   const [form, setForm] = useState({ name: invited?.author.name ?? '', email: invited?.email ?? '', password: '' })
+  const [agreed, setAgreed] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const action = useAction(async () => {
-    const result = await signUp({ data: { ...form, next: next ? safeNext(next) : undefined } })
+    if (!agreed) throw new Error('Tick the box to agree to the terms')
+    const result = await signUp({ data: { ...form, acceptTerms: true, next: next ? safeNext(next) : undefined } })
     if (result.needsConfirmation) {
       setSentTo(form.email)
       return
@@ -87,20 +90,10 @@ function SignupPage() {
         <Field label="Password" hint="8+ characters">
           <input className="input" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} />
         </Field>
-        <button type="submit" className="btn btn-primary w-full" disabled={action.pending}>
+        <TermsCheckbox checked={agreed} onChange={setAgreed} />
+        <button type="submit" className="btn btn-primary w-full" disabled={action.pending || !agreed}>
           {action.pending ? 'Creating…' : 'Create account'}
         </button>
-        <p className="text-xs text-subtle">
-          By creating an account you agree to the{' '}
-          <Link to="/legal/$page" params={{ page: 'terms' }}>
-            Terms
-          </Link>{' '}
-          and{' '}
-          <Link to="/legal/$page" params={{ page: 'privacy' }}>
-            Privacy
-          </Link>{' '}
-          policy.
-        </p>
       </form>
     </AuthShell>
   )

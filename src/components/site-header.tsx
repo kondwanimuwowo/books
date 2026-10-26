@@ -3,6 +3,8 @@ import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@her
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV } from '#/data/navigation'
 import { LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
+import { COOKIE_COPY } from '#/data/cookies'
+import { openCookieSettings } from '#/lib/consent'
 import { quickSearch } from '#/functions/catalog.functions'
 import { BookCover } from './book'
 import { LoadingLine, Spinner } from './loading-line'
@@ -409,6 +411,9 @@ export function SiteFooter() {
               {LEGAL_PAGES[page].title}
             </Link>
           ))}
+          <button type="button" onClick={openCookieSettings} className={footerLink}>
+            {COOKIE_COPY.settings}
+          </button>
         </nav>
       </div>
     </footer>
