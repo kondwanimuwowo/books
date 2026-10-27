@@ -53,7 +53,7 @@ function Orders() {
             <Link to="/orders/$number" params={{ number: o.number }} className="card lift flex items-center gap-3.5 p-4 text-ink no-underline hover:text-ink sm:gap-5">
               <CoverStack books={o.books} />
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 font-medium sm:line-clamp-1">
+                <p className="line-clamp-2 font-bold tracking-[-0.01em] sm:line-clamp-1">
                   {o.books[0]?.title ?? o.number}
                   {o.itemCount > 1 && <span className="font-normal text-subtle">{` + ${o.itemCount - 1} more`}</span>}
                 </p>

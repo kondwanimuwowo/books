@@ -11,7 +11,11 @@ import { etaLabel, PICKUP_COPY } from '#/data/shipping'
 import type { ActiveShippingMethod, ShippingOption } from '#/data/shipping'
 import { TownField } from '#/components/town-field'
 import { Select } from '#/components/select'
-import { ShieldCheckIcon } from '@heroicons/react/20/solid'
+import { ArrowRightIcon, ShieldCheckIcon } from '@heroicons/react/20/solid'
+import { BookCover } from '#/components/book'
+import { PaymentMarks } from '#/components/payment-marks'
+import { PAY_COPY } from '#/data/payments'
+import type { BagQuote } from '#/components/use-bag-quote'
 import { SAFETY } from '#/data/safety'
 
 export const Route = createFileRoute('/_authed/checkout')({
@@ -23,8 +27,6 @@ export const Route = createFileRoute('/_authed/checkout')({
 function isProvince(value: string | null): value is Province {
   return PROVINCES.includes(value as Province)
 }
-
-
 
 /** One dropdown per parcel: courier, price and days on each line, the chosen one explained underneath. */
 function DeliveryChoice({ options, value, onChange }: { options: ShippingOption[]; value: ActiveShippingMethod | undefined; onChange: (method: ActiveShippingMethod) => void }) {
@@ -104,8 +106,9 @@ function Checkout() {
   const step = destination ? 1 : 0
 
   const submit = (
-    <button type="submit" className="btn btn-primary w-full" disabled={!ready || action.pending}>
+    <button type="submit" className="btn btn-primary w-full gap-1.5" disabled={!ready || action.pending}>
       {action.pending ? 'Placing order…' : 'Continue to payment'}
+      {!action.pending && <ArrowRightIcon className="size-4" aria-hidden />}
     </button>
   )
 
@@ -165,6 +168,17 @@ function Checkout() {
               </div>
             )}
           </section>
+          {/* Phones: what's being paid for, under the forms; desktop has it beside them. */}
+          <section className="card p-5 lg:hidden" aria-labelledby="summary-heading-phone">
+            <h2 id="summary-heading-phone" className="text-xl">
+              Your order
+            </h2>
+            <SummaryItems groups={groups} />
+            <div className="mt-4 space-y-3 border-t border-line pt-4">
+              <Totals subtotal={subtotal} shipping={destination ? shipping : null} />
+            </div>
+            <PayWith className="mt-5" />
+          </section>
           <div className="lg:hidden">
             <Agreement />
           </div>
@@ -172,9 +186,14 @@ function Checkout() {
 
         <aside className="hidden lg:block">
           <div className="card sticky top-28 space-y-3 p-5">
-            <Totals subtotal={subtotal} shipping={destination ? shipping : null} />
+            <h2 className="text-xl">Your order</h2>
+            <SummaryItems groups={groups} />
+            <div className="space-y-3 border-t border-line pt-3">
+              <Totals subtotal={subtotal} shipping={destination ? shipping : null} />
+            </div>
             {action.error && <Alert>{action.error}</Alert>}
             {submit}
+            <PayWith className="pt-1" />
             <Agreement />
           </div>
         </aside>
@@ -212,6 +231,40 @@ function Totals({ subtotal, shipping }: { subtotal: number; shipping: number | n
         <Price ngwee={subtotal + (shipping ?? 0)} className="text-xl font-bold tracking-[-0.02em] tabular-nums" />
       </div>
     </>
+  )
+}
+
+/** The books in the order, smallest useful size: cover, title, how many and what for. */
+function SummaryItems({ groups }: { groups: BagQuote['groups'] }) {
+  const items = groups.flatMap((g) => g.items)
+  if (!items.length) return null
+  return (
+    <ul className="mt-4 space-y-3">
+      {items.map((item) => (
+        <li key={item.listingId} className="flex items-center gap-3">
+          <div className="w-10 shrink-0">
+            <BookCover src={item.book.coverUrl} title={item.book.title} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-1 text-sm font-bold tracking-[-0.01em]">{item.book.title}</p>
+            <p className="text-xs text-subtle">
+              {item.quantity > 1 ? `${item.quantity} × ` : ''}
+              <Price ngwee={item.offerNgwee ?? item.priceNgwee} className="tabular-nums" />
+            </p>
+          </div>
+          <Price ngwee={item.lineNgwee} className="shrink-0 text-sm tabular-nums" />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PayWith({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <p className="text-xs font-medium text-muted">{PAY_COPY.payWith}</p>
+      <PaymentMarks size="sm" className="mt-2" />
+    </div>
   )
 }
 

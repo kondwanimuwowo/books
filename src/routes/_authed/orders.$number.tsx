@@ -5,7 +5,7 @@ import { confirmDelivered, getOrder, reportProblem } from '#/functions/orders.fu
 import { BookCover } from '#/components/book'
 import { CheckoutSteps } from '#/components/checkout-steps'
 import { Alert, useAction } from '#/components/form'
-import { PaymentPanel } from '#/components/payment-panel'
+import { PaymentPanel, PaymentSuccess } from '#/components/payment-panel'
 import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
@@ -33,6 +33,8 @@ function OrderPage() {
   const [justPaid, setJustPaid] = useState(false)
   const onPaid = useCallback(() => {
     setJustPaid(true)
+    // Phones were scrolled down at the pay form; the good news goes at the top.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     void router.invalidate()
   }, [router])
 
@@ -61,9 +63,17 @@ function OrderPage() {
             {formatDate(order.createdAt)} · to {order.shipTown}
           </p>
 
-          {justPaid && (
-            <div className="rise mt-5">
-              <Alert tone="success">Paid. Your sellers are packing.</Alert>
+          {justPaid && !pending && (
+            <div className="mt-6 space-y-3">
+              <PaymentSuccess totalNgwee={order.totalNgwee} orderNumber={order.number} />
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <Link to="/" className="btn btn-primary">
+                  Keep shopping
+                </Link>
+                <Link to="/account" className="btn btn-secondary">
+                  Your orders
+                </Link>
+              </div>
             </div>
           )}
 
@@ -178,11 +188,11 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
             </div>
             <div className="min-w-0 flex-1">
               {item.slug ? (
-                <Link to="/books/$slug" params={{ slug: item.slug }} className="line-clamp-2 font-medium text-ink">
+                <Link to="/books/$slug" params={{ slug: item.slug }} className="line-clamp-2 font-bold tracking-[-0.01em] text-ink">
                   {item.title}
                 </Link>
               ) : (
-                <p className="font-medium">{item.title}</p>
+                <p className="font-bold tracking-[-0.01em]">{item.title}</p>
               )}
               <p className="text-sm text-subtle">
                 {conditionLabel(item.condition)}

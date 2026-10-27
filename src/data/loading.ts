@@ -1,4 +1,4 @@
-export type LoadingKind = 'find' | 'read' | 'list' | 'research'
+export type LoadingKind = 'find' | 'read' | 'list' | 'research' | 'pay'
 
 /** How long each line stays before the next one rolls in. */
 export const LOADING_LINE_MS = 2800
@@ -113,6 +113,35 @@ export const LOADING_LINES: Record<LoadingKind, { after: number; lines: string[]
     },
     { after: 25000, lines: SLOW_NETWORK },
   ],
+  // Waiting for the buyer to approve the mobile money prompt on their phone.
+  pay: [
+    {
+      after: 0,
+      lines: [
+        'Your phone should be buzzing about now…',
+        'Waiting for your PIN, no peeking…',
+        'Kwacha warming up for the trip…',
+        'Telling your books to pack their bags…',
+        'Checking the network tower is awake…',
+        'Holding the door open for your money…',
+        'Counting the ngwee twice, to be safe…',
+        'Asking your phone nicely…',
+        'The seller is already looking for tape…',
+        'Polishing the books while we wait…',
+      ],
+    },
+    {
+      after: 20000,
+      lines: [
+        'No prompt yet? Check the phone is on and has signal…',
+        'Prompt hiding under your messages? Have a look…',
+        'Still waiting. Mobile money takes its time sometimes…',
+        'Your books are patient. So are we…',
+        'Approved already? We’re just waiting for the network to say so…',
+      ],
+    },
+    { after: 60000, lines: SLOW_NETWORK },
+  ],
   // Researching an author takes a minute or two of web searches.
   research: [
     {
@@ -149,4 +178,5 @@ export const LOADING_LABEL: Record<LoadingKind, string> = {
   read: 'Reading your photos',
   list: 'Reading your list',
   research: 'Researching the author',
+  pay: 'Waiting for you to approve the payment',
 }

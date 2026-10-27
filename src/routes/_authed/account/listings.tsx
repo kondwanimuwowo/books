@@ -92,7 +92,7 @@ function ListingItem({ listing }: { listing: Listing }) {
       </Link>
 
       <div className="min-w-0 flex-1">
-        <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="line-clamp-1 font-medium text-ink">
+        <Link to="/books/$slug" params={{ slug: listing.book.slug }} className="line-clamp-1 font-bold tracking-[-0.01em] text-ink">
           {listing.book.title}
         </Link>
         <p className="text-sm text-subtle">

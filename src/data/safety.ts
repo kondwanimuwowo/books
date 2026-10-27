@@ -1,5 +1,7 @@
 // Copy that keeps payments and conversations on Kuwala, where escrow covers them.
 // Phone numbers are only shared once an order is paid (see getOrder and getMySales).
+import { CARD_PAYMENTS, NETWORKS } from './payments'
+
 export const SAFETY = {
   checkout: 'Pay and agree everything on Kuwala. Your money is held until you confirm the book arrived. If you pay a seller directly, we can’t get it back for you.',
   buyerContact: 'Use this number to arrange delivery, never to pay. Confirm only once the book is in your hands.',
@@ -24,6 +26,6 @@ export const BUY_TRUST = {
   delivery: (inTown: string | null, outOfTown: string | null, extra: string | null) =>
     [inTown && `${inTown} in the seller’s town`, outOfTown && `${outOfTown} to other towns${extra ? `, plus ${extra} for each extra book` : ''}`].filter(Boolean).join(', ') ||
     'Shown at checkout',
-  pay: 'Airtel Money, MTN MoMo, Zamtel Kwacha or card, approved on your own phone.',
+  pay: `${NETWORKS.map((n) => n.name).join(', ')}${CARD_PAYMENTS ? ' or card' : ''}, approved on your own phone.`,
   held: 'Your money is held until you confirm the book arrived. Something wrong? Report it before you confirm.',
 } as const

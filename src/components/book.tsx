@@ -76,7 +76,7 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
         </span>
       )}
       <div className="mt-3 space-y-0.5">
-        <p className="line-clamp-2 text-[15px] leading-snug font-medium">{book.title}</p>
+        <p className="line-clamp-2 text-[15px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
         {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
         {book.isZambian && <ZambianMark className="mt-1" />}
         <p className="pt-1 text-sm">

@@ -3,6 +3,8 @@ import type { LinkProps } from '@tanstack/react-router'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
+import { PAY_COPY } from '#/data/payments'
+import { PaymentMarks } from './payment-marks'
 import { LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
 import { openCookieSettings } from '#/lib/consent'
@@ -405,8 +407,12 @@ export function SiteFooter() {
     <footer className="band mt-14 sm:mt-20">
       {/* Phones: the two link groups side by side, so the footer is a glance rather than a scroll. */}
       <div className="page grid grid-cols-2 gap-x-6 gap-y-8 py-10 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-10 sm:py-12">
-        <div className="col-span-2 sm:col-span-1">
+        <div className="col-span-2 flex flex-col items-start gap-6 sm:col-span-1">
           <Logo tone="inverse" className="h-5" />
+          <div className="space-y-2">
+            <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
+            <PaymentMarks size="sm" />
+          </div>
         </div>
         {FOOTER_NAV.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">

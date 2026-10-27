@@ -156,7 +156,7 @@ function BookRow({ book, onEdit }: { book: Book; onEdit: () => void }) {
     <div className="flex items-center gap-4">
       <BookCover src={book.coverUrl} title={book.title} className="w-12 shrink-0 shadow-sm" />
       <div className="min-w-0 flex-1">
-        <Link to="/books/$slug" params={{ slug: book.slug }} className="line-clamp-1 font-medium text-ink">
+        <Link to="/books/$slug" params={{ slug: book.slug }} className="line-clamp-1 font-bold tracking-[-0.01em] text-ink">
           {book.title}
         </Link>
         <p className="text-sm text-subtle">{[book.publishedYear, book.publisher].filter(Boolean).join(' · ') || 'Details missing'}</p>

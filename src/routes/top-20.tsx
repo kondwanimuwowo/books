@@ -116,7 +116,7 @@ function ChartRow({ entry: e }: { entry: Entry }) {
           <BookCover src={e.book.coverUrl} title={e.book.title} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 font-medium">{e.book.title}</p>
+          <p className="line-clamp-2 font-bold tracking-[-0.01em]">{e.book.title}</p>
           {e.book.authorNames && <p className="line-clamp-1 text-sm text-muted">{e.book.authorNames}</p>}
           <p className="mt-0.5 text-xs text-subtle">
             <span className="tabular-nums">{e.buyers}</span> readers

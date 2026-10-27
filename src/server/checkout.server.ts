@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
+import { CARD_PAYMENTS } from '#/data/payments'
 import { orders, payments, profiles } from '#/db/schema'
 import { ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
@@ -92,6 +93,7 @@ export async function startMobileMoney(db: Db, user: SessionUser, input: MobileM
 
 // Cards go through Lenco's inline widget (direct card API needs PCI DSS); we only issue the reference.
 export async function startCard(db: Db, user: SessionUser, number: string) {
+  if (!CARD_PAYMENTS) throw new AppError('Card payments are paused. Pay with mobile money.', 'forbidden')
   const order = await ownOrder(db, number, user.id)
   if (order.status !== 'pending_payment') throw new AppError('This order has already been paid', 'conflict')
   const reference = newReference(order.number)

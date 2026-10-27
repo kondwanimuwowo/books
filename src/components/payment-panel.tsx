@@ -1,13 +1,17 @@
-import { CreditCardIcon, DevicePhoneMobileIcon } from '@heroicons/react/20/solid'
+import { CheckCircleIcon, CreditCardIcon, DevicePhoneMobileIcon, LockClosedIcon, ShieldCheckIcon } from '@heroicons/react/20/solid'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { checkPayment, startCardPayment, startMobileMoneyPayment } from '#/functions/orders.functions'
-import { detectOperator, OPERATOR_LABELS } from '#/lib/phone'
+import { detectOperator, normalizeLocalPhone, OPERATOR_LABELS } from '#/lib/phone'
 import type { Operator } from '#/lib/phone'
 import { formatMoney } from '#/lib/money'
 import { cn } from '#/lib/utils'
 import { Alert, Field, errorMessage } from './form'
+import { LoadingLine, Spinner } from './loading-line'
+import { NetworkMark } from './payment-marks'
+import { CARD_PAYMENTS, NETWORKS, PAY_COPY } from '#/data/payments'
+import { SAFETY } from '#/data/safety'
 
 declare global {
   interface Window {
@@ -131,12 +135,12 @@ export function PaymentPanel({
     return (
       <Swap stageKey="waiting">
         {stage.method === 'mobile_money' ? (
-          <div className="card p-6 text-center" role="status" aria-live="polite">
+          <div className="card p-6 text-center sm:p-8" role="status" aria-live="polite">
             <PhonePrompt amount={formatMoney(totalNgwee)} network={operator ? OPERATOR_LABELS[operator] : 'Mobile money'} />
-            <h2 className="mt-5 text-xl">Check your phone</h2>
-            <p className="mt-1 text-muted">
-              Approve {formatMoney(totalNgwee)} on {phone}.
-            </p>
+            <h2 className="mt-6 text-2xl">{PAY_COPY.waitingTitle}</h2>
+            <p className="mt-1 text-muted">{PAY_COPY.waitingBody(formatMoney(totalNgwee), phone)}</p>
+            <LoadingLine kind="pay" className="mx-auto mt-5 max-w-xs justify-center rounded-full bg-sunken px-4 py-2.5 text-left" />
+            <p className="mt-5 text-xs text-subtle">{PAY_COPY.waitingNote}</p>
           </div>
         ) : (
           <div className="card p-6 text-center" role="status" aria-live="polite">
@@ -153,78 +157,109 @@ export function PaymentPanel({
 
   const busy = stage.kind === 'starting'
   const amount = formatMoney(totalNgwee)
+  const validPhone = !!normalizeLocalPhone(phone)
 
   return (
     <Swap stageKey="form">
       <div className="card p-5 sm:p-6">
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-sunken p-1" role="radiogroup" aria-label="Pay with">
-          {(
-            [
-              ['mobile_money', 'Mobile money', DevicePhoneMobileIcon],
-              ['card', 'Card', CreditCardIcon],
-            ] as const
-          ).map(([value, label, Icon]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={method === value}
-              onClick={() => setMethod(value)}
-              className={cn(
-                'flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors',
-                method === value ? 'bg-surface text-ink shadow-sm' : 'text-subtle hover:text-ink',
-              )}
-            >
-              <Icon className="size-5" aria-hidden /> {label}
-            </button>
-          ))}
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">Amount to pay</p>
+            <p className="mt-1 text-3xl font-bold tracking-[-0.03em] tabular-nums">{amount}</p>
+          </div>
+          <LockClosedIcon className="mb-1.5 size-5 text-subtle" aria-hidden />
         </div>
 
-        <div className="mt-5 space-y-4">
+        {CARD_PAYMENTS && (
+          <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-sunken p-1" role="radiogroup" aria-label="Pay with">
+            {(
+              [
+                ['mobile_money', 'Mobile money', DevicePhoneMobileIcon],
+                ['card', 'Card', CreditCardIcon],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={method === value}
+                onClick={() => setMethod(value)}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors',
+                  method === value ? 'bg-surface text-ink shadow-sm' : 'text-subtle hover:text-ink',
+                )}
+              >
+                <Icon className="size-5" aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-5 space-y-5">
           {stage.kind === 'failed' && <Alert>{stage.reason}</Alert>}
 
-          {method === 'mobile_money' ? (
+          {method === 'mobile_money' || !CARD_PAYMENTS ? (
             <>
-              <Field label="Mobile money number">
+              <Field label={PAY_COPY.numberLabel}>
                 <span className="relative block">
+                  <DevicePhoneMobileIcon className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-subtle" aria-hidden />
                   <input
-                    className="input pr-20"
+                    className="input pl-11 text-lg tracking-wide tabular-nums"
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    placeholder="097 123 4567"
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value)
-                      setOperator(detectOperator(e.target.value))
+                      // The prefix tells us the network; a manual pick stays when it can't.
+                      const detected = detectOperator(e.target.value)
+                      if (detected) setOperator(detected)
                     }}
                   />
-                  {/* The prefix already tells us the network; only ask when it can't. */}
-                  {operator && (
-                    <span className="rise absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-soft-ink">
-                      {OPERATOR_LABELS[operator]}
-                    </span>
-                  )}
                 </span>
               </Field>
-              {!operator && phone.replace(/\D/g, '').length >= 3 && (
-                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Network">
-                  {(Object.keys(OPERATOR_LABELS) as Operator[]).map((op) => (
-                    <button
-                      key={op}
-                      type="button"
-                      role="radio"
-                      aria-checked={false}
-                      onClick={() => setOperator(op)}
-                      className="pill bg-sunken hover:bg-sunken-strong"
-                    >
-                      {OPERATOR_LABELS[op]}
-                    </button>
-                  ))}
+
+              <fieldset>
+                <legend className="field-label">{PAY_COPY.networkLabel}</legend>
+                <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label={PAY_COPY.networkLabel}>
+                  {NETWORKS.map((n) => {
+                    const picked = operator === n.key
+                    return (
+                      <button
+                        key={n.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={picked}
+                        aria-label={n.name}
+                        onClick={() => setOperator(n.key)}
+                        className={cn(
+                          'relative flex h-14 items-center justify-center rounded-xl border bg-surface px-1.5 transition-[border-color,box-shadow]',
+                          picked ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong',
+                        )}
+                      >
+                        <NetworkMark network={n.key} size="sm" className={cn(!picked && operator && 'opacity-60')} />
+                        {picked && <CheckCircleIcon className="rise absolute -top-2 -right-2 size-5 rounded-full bg-surface text-accent" aria-hidden />}
+                      </button>
+                    )
+                  })}
                 </div>
-              )}
-              <button type="button" className="btn btn-primary w-full" disabled={busy || !operator} onClick={() => void payMobile()}>
-                {busy ? 'Sending…' : `Pay ${amount}`}
+                {operator && <p className="mt-2 text-xs text-subtle">{PAY_COPY.networkHint}</p>}
+              </fieldset>
+
+              <button type="button" className="btn btn-primary h-13 w-full gap-2 text-base" disabled={busy || !operator || !validPhone} onClick={() => void payMobile()}>
+                {busy ? <Spinner /> : <LockClosedIcon className="size-4" aria-hidden />}
+                {busy ? 'Sending the prompt…' : `Pay ${amount}`}
               </button>
+
+              <ol className="grid grid-cols-3 gap-2 text-center text-xs text-muted">
+                {PAY_COPY.how.map((step, i) => (
+                  <li key={step} className="flex flex-col items-center gap-1.5">
+                    <span className="grid size-6 place-items-center rounded-full bg-accent-soft text-[11px] font-bold text-accent-soft-ink tabular-nums">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
             </>
           ) : (
             <>
@@ -234,6 +269,11 @@ export function PaymentPanel({
               </button>
             </>
           )}
+
+          <p className="flex gap-2 border-t border-line pt-4 text-xs text-muted">
+            <ShieldCheckIcon className="size-4 shrink-0 text-success" aria-hidden />
+            {SAFETY.checkout}
+          </p>
         </div>
       </div>
     </Swap>
@@ -243,7 +283,7 @@ export function PaymentPanel({
 /** A phone showing the approval prompt the buyer is about to receive, so they know what to look for. */
 function PhonePrompt({ amount, network }: { amount: string; network: string }) {
   return (
-    <div aria-hidden className="mx-auto w-32 rounded-[1.4rem] bg-ink p-1.5 shadow-md">
+    <div aria-hidden className="mx-auto w-36 rounded-[1.4rem] bg-ink p-1.5 shadow-md">
       <div className="flex h-44 flex-col justify-center rounded-[1.05rem] bg-canvas px-2.5">
         <div className="animate-[rise_400ms_var(--ease-out)_both,prompt-pulse_2.4s_var(--ease-in-out)_400ms_infinite] rounded-lg bg-surface p-2.5 text-left shadow-md motion-reduce:animate-none">
           <p className="text-[9px] font-medium tracking-[0.12em] text-subtle uppercase">{network}</p>
@@ -276,5 +316,34 @@ function Swap({ stageKey, children }: { stageKey: string; children: ReactNode })
         </motion.div>
       </AnimatePresence>
     </MotionConfig>
+  )
+}
+
+/** The moment payment lands: what was paid, where the money is, and what happens next. */
+export function PaymentSuccess({ totalNgwee, orderNumber }: { totalNgwee: number; orderNumber: string }) {
+  return (
+    <div className="card rise overflow-hidden" role="status" aria-live="polite">
+      <div className="bg-success-soft px-5 py-7 text-center sm:px-8">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-surface shadow-sm">
+          <CheckCircleIcon className="size-11 animate-[rise_500ms_var(--ease-out)_both] text-success motion-reduce:animate-none" aria-hidden />
+        </span>
+        <h2 className="mt-4 text-2xl sm:text-3xl">{PAY_COPY.successTitle}</h2>
+        <p className="mt-1 text-muted">{PAY_COPY.successBody(formatMoney(totalNgwee))}</p>
+        <p className="mt-3 text-xs text-subtle">
+          Order <span className="font-medium text-ink tabular-nums">{orderNumber}</span>
+        </p>
+      </div>
+      <ol className="space-y-4 px-5 py-6 sm:px-8">
+        {PAY_COPY.next.map((step, i) => (
+          <li key={step.title} className="flex gap-3">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent-soft-ink tabular-nums">{i + 1}</span>
+            <div>
+              <p className="font-bold tracking-[-0.01em]">{step.title}</p>
+              <p className="text-sm text-muted">{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
