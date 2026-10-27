@@ -8,7 +8,8 @@ import { books, listings, offers, profiles, sellers } from '#/db/schema'
 import { MAX_COUNTERS, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS, OFFERS_PER_COPY_PER_WEEK } from '#/data/listing-options'
 import { formatMoney, toNgwee } from '#/lib/money'
 import { requireUserMiddleware } from '#/server/auth'
-import { escapeHtml, sendEmail } from '#/server/email.server'
+import { escapeHtml } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
 import { loadOfferParties } from '#/server/offers.server'
 import { readerStandings } from '#/server/reputation.server'
 import { AppError } from '#/server/errors.server'
@@ -92,7 +93,7 @@ export const makeOffer = createServerFn({ method: 'POST' })
     }
 
     if (!tooLow) {
-      await sendEmail({
+      await notify('offers', {
         to: listing.seller.email,
         subject: `Offer of ${formatMoney(amountNgwee)} for ${listing.title}`,
         lines: [
@@ -177,7 +178,7 @@ export const answerOffer = createServerFn({ method: 'POST' })
     })
 
     const [o] = await loadOfferParties(db, [data.offerId])
-    if (o) await sendEmail(moveEmail(data.move, side, amountNgwee, o))
+    if (o) await notify('offers', moveEmail(data.move, side, amountNgwee, o))
     return { ok: true }
   })
 

@@ -12,7 +12,8 @@ import { slugify } from '#/lib/utils'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
 import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
-import { escapeHtml, sendEmail } from '#/server/email.server'
+import { escapeHtml } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
 import { deletePrivate } from '#/server/private-files.server'
 import { uniqueSlug } from '#/server/catalog.server'
 import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
@@ -185,7 +186,7 @@ export const resolveDispute = createServerFn({ method: 'POST' })
     const orderLink = `${env.APP_ORIGIN}/orders/${part.orderNumber}`
     const refunded = data.outcome === 'refund'
     await Promise.all([
-      sendEmail({
+      notify('orders', {
         to: part.buyerEmail,
         subject: `Update on your problem report for order ${part.orderNumber}`,
         lines: [
@@ -196,7 +197,7 @@ export const resolveDispute = createServerFn({ method: 'POST' })
           orderLink,
         ],
       }),
-      sendEmail({
+      notify('selling', {
         to: part.sellerEmail,
         subject: `Dispute on order ${part.orderNumber} resolved`,
         lines: [
@@ -566,7 +567,7 @@ export const decideVerification = createServerFn({ method: 'POST' })
       .where(eq(verificationRequests.id, data.requestId))
 
     const first = request.request.legalName.split(' ')[0]
-    await sendEmail(
+    await notify('account',
       data.decision === 'approved'
         ? {
             to: request.email,

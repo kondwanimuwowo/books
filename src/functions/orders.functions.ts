@@ -15,6 +15,7 @@ import { optionalUserMiddleware, requireSellerMiddleware, requireUserMiddleware 
 import { initiateMobileMoneyCollection } from '#/server/lenco.server'
 import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quoteCart, releaseToSeller, settlePayment } from '#/server/orders.server'
 import { escapeHtml, sendEmail } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
 import { ownsPrivate } from '#/server/private-files.server'
 import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
 import { AppError } from '#/server/errors.server'
@@ -298,7 +299,7 @@ export const reportProblem = createServerFn({ method: 'POST' })
       .where(eq(sellerOrders.id, part.id))
       .limit(1)
     if (seller) {
-      await sendEmail({
+      await notify('selling', {
         to: seller.email,
         subject: DISPUTE_COPY.sellerSubject(seller.number),
         lines: DISPUTE_COPY.sellerLines(data.note, DISPUTE_REPLY_HOURS).map(escapeHtml),
@@ -382,7 +383,7 @@ export const markShipped = createServerFn({ method: 'POST' })
       .from(orders)
       .innerJoin(profiles, eq(profiles.id, orders.buyerId))
       .where(eq(orders.id, part.orderId))
-    await sendEmail({
+    await notify('orders', {
       to: buyer.email,
       subject: `${context.seller.storeName} has shipped part of ${buyer.number}`,
       lines: [`Delivery details from the seller: ${data.trackingNote}`, 'When the books arrive, confirm delivery so the seller gets paid.'],

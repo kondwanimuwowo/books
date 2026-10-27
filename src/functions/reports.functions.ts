@@ -5,7 +5,8 @@ import { getDb } from '#/db/client.server'
 import { books, listingReports, listings, profiles, sellers } from '#/db/schema'
 import { REPORT_COPY, REPORT_REASONS } from '#/data/listing-options'
 import { requireAdminMiddleware, requireUserMiddleware } from '#/server/auth'
-import { escapeHtml, sendEmail } from '#/server/email.server'
+import { escapeHtml } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
 import { AppError } from '#/server/errors.server'
 
 const reasons = REPORT_REASONS.map((r) => r.value) as [string, ...string[]]
@@ -72,7 +73,7 @@ export const decideReport = createServerFn({ method: 'POST' })
             .where(eq(sellers.id, listing.sellerId))
             .limit(1)
         : []
-      if (who) await sendEmail({ to: who.email, subject: REPORT_COPY.removedSubject(who.title), lines: REPORT_COPY.removedLines(who.title).map(escapeHtml) })
+      if (who) await notify('selling', { to: who.email, subject: REPORT_COPY.removedSubject(who.title), lines: REPORT_COPY.removedLines(who.title).map(escapeHtml) })
     }
     return { ok: true }
   })

@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { REMINDER_AFTER_DAYS, REMINDER_UNTIL_DAYS, REVIEW_COPY } from '#/data/reputation'
-import { escapeHtml, sendEmail } from './email.server'
+import { escapeHtml } from './email.server'
+import { notify } from './notify.server'
 
 const BATCH = 50
 
@@ -31,7 +32,7 @@ export async function remindToRate(db: Db) {
       exists (select 1 from ratings r where r.seller_order_id = so.id and r.rater = 'seller') as seller_rated`)
   for (const part of due) {
     if (!part.buyer_done) {
-      await sendEmail({
+      await notify('orders', {
         to: part.buyer_email,
         subject: REVIEW_COPY.reminderSubject,
         lines: [escapeHtml(REVIEW_COPY.reminderBuyer(part.store))],
@@ -39,7 +40,7 @@ export async function remindToRate(db: Db) {
       })
     }
     if (!part.seller_rated) {
-      await sendEmail({
+      await notify('selling', {
         to: part.seller_email,
         subject: `Rate the buyer for order ${part.number}`,
         lines: [REVIEW_COPY.reminderSeller],

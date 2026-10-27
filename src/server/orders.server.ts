@@ -7,7 +7,7 @@ import { COMMISSION_RATE } from '#/data/listing-options'
 import { formatMoney } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getCollectionStatus, isPendingStatus } from './lenco.server'
-import { sendEmail } from './email.server'
+import { notify } from './notify.server'
 import { notifySoldElsewhere } from './offers.server'
 import { AppError } from './errors.server'
 
@@ -287,7 +287,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
     .where(eq(sellerOrders.orderId, orderId))
 
   await Promise.all([
-    sendEmail({
+    notify('orders', {
       to: order.email,
       subject: `Order ${order.number} confirmed`,
       lines: [
@@ -298,7 +298,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
       action: { label: 'View your order', path: `/orders/${order.number}` },
     }),
     ...sellerRows.map((s) =>
-      sendEmail({
+      notify('selling', {
         to: s.email,
         subject: `New order ${order.number}`,
         lines: [

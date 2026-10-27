@@ -3,7 +3,8 @@ import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { PLAQUE_COPY, REVIEW_GATE, TIERS, tierInfo } from '#/data/tiers'
 import type { Tier } from '#/data/tiers'
-import { escapeHtml, sendEmail } from './email.server'
+import { escapeHtml } from './email.server'
+import { notify } from './notify.server'
 
 /**
  * Distinct readers per verified author: buyers with a delivered copy of one of their books, from any shop.
@@ -61,7 +62,7 @@ async function announce(db: Db, authorId: string, tier: Tier, readers: number) {
     where a.id = ${authorId}`)
   if (!author) return
   const { label } = tierInfo(tier)
-  await sendEmail({
+  await notify('account', {
     to: author.email,
     subject: `${PLAQUE_COPY.reached(label)} on Kuwala Books`,
     lines: [escapeHtml(PLAQUE_COPY.email(author.name.split(' ')[0], label, readers))],

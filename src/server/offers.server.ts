@@ -3,7 +3,8 @@ import { alias } from 'drizzle-orm/pg-core'
 import type { Db } from '#/db/client.server'
 import { books, listings, offers, profiles, sellers } from '#/db/schema'
 import { formatMoney } from '#/lib/money'
-import { escapeHtml, sendEmail } from './email.server'
+import { escapeHtml } from './email.server'
+import { notify } from './notify.server'
 
 const sellerProfiles = alias(profiles, 'seller_profiles')
 
@@ -34,7 +35,7 @@ export async function notifySoldElsewhere(db: Db, ids: string[]) {
   const rows = await loadOfferParties(db, ids)
   await Promise.all(
     rows.map((o) =>
-      sendEmail({
+      notify('offers', {
         to: o.buyerEmail,
         subject: `${o.title} has sold`,
         lines: [`The copy of ${escapeHtml(o.title)} you made an offer on has sold to another buyer, so your offer is closed.`],
@@ -53,20 +54,20 @@ export async function notifyLapsed(db: Db, lapsed: { id: string; turn: 'buyer' |
       if (!o) return
       const title = escapeHtml(o.title)
       if (l.agreedNgwee !== null) {
-        return sendEmail({
+        return notify('offers', {
           to: o.sellerEmail,
           subject: `Offer not paid: ${o.title}`,
           lines: [`The buyer didn’t pay the agreed ${formatMoney(l.agreedNgwee)} for ${title} in time. The copy is back on sale.`],
         })
       }
       return l.turn === 'seller'
-        ? sendEmail({
+        ? notify('offers', {
             to: o.buyerEmail,
             subject: `No reply on ${o.title}`,
             lines: [`${escapeHtml(o.storeName)} didn’t answer your offer for ${title} in time, so it has been declined.`],
             action: { label: 'See your offers', path: '/account/offers' },
           })
-        : sendEmail({
+        : notify('offers', {
             to: o.sellerEmail,
             subject: `No reply on ${o.title}`,
             lines: [`The buyer didn’t answer your counter-offer for ${title} in time, so it has been declined.`],

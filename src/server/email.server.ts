@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { Resend } from 'resend'
 
-interface Message {
+export interface Message {
   to: string
   subject: string
   lines: string[]
