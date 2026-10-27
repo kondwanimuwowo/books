@@ -1,6 +1,6 @@
 // Saves data on repeat visits: hashed app files and covers come from the phone, not the network.
 // Pages and server calls always go to the network, so prices, stock and sign-in are never stale.
-const STATIC = 'static-v2'
+const STATIC = 'static-v3'
 const COVERS = 'covers-v1'
 const MAX_COVERS = 300
 const OFFLINE = '/offline.html'
@@ -9,7 +9,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(STATIC)
-      .then((cache) => cache.addAll([OFFLINE, '/brand/favicon-48.png']))
+      .then((cache) => cache.addAll([OFFLINE, '/brand/mark-48.png']))
       .then(() => self.skipWaiting()),
   )
 })
