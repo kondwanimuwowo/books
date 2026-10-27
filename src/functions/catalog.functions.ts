@@ -1,20 +1,14 @@
 import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { env } from 'cloudflare:workers'
 import { getCookie, getRequest, setResponseHeader } from '@tanstack/react-start/server'
-import { eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { authors, profiles, sellers } from '#/db/schema'
 import { optionalUserMiddleware } from '#/server/auth'
-import { categoriesWithCounts, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory, searchBooks, shelf } from '#/server/catalog.server'
+import { categoriesWithCounts, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
-import { interpretSearch } from '#/server/ai.server'
-import { SEARCH_REQUEST_WORDS } from '#/data/ai'
-import { MIN_WALL_COVERS, WALL_TILES } from '#/data/home'
-import { toIsbn13 } from '#/lib/isbn'
 import { loadDeliveryRates } from '#/server/orders.server'
-import { loadChart } from '#/server/chart.server'
+import { loadChartPage, loadHome, quickSearchBooks, runSearch } from '#/server/browse.server'
+import { loadMember } from '#/server/members.server'
+import { directoryInput, quickSearchSchema, searchSchema, slugInput } from '#/schemas/catalog'
 
 // Only the data a browser fetches for a page is shared and cacheable. During a full page load these functions
 // run inside the HTML response, which also carries who is signed in, so that response must never be cached.
@@ -31,86 +25,19 @@ export const getSiteContext = createServerFn({ method: 'GET' })
     const db = getDb()
     const currency: 'ZMW' | 'USD' = getCookie('kb_currency') === 'USD' ? 'USD' : 'ZMW'
     if (!context.user) return { user: null, fx, currency }
-    const [row] = await db
-      .select({
-        displayName: profiles.displayName,
-        isAdmin: profiles.isAdmin,
-        termsVersion: profiles.termsVersion,
-        sellerSlug: sellers.slug,
-        town: profiles.town,
-        province: profiles.province,
-        isAuthor: sql<boolean>`exists (select 1 from ${authors} where ${authors.verifiedSellerId} = ${sellers.id})`,
-        sellerKind: sellers.kind,
-        sellerVerified: sql<boolean>`${sellers.verifiedAt} is not null`,
-        verificationPending: sql<boolean>`exists (select 1 from verification_requests v where v.seller_id = ${sellers.id} and v.status = 'pending')`,
-      })
-      .from(profiles)
-      .leftJoin(sellers, eq(sellers.profileId, profiles.id))
-      .where(eq(profiles.id, context.user.id))
-      .limit(1)
-    return {
-      user: {
-        id: context.user.id,
-        email: context.user.email,
-        displayName: row?.displayName ?? context.user.email,
-        isAdmin: row?.isAdmin ?? false,
-        // Admin runs on its own host with its own sign-in.
-        adminUrl: row?.isAdmin ? (env.ADMIN_ORIGIN ?? '/admin') : null,
-        sellerSlug: row?.sellerSlug ?? null,
-        // Where they usually receive books, for delivery estimates on book pages.
-        place: row?.town && row.province ? { town: row.town, province: row.province } : null,
-        isAuthor: row?.isAuthor ?? false,
-        // Compared with TERMS_VERSION to ask for acceptance once.
-        termsVersion: row?.termsVersion ?? null,
-        // Everyone starts as a reader; opening a shop gives them its kind.
-        role: { kind: row?.sellerKind ?? null, verified: row?.sellerVerified ?? false, pending: row?.verificationPending ?? false },
-      },
-      fx,
-      currency,
-    }
+    return { user: await loadMember(db, context.user), fx, currency }
   })
 
 export const getHomeData = createServerFn({ method: 'GET' }).handler(async () => {
-  const db = getDb()
-  const [chart, zambian, recent, bargains, categories] = await Promise.all([
-    loadChart(db),
-    shelf(db, 'zambian'),
-    shelf(db, 'recent'),
-    shelf(db, 'bargains'),
-    categoriesWithCounts(db),
-  ])
+  const home = await loadHome(getDb())
   publicCache(60)
-  // The intro band's cover background reuses covers already loaded for the shelves.
-  const wall = coverWall([...new Set([...recent, ...zambian, ...bargains].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24))
-  return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall }
+  return home
 })
 
-function shuffle<T>(items: T[]) {
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
-
-/** Every cover in a fresh random order each round, never the same one twice in a row. Empty when there are too few. */
-function coverWall(covers: string[]) {
-  if (covers.length < MIN_WALL_COVERS) return []
-  const tiles: string[] = []
-  while (tiles.length < WALL_TILES) {
-    const round = shuffle(covers)
-    if (round[0] === tiles.at(-1)) round.push(round.shift() as string)
-    tiles.push(...round)
-  }
-  return tiles.slice(0, WALL_TILES)
-}
-
 export const getChart = createServerFn({ method: 'GET' }).handler(async () => {
-  const db = getDb()
-  const [chart, zambian] = await Promise.all([loadChart(db), shelf(db, 'zambian')])
+  const chart = await loadChartPage(getDb())
   publicCache(300)
-  return { ...chart, zambian }
+  return chart
 })
 
 export const getCategories = createServerFn({ method: 'GET' }).handler(async () => {
@@ -118,75 +45,16 @@ export const getCategories = createServerFn({ method: 'GET' }).handler(async () 
   return categoriesWithCounts(getDb())
 })
 
-export const searchSchema = z.object({
-  q: z.string().max(200).optional(),
-  category: z.string().max(400).optional(),
-  zambian: z.boolean().optional(),
-  condition: z.enum(['new', 'used']).optional(),
-  language: z.string().max(80).optional(),
-  min: z.number().min(0).max(100000).optional(),
-  max: z.number().min(0).max(100000).optional(),
-  sort: z.enum(['relevance', 'price', 'newest']).optional(),
-  page: z.number().int().min(1).max(500).optional(),
-  // Search for exactly what was typed, without AI's reading of it.
-  exact: z.boolean().optional(),
-})
-
-type SearchInput = z.infer<typeof searchSchema>
-
-/**
- * When a search finds nothing, or reads like a request ("grade 7 maths in Bemba"), Claude rewrites it into keywords
- * and filters. The rewrite is only used if it finds books; the page then offers the exact search too.
- */
-async function interpretIfUseful(db: ReturnType<typeof getDb>, data: SearchInput, total: number, sections: { slug: string; name: string }[]) {
-  const q = data.q?.trim()
-  if (!q || data.exact || (data.page ?? 1) > 1 || q.length < 3 || toIsbn13(q)) return null
-  if (total > 0 && !SEARCH_REQUEST_WORDS.test(q)) return null
-  const reading = await interpretSearch(db, q, sections)
-  if (!reading) return null
-  const applied = {
-    q: reading.query.trim() || undefined,
-    category: data.category ?? reading.section ?? undefined,
-    language: data.language ?? reading.language ?? undefined,
-    condition: data.condition ?? reading.condition ?? undefined,
-    zambian: data.zambian || reading.zambian || undefined,
-  }
-  const changed =
-    applied.q?.toLowerCase() !== q.toLowerCase() ||
-    applied.category !== data.category ||
-    applied.language !== data.language ||
-    applied.condition !== data.condition ||
-    applied.zambian !== data.zambian
-  if (!changed) return null
-  const result = await searchBooks(db, { ...data, ...applied })
-  if (result.total > 0) return { result, applied }
-  // Keywords plus filters can be too narrow; the filters alone still answer "used Zambian novels".
-  const hasFilters = applied.category || applied.language || applied.condition || applied.zambian
-  if (!applied.q || !hasFilters) return null
-  const broader = { ...applied, q: undefined }
-  const fallback = await searchBooks(db, { ...data, ...broader })
-  return fallback.total > 0 ? { result: fallback, applied: broader } : null
-}
-
 export const searchBooksFn = createServerFn({ method: 'GET' })
   .validator(searchSchema)
   .handler(async ({ data }) => {
-    const db = getDb()
-    const [result, categories] = await Promise.all([searchBooks(db, data), categoriesWithCounts(db)])
+    const result = await runSearch(getDb(), data)
     publicCache(30)
-    // A misspelt title ("eccentric thots") is found by close spelling first; that's free, Claude isn't.
-    if (!result.total && data.q?.trim() && !data.exact && !toIsbn13(data.q)) {
-      const close = await searchBooks(db, { ...data, fuzzy: true })
-      if (close.total) return { ...close, categories, interpreted: null, closeMatches: true }
-    }
-    const interpreted = await interpretIfUseful(db, data, result.total, categories)
-    return interpreted
-      ? { ...interpreted.result, categories, interpreted: interpreted.applied, closeMatches: false }
-      : { ...result, categories, interpreted: null, closeMatches: false }
+    return result
   })
 
 export const getBook = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().max(120) }))
+  .validator(slugInput)
   .handler(async ({ data }) => {
     const db = getDb()
     const [book, deliveryRates] = await Promise.all([getBookBySlug(db, data.slug), loadDeliveryRates(db)])
@@ -197,7 +65,7 @@ export const getBook = createServerFn({ method: 'GET' })
   })
 
 export const getAuthor = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().max(120) }))
+  .validator(slugInput)
   .handler(async ({ data }) => {
     const author = await getAuthorBySlug(getDb(), data.slug)
     if (!author) throw notFound()
@@ -205,25 +73,17 @@ export const getAuthor = createServerFn({ method: 'GET' })
     return author
   })
 
-const QUICK_BOOKS = 6
-const QUICK_AUTHORS = 3
-
-/** Results for the header search box as someone types: exact words, then close spellings. No AI, it must keep up. */
+/** Results for the header search box as someone types. */
 export const quickSearch = createServerFn({ method: 'GET' })
-  .validator(z.object({ q: z.string().trim().min(2).max(100) }))
+  .validator(quickSearchSchema)
   .handler(async ({ data }) => {
-    const db = getDb()
-    const [exact, authors] = await Promise.all([
-      searchBooks(db, { q: data.q, limit: QUICK_BOOKS }),
-      listDirectory(db, 'authors', { query: data.q, limit: QUICK_AUTHORS }),
-    ])
-    const books = exact.total || toIsbn13(data.q) ? exact : await searchBooks(db, { q: data.q, limit: QUICK_BOOKS, fuzzy: true })
+    const result = await quickSearchBooks(getDb(), data.q)
     publicCache(60)
-    return { books: books.results, total: books.total, authors }
+    return result
   })
 
 export const getPublisher = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().max(120) }))
+  .validator(slugInput)
   .handler(async ({ data }) => {
     const publisher = await getPublisherBySlug(getDb(), data.slug)
     if (!publisher) throw notFound()
@@ -231,22 +91,15 @@ export const getPublisher = createServerFn({ method: 'GET' })
     return publisher
   })
 
-export const directorySchema = z.object({
-  q: z.string().trim().max(100).optional(),
-  zambian: z.boolean().optional(),
-  verified: z.boolean().optional(),
-  tier: z.enum(['copper', 'emerald', 'gold']).optional(),
-})
-
 export const getDirectory = createServerFn({ method: 'GET' })
-  .validator(directorySchema.extend({ kind: z.enum(['authors', 'publishers']) }))
+  .validator(directoryInput)
   .handler(async ({ data }) => {
     publicCache(120)
     return listDirectory(getDb(), data.kind, { query: data.q, zambian: data.zambian, verified: data.verified, tier: data.tier })
   })
 
 export const getSeller = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().max(120) }))
+  .validator(slugInput)
   .handler(async ({ data }) => {
     const seller = await getSellerBySlug(getDb(), data.slug)
     if (!seller) throw notFound()
