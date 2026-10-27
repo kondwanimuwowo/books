@@ -17,6 +17,7 @@ import { payOutSeller, sellerBalance } from '#/server/payouts.server'
 import { INSTANT_MIN_NGWEE, instantFee, nextPayoutDay } from '#/data/payouts'
 import { MAX_LISTING_PHOTOS, PHOTOS_COPY } from '#/data/listing-options'
 import { writeSellerProfile } from '#/server/sellers.server'
+import { AppError } from '#/server/errors.server'
 
 const phoneSchema = z.string().transform((value, ctx) => {
   const local = normalizeLocalPhone(value)
@@ -73,7 +74,7 @@ export const saveSellerProfile = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const { photoKey, ...profile } = data
     const photoUrl = photoKey ? await ownedCoverUrl(photoKey, context.user.id) : undefined
-    if (photoUrl === null) throw new Error('That photo didn’t upload. Add it again.')
+    if (photoUrl === null) throw new AppError('That photo didn’t upload. Add it again.')
     const slug = await writeSellerProfile(getDb(), context.user.id, { ...profile, photoUrl })
     return { slug }
   })
@@ -149,7 +150,7 @@ const offerFields = {
 
 function offerValues(data: { acceptsOffers: boolean; offerFloorKwacha: number | null; priceKwacha: number }) {
   if (data.acceptsOffers && data.offerFloorKwacha !== null && data.offerFloorKwacha >= data.priceKwacha) {
-    throw new Error('The lowest you’ll take should be under your price')
+    throw new AppError('The lowest you’ll take should be under your price')
   }
   return { acceptsOffers: data.acceptsOffers, offerFloorNgwee: data.acceptsOffers && data.offerFloorKwacha !== null ? toNgwee(data.offerFloorKwacha) : null }
 }
@@ -199,19 +200,19 @@ export const createListing = createServerFn({ method: 'POST' })
     let bookId: string
     let slug: string
     const uploadedCover = data.coverKey ? await ownedCoverUrl(data.coverKey, context.user.id) : null
-    if (data.coverKey && !uploadedCover) throw new Error('That photo didn’t upload. Add it again.')
-    if (data.condition !== 'new' && !data.photoKeys.length) throw new Error(PHOTOS_COPY.required)
+    if (data.coverKey && !uploadedCover) throw new AppError('That photo didn’t upload. Add it again.')
+    if (data.condition !== 'new' && !data.photoKeys.length) throw new AppError(PHOTOS_COPY.required)
     const copyPhotos = await Promise.all(data.photoKeys.map((key) => ownedCoverUrl(key, context.user.id)))
-    if (copyPhotos.some((url) => !url)) throw new Error('A photo didn’t upload. Add it again.')
+    if (copyPhotos.some((url) => !url)) throw new AppError('A photo didn’t upload. Add it again.')
 
     if (data.book.kind === 'existing') {
       const [book] = await db.select({ id: books.id, slug: books.slug }).from(books).where(eq(books.id, data.book.bookId)).limit(1)
-      if (!book) throw new Error('Book not found')
+      if (!book) throw new AppError('Book not found', 'not_found')
       ;({ id: bookId, slug } = book)
     } else {
       const [category] = data.categorySlug ? await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, data.categorySlug)).limit(1) : []
       const isbn13 = data.book.candidate.isbn13 ? toIsbn13(data.book.candidate.isbn13) : null
-      if (data.book.candidate.isbn13 && !isbn13) throw new Error('That ISBN doesn’t look right')
+      if (data.book.candidate.isbn13 && !isbn13) throw new AppError('That ISBN doesn’t look right')
       // Open Library search results can carry the work's title; save the picked edition's own details.
       const edition = data.book.kind === 'external' && data.book.source === 'openlibrary' && isbn13 ? await lookupIsbn(isbn13) : null
       const picked = data.book.candidate
@@ -313,7 +314,7 @@ export const updateListing = createServerFn({ method: 'POST' })
       const [current] = await db.select({ photos: listings.photos }).from(listings).where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id))).limit(1)
       // Photos already on this copy stay; new ones must be this seller's uploads.
       const urls = await Promise.all(data.photoKeys.map(async (key) => (current?.photos.includes(`/covers/${key}`) ? `/covers/${key}` : ownedCoverUrl(key, context.user.id))))
-      if (urls.some((url) => !url)) throw new Error('A photo didn’t upload. Add it again.')
+      if (urls.some((url) => !url)) throw new AppError('A photo didn’t upload. Add it again.')
       photos = urls as string[]
     }
     const [updated] = await db
@@ -321,7 +322,7 @@ export const updateListing = createServerFn({ method: 'POST' })
       .set({ priceNgwee: toNgwee(data.priceKwacha), quantity: data.quantity, status, ...offerValues(data), ...(photos && { photos }) })
       .where(and(eq(listings.id, data.id), eq(listings.sellerId, context.seller.id)))
       .returning({ bookId: listings.bookId })
-    if (!updated) throw new Error('Listing not found')
+    if (!updated) throw new AppError('Listing not found', 'not_found')
     await fillMissingDescription(db, updated.bookId, data.description)
     return { ok: true }
   })
@@ -331,7 +332,7 @@ export const savePayoutDetails = createServerFn({ method: 'POST' })
   .validator(z.object({ phone: phoneSchema, operator: z.enum(['mtn', 'airtel', 'zamtel']) }))
   .handler(async ({ data, context }) => {
     const resolved = await resolveMobileMoney(data.phone, data.operator).catch(() => null)
-    if (!resolved) throw new Error('We couldn’t find a mobile money account on that number')
+    if (!resolved) throw new AppError('We couldn’t find a mobile money account on that number')
     const recipient = await createMobileMoneyRecipient(data.phone, data.operator)
     const db = getDb()
     await db
@@ -354,10 +355,10 @@ export const payMeNow = createServerFn({ method: 'POST' })
   .handler(async ({ context }) => {
     const db = getDb()
     const { readyNgwee } = await sellerBalance(db, context.seller.id)
-    if (readyNgwee < INSTANT_MIN_NGWEE) throw new Error(`Pay me now works from ${formatMoney(INSTANT_MIN_NGWEE)}`)
+    if (readyNgwee < INSTANT_MIN_NGWEE) throw new AppError(`Pay me now works from ${formatMoney(INSTANT_MIN_NGWEE)}`)
     const result = await payOutSeller(db, context.seller.id, 'instant')
-    if (!result) throw new Error('Nothing is ready to pay out')
-    if (result.status === 'failed') throw new Error('The transfer didn’t go through. Your balance is safe; try again later.')
+    if (!result) throw new AppError('Nothing is ready to pay out')
+    if (result.status === 'failed') throw new AppError('The transfer didn’t go through. Your balance is safe; try again later.')
     return result
   })
 

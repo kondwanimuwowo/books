@@ -5,6 +5,7 @@ import { getDb } from '#/db/client.server'
 import { authors, sellers, verificationRequests } from '#/db/schema'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { ownsPrivate } from '#/server/private-files.server'
+import { AppError } from '#/server/errors.server'
 
 const AUTHOR_MATCHES = 6
 
@@ -75,23 +76,23 @@ export const submitVerification = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const db = getDb()
     const { seller } = context
-    if (seller.verifiedAt) throw new Error('You are already verified')
-    if (!data.documents.some((d) => d.type === 'id')) throw new Error('Add a photo of your NRC or passport')
-    if (!data.documents.some((d) => d.type === 'selfie')) throw new Error('Add a photo of you holding your book')
+    if (seller.verifiedAt) throw new AppError('You are already verified')
+    if (!data.documents.some((d) => d.type === 'id')) throw new AppError('Add a photo of your NRC or passport')
+    if (!data.documents.some((d) => d.type === 'selfie')) throw new AppError('Add a photo of you holding your book')
     for (const d of data.documents) {
-      if (!(await ownsPrivate(d.key, context.user.id))) throw new Error('A photo didn’t upload. Add it again.')
+      if (!(await ownsPrivate(d.key, context.user.id))) throw new AppError('A photo didn’t upload. Add it again.')
     }
     if (data.authorId) {
       const [page] = await db.select({ owner: authors.verifiedSellerId }).from(authors).where(eq(authors.id, data.authorId)).limit(1)
-      if (!page) throw new Error('That author page no longer exists')
-      if (page.owner && page.owner !== seller.id) throw new Error('That author page is already verified to someone else')
+      if (!page) throw new AppError('That author page no longer exists', 'not_found')
+      if (page.owner && page.owner !== seller.id) throw new AppError('That author page is already verified to someone else')
     }
     const [open] = await db
       .select({ id: verificationRequests.id })
       .from(verificationRequests)
       .where(and(eq(verificationRequests.sellerId, seller.id), inArray(verificationRequests.status, ['pending'])))
       .limit(1)
-    if (open) throw new Error('Your details are already with us')
+    if (open) throw new AppError('Your details are already with us')
     await db.update(sellers).set({ kind: 'author' }).where(eq(sellers.id, seller.id))
     await db.insert(verificationRequests).values({ sellerId: seller.id, authorId: data.authorId, legalName: data.legalName, documents: data.documents })
     return { ok: true }

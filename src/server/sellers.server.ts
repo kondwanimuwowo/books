@@ -4,6 +4,7 @@ import { profiles, sellers } from '#/db/schema'
 import type { Province } from '#/data/zambia'
 import type { SellerKind } from '#/data/listing-options'
 import { randomCode, slugify } from '#/lib/utils'
+import { AppError } from './errors.server'
 
 export interface SellerProfileInput {
   storeName: string
@@ -20,7 +21,7 @@ export interface SellerProfileInput {
 export async function writeSellerProfile(db: Db, profileId: string, data: SellerProfileInput) {
   const [existing] = await db.select({ id: sellers.id, slug: sellers.slug, photoUrl: sellers.photoUrl }).from(sellers).where(eq(sellers.profileId, profileId)).limit(1)
   // Readers meet authors through their face; the page and its share preview depend on it.
-  if (data.kind === 'author' && !data.photoUrl && !existing?.photoUrl) throw new Error('Add a photo of yourself')
+  if (data.kind === 'author' && !data.photoUrl && !existing?.photoUrl) throw new AppError('Add a photo of yourself')
   const values = {
     storeName: data.storeName,
     kind: data.kind,

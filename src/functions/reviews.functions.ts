@@ -6,6 +6,7 @@ import { books, orderItems, orders, profiles, reviews, sellerOrders } from '#/db
 import { REVIEW_COPY, REVIEW_LIMITS } from '#/data/reputation'
 import { containsLink, containsPhoneNumber } from '#/data/safety'
 import { requireAdminMiddleware, requireUserMiddleware } from '#/server/auth'
+import { AppError } from '#/server/errors.server'
 
 const reviewBody = z
   .string()
@@ -26,7 +27,7 @@ export const writeReview = createServerFn({ method: 'POST' })
       .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
       .where(and(eq(orderItems.bookId, data.bookId), eq(orders.buyerId, context.user.id), eq(sellerOrders.status, 'delivered')))
       .limit(1)
-    if (!received) throw new Error('You can review a book once you’ve received it')
+    if (!received) throw new AppError('You can review a book once you’ve received it')
     const values = { score: data.score, body: data.body || null }
     await db
       .insert(reviews)

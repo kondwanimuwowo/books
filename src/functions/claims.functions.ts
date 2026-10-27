@@ -5,6 +5,7 @@ import { getDb } from '#/db/client.server'
 import { authorDrafts, authors, bookAuthors } from '#/db/schema'
 import { INVITE_DAYS } from '#/data/claims'
 import { sha256 } from '#/server/tokens.server'
+import { AppError } from '#/server/errors.server'
 
 const tokenSchema = z.object({ token: z.string().min(20).max(64) })
 
@@ -48,7 +49,7 @@ export const stopInvites = createServerFn({ method: 'POST' })
   .validator(tokenSchema)
   .handler(async ({ data }) => {
     const invite = await findInvite(data.token)
-    if (!invite) throw new Error('That link isn’t valid')
+    if (!invite) throw new AppError('That link isn’t valid', 'not_found')
     await getDb().update(authorDrafts).set({ optedOutAt: new Date(), contact: {}, inviteTokenHash: null }).where(eq(authorDrafts.id, invite.draftId))
     return { ok: true }
   })

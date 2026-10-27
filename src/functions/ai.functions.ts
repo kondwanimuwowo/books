@@ -14,6 +14,7 @@ import type { BookCandidate } from '#/server/book-sources.server'
 import { cheapestCopies, findCatalogueMatches } from '#/server/catalog.server'
 import type { CatalogueMatch } from '#/server/catalog.server'
 import { detectImage, storeCover } from '#/server/covers.server'
+import { AppError } from '#/server/errors.server'
 
 // Photos are shrunk on the phone first (see readPhotos in sell.tsx); this only stops abuse.
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024
@@ -46,13 +47,13 @@ export type PhotoResult = {
 export const readPhotos = createServerFn({ method: 'POST' })
   .middleware([requireSellerMiddleware])
   .validator((data: unknown) => {
-    if (!(data instanceof FormData)) throw new Error('Expected photos')
+    if (!(data instanceof FormData)) throw new AppError('Expected photos')
     const photos = PHOTO_SLOTS.flatMap(({ key }) => {
       const file = data.get(key)
       return file instanceof File ? [{ slot: key as PhotoSlot, file }] : []
     })
-    if (!photos.some((p) => p.slot === 'front')) throw new Error('Add a photo of the front cover')
-    if (photos.some((p) => p.file.size > MAX_PHOTO_BYTES)) throw new Error('That photo is too large')
+    if (!photos.some((p) => p.slot === 'front')) throw new AppError('Add a photo of the front cover')
+    if (photos.some((p) => p.file.size > MAX_PHOTO_BYTES)) throw new AppError('That photo is too large')
     return photos
   })
   .handler(async ({ data, context }): Promise<PhotoResult> => {
@@ -62,13 +63,13 @@ export const readPhotos = createServerFn({ method: 'POST' })
       data.map(async ({ slot, file }) => {
         const bytes = new Uint8Array(await file.arrayBuffer())
         const type = detectImage(bytes)
-        if (!type) throw new Error('Use JPEG, WebP or PNG photos')
+        if (!type) throw new AppError('Use JPEG, WebP or PNG photos')
         return { slot, bytes, mediaType: MEDIA_TYPES[type] }
       }),
     )
     const reading = await readBookPhotos(db, context.user.id, photos)
-    if (!reading) throw new Error('Couldn’t read those photos just now. Fill the details in yourself.')
-    if (!reading.isBook || !reading.title) throw new Error('We couldn’t make out a book in those photos. Try a sharper photo of the front cover.')
+    if (!reading) throw new AppError('Couldn’t read those photos just now. Fill the details in yourself.')
+    if (!reading.isBook || !reading.title) throw new AppError('We couldn’t make out a book in those photos. Try a sharper photo of the front cover.')
 
     const front = photos.find((p) => p.slot === 'front')
     const condition = CONDITIONS.some((c) => c.value === reading.condition) ? (reading.condition as Condition) : null
@@ -160,12 +161,12 @@ function listQuery(text: string, item: { author: string | null; publisher: strin
 export const readSchoolList = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])
   .validator((data: unknown) => {
-    if (!(data instanceof FormData)) throw new Error('Expected a list')
+    if (!(data instanceof FormData)) throw new AppError('Expected a list')
     const photos = data.getAll('photo').filter((f): f is File => f instanceof File)
     const text = String(data.get('text') ?? '').trim().slice(0, MAX_LIST_TEXT) || null
-    if (!photos.length && !text) throw new Error('Add a photo of the list, or type it in')
-    if (photos.length > MAX_LIST_PHOTOS) throw new Error(`Up to ${MAX_LIST_PHOTOS} photos`)
-    if (photos.some((p) => p.size > MAX_PHOTO_BYTES)) throw new Error('That photo is too large')
+    if (!photos.length && !text) throw new AppError('Add a photo of the list, or type it in')
+    if (photos.length > MAX_LIST_PHOTOS) throw new AppError(`Up to ${MAX_LIST_PHOTOS} photos`)
+    if (photos.some((p) => p.size > MAX_PHOTO_BYTES)) throw new AppError('That photo is too large')
     return { photos, text }
   })
   .handler(async ({ data, context }) => {
@@ -175,13 +176,13 @@ export const readSchoolList = createServerFn({ method: 'POST' })
       data.photos.map(async (file) => {
         const bytes = new Uint8Array(await file.arrayBuffer())
         const type = detectImage(bytes)
-        if (!type) throw new Error('Use JPEG, WebP or PNG photos')
+        if (!type) throw new AppError('Use JPEG, WebP or PNG photos')
         return { bytes, mediaType: MEDIA_TYPES[type] }
       }),
     )
     const reading = await readBookList(db, context.user.id, { photos, text: data.text })
-    if (!reading) throw new Error('Couldn’t read the list just now. Try again in a moment.')
-    if (!reading.isList || !reading.items.length) throw new Error('We couldn’t find any books on that list. Try a sharper photo.')
+    if (!reading) throw new AppError('Couldn’t read the list just now. Try again in a moment.')
+    if (!reading.isList || !reading.items.length) throw new AppError('We couldn’t find any books on that list. Try a sharper photo.')
 
     const found = await Promise.all(
       reading.items.map(async (item) => {

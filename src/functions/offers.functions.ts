@@ -11,6 +11,7 @@ import { requireUserMiddleware } from '#/server/auth'
 import { escapeHtml, sendEmail } from '#/server/email.server'
 import { loadOfferParties } from '#/server/offers.server'
 import { readerStandings } from '#/server/reputation.server'
+import { AppError } from '#/server/errors.server'
 
 const hoursFromNow = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
 
@@ -61,18 +62,18 @@ export const makeOffer = createServerFn({ method: 'POST' })
       .innerJoin(profiles, eq(profiles.id, sellers.profileId))
       .where(eq(listings.id, data.listingId))
       .limit(1)
-    if (!listing || listing.status !== 'active' || listing.quantity < 1) throw new Error('This copy is no longer for sale')
-    if (!listing.acceptsOffers) throw new Error('This seller isn’t taking offers on this copy')
-    if (listing.seller.profileId === context.user.id) throw new Error('This is your own listing')
+    if (!listing || listing.status !== 'active' || listing.quantity < 1) throw new AppError('This copy is no longer for sale')
+    if (!listing.acceptsOffers) throw new AppError('This seller isn’t taking offers on this copy')
+    if (listing.seller.profileId === context.user.id) throw new AppError('This is your own listing')
 
     const amountNgwee = toNgwee(data.amountKwacha)
-    if (amountNgwee >= listing.priceNgwee) throw new Error(`Offer less than ${formatMoney(listing.priceNgwee)}, or add it to your bag`)
+    if (amountNgwee >= listing.priceNgwee) throw new AppError(`Offer less than ${formatMoney(listing.priceNgwee)}, or add it to your bag`)
 
     const [recent] = await db
       .select({ n: sql<number>`count(*)::int` })
       .from(offers)
       .where(and(eq(offers.listingId, listing.id), eq(offers.buyerId, context.user.id), gte(offers.createdAt, hoursFromNow(-7 * 24))))
-    if (recent.n >= OFFERS_PER_COPY_PER_WEEK) throw new Error('You’ve made enough offers on this copy this week')
+    if (recent.n >= OFFERS_PER_COPY_PER_WEEK) throw new AppError('You’ve made enough offers on this copy this week', 'rate_limited')
 
     const tooLow = listing.floorNgwee !== null && amountNgwee < listing.floorNgwee
     const now = new Date()
@@ -86,7 +87,7 @@ export const makeOffer = createServerFn({ method: 'POST' })
         ...(tooLow ? { status: 'declined' as const, respondedAt: now, expiresAt: now } : { expiresAt: hoursFromNow(OFFER_REPLY_HOURS) }),
       })
     } catch (error) {
-      if (isUniqueViolation(error)) throw new Error('You already have an offer on this copy')
+      if (isUniqueViolation(error)) throw new AppError('You already have an offer on this copy', 'conflict')
       throw error
     }
 
@@ -123,8 +124,8 @@ export const answerOffer = createServerFn({ method: 'POST' })
       const [offer] = await tx.select().from(offers).where(eq(offers.id, data.offerId)).for('update')
       const [seller] = offer ? await tx.select({ profileId: sellers.profileId }).from(sellers).where(eq(sellers.id, offer.sellerId)) : []
       const side: Party | null = offer?.buyerId === context.user.id ? 'buyer' : seller?.profileId === context.user.id ? 'seller' : null
-      if (!offer || !side || offer.status !== 'pending' || offer.expiresAt <= new Date()) throw new Error('This offer is no longer open')
-      if (offer.turn !== side) throw new Error('Waiting for the other side to answer')
+      if (!offer || !side || offer.status !== 'pending' || offer.expiresAt <= new Date()) throw new AppError('This offer is no longer open', 'conflict')
+      if (offer.turn !== side) throw new AppError('Waiting for the other side to answer', 'conflict')
       const now = new Date()
 
       if (data.move === 'decline') {
@@ -133,13 +134,13 @@ export const answerOffer = createServerFn({ method: 'POST' })
       }
 
       if (data.move === 'counter') {
-        if (offer.counters >= MAX_COUNTERS) throw new Error('This is the final offer. Accept or decline it')
-        if (data.counterKwacha === undefined) throw new Error('Enter your counter-offer')
+        if (offer.counters >= MAX_COUNTERS) throw new AppError('This is the final offer. Accept or decline it')
+        if (data.counterKwacha === undefined) throw new AppError('Enter your counter-offer')
         const amount = toNgwee(data.counterKwacha)
         if (side === 'seller') {
           const [listing] = await tx.select({ priceNgwee: listings.priceNgwee }).from(listings).where(eq(listings.id, offer.listingId))
           if (amount <= offer.amountNgwee || amount >= listing.priceNgwee) {
-            throw new Error(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(listing.priceNgwee)}`)
+            throw new AppError(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(listing.priceNgwee)}`)
           }
           await tx
             .update(offers)
@@ -147,7 +148,7 @@ export const answerOffer = createServerFn({ method: 'POST' })
             .where(eq(offers.id, offer.id))
         } else {
           const ceiling = offer.counterNgwee ?? 0
-          if (amount <= offer.amountNgwee || amount >= ceiling) throw new Error(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(ceiling)}`)
+          if (amount <= offer.amountNgwee || amount >= ceiling) throw new AppError(`Counter between ${formatMoney(offer.amountNgwee)} and ${formatMoney(ceiling)}`)
           await tx
             .update(offers)
             .set({ amountNgwee: amount, turn: 'seller', counters: offer.counters + 1, respondedAt: now, expiresAt: hoursFromNow(OFFER_REPLY_HOURS) })
@@ -157,16 +158,16 @@ export const answerOffer = createServerFn({ method: 'POST' })
       }
 
       const agreedNgwee = side === 'seller' ? offer.amountNgwee : offer.counterNgwee
-      if (agreedNgwee === null) throw new Error('There’s no counter-offer to accept')
+      if (agreedNgwee === null) throw new AppError('There’s no counter-offer to accept')
       // Locking the listing makes two accepts on its last copy queue up instead of both succeeding.
       const [listing] = await tx
         .select({ status: listings.status, quantity: listings.quantity })
         .from(listings)
         .where(eq(listings.id, offer.listingId))
         .for('update')
-      if (!listing || listing.status !== 'active') throw new Error('This copy isn’t on sale right now')
+      if (!listing || listing.status !== 'active') throw new AppError('This copy isn’t on sale right now')
       if (listing.quantity - (await heldCopies(tx, offer.listingId, offer.id)) < 1) {
-        throw new Error(side === 'seller' ? 'Every copy is already held for an accepted offer' : 'The copy is held for another buyer. Try again later')
+        throw new AppError(side === 'seller' ? 'Every copy is already held for an accepted offer' : 'The copy is held for another buyer. Try again later')
       }
       await tx
         .update(offers)
@@ -239,7 +240,7 @@ export const withdrawOffer = createServerFn({ method: 'POST' })
       .set({ status: 'withdrawn', respondedAt: new Date() })
       .where(and(eq(offers.id, data.offerId), eq(offers.buyerId, context.user.id), inArray(offers.status, ['pending', 'accepted'])))
       .returning({ id: offers.id })
-    if (!row) throw new Error('This offer is no longer open')
+    if (!row) throw new AppError('This offer is no longer open', 'conflict')
     return { ok: true }
   })
 

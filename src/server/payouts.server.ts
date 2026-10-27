@@ -5,6 +5,7 @@ import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayou
 import { ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
+import { AppError } from './errors.server'
 
 // Delivered parcels wait as 'released' (the seller's balance) until a payout claims them.
 const WAITING = ['released', 'failed'] as const
@@ -27,7 +28,7 @@ export async function sellerBalance(db: Db, sellerId: string) {
  */
 export async function payOutSeller(db: Db, sellerId: string, kind: 'weekly' | 'instant') {
   const [seller] = await db.select().from(sellers).where(eq(sellers.id, sellerId)).limit(1)
-  if (!seller?.lencoRecipientId || seller.payoutMethod !== 'mobile_money') throw new Error('Add your mobile money number first')
+  if (!seller?.lencoRecipientId || seller.payoutMethod !== 'mobile_money') throw new AppError('Add your mobile money number first')
 
   const reference = `po-${sellerId.slice(0, 8)}-${randomCode(6)}`
   const [payout] = await db.insert(payouts).values({ sellerId, kind, amountNgwee: 0, reference, status: 'processing' }).returning({ id: payouts.id })

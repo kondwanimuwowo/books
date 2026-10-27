@@ -8,6 +8,7 @@ import { consents, profiles } from '#/db/schema'
 import { TERMS_VERSION } from '#/data/legal'
 import { optionalUserMiddleware, requireUserMiddleware } from '#/server/auth'
 import { getSupabase } from '#/server/supabase.server'
+import { AppError } from '#/server/errors.server'
 
 // Safe in-app paths only, so ?next= can't bounce people to another site.
 const nextPath = z
@@ -37,7 +38,7 @@ export const signUp = createServerFn({ method: 'POST' })
       password: data.password,
       options: { data: { display_name: data.name, terms_version: TERMS_VERSION, user_agent: userAgent }, emailRedirectTo: callback.toString() },
     })
-    if (error) throw new Error(error.message)
+    if (error) throw new AppError(error.message)
     // With email confirmation on, there's no session until they click the link.
     return { needsConfirmation: !result.session }
   })
@@ -46,7 +47,7 @@ export const signIn = createServerFn({ method: 'POST' })
   .validator(z.object({ email: z.string().trim().email(), password: z.string().min(1).max(128) }))
   .handler(async ({ data }) => {
     const { data: result, error } = await getSupabase().auth.signInWithPassword(data)
-    if (error || !result.user?.email) throw new Error('Wrong email or password')
+    if (error || !result.user?.email) throw new AppError('Wrong email or password', 'unauthorized')
     // Backstop for the on_auth_user_created trigger.
     await getDb()
       .insert(profiles)
@@ -91,7 +92,7 @@ export const updatePassword = createServerFn({ method: 'POST' })
   .validator(z.object({ password: z.string().min(8).max(128) }))
   .handler(async ({ data }) => {
     const { error } = await getSupabase().auth.updateUser({ password: data.password })
-    if (error) throw new Error(error.message)
+    if (error) throw new AppError(error.message)
     return { ok: true }
   })
 

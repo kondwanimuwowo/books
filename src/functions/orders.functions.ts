@@ -17,6 +17,7 @@ import { autoReleaseDate, createOrder, loadCartListings, loadDeliveryRates, quot
 import { escapeHtml, sendEmail } from '#/server/email.server'
 import { ownsPrivate } from '#/server/private-files.server'
 import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
+import { AppError } from '#/server/errors.server'
 
 const linesSchema = z
   .array(z.object({ listingId: z.string().uuid(), quantity: z.number().int().min(1).max(50) }))
@@ -71,7 +72,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
     const db = getDb()
     // An address only matters if something is being delivered; pickups need just a name and number.
     const allPickup = Object.values(data.methods).length > 0 && Object.values(data.methods).every((m) => m === 'collect')
-    if (!allPickup && data.shipTo.address.length < 3) throw new Error('Add your address or a landmark')
+    if (!allPickup && data.shipTo.address.length < 3) throw new AppError('Add your address or a landmark')
     const shipTo = { ...data.shipTo, address: data.shipTo.address || 'Pickup from seller' }
     const order = await createOrder(db, context.user.id, data.lines, shipTo, data.methods)
     await db
@@ -189,7 +190,7 @@ export const startMobileMoneyPayment = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data, context }) => {
     const order = await ownOrder(data.number, context.user.id)
-    if (order.status !== 'pending_payment') throw new Error('This order has already been paid')
+    if (order.status !== 'pending_payment') throw new AppError('This order has already been paid', 'conflict')
     const db = getDb()
     const reference = newReference(order.number)
     await db.insert(payments).values({ orderId: order.id, reference, method: 'mobile_money', operator: data.operator, phone: data.phone, amountNgwee: order.totalNgwee })
@@ -220,7 +221,7 @@ export const startCardPayment = createServerFn({ method: 'POST' })
   .validator(z.object({ number: z.string().max(20) }))
   .handler(async ({ data, context }) => {
     const order = await ownOrder(data.number, context.user.id)
-    if (order.status !== 'pending_payment') throw new Error('This order has already been paid')
+    if (order.status !== 'pending_payment') throw new AppError('This order has already been paid', 'conflict')
     const reference = newReference(order.number)
     await getDb().insert(payments).values({ orderId: order.id, reference, method: 'card', amountNgwee: order.totalNgwee })
     const [first, ...rest] = order.shipName.split(' ')
@@ -267,7 +268,7 @@ export const confirmDelivered = createServerFn({ method: 'POST' })
   .validator(z.object({ sellerOrderId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const part = await buyerPart(data.sellerOrderId, context.user.id)
-    if (part.status !== 'shipped' && part.status !== 'to_ship') throw new Error('This parcel can’t be confirmed right now')
+    if (part.status !== 'shipped' && part.status !== 'to_ship') throw new AppError('This parcel can’t be confirmed right now')
     await releaseToSeller(getDb(), part.id)
     return { ok: true }
   })
@@ -277,7 +278,7 @@ export const reportProblem = createServerFn({ method: 'POST' })
   .validator(z.object({ sellerOrderId: z.string().uuid(), note: z.string().trim().min(10).max(1000) }))
   .handler(async ({ data, context }) => {
     const part = await buyerPart(data.sellerOrderId, context.user.id)
-    if (part.status !== 'shipped' && part.status !== 'to_ship') throw new Error('This parcel can’t be disputed right now')
+    if (part.status !== 'shipped' && part.status !== 'to_ship') throw new AppError('This parcel can’t be disputed right now')
     await getDb()
       .update(sellerOrders)
       .set({ status: 'disputed', autoReleaseAt: null, disputeNote: data.note, disputedAt: new Date() })
@@ -312,13 +313,13 @@ export const respondToDispute = createServerFn({ method: 'POST' })
   .middleware([requireSellerMiddleware])
   .validator(z.object({ sellerOrderId: z.string().uuid(), note: z.string().trim().min(10, 'Say what happened').max(1000), proofKey: z.string().max(64).optional() }))
   .handler(async ({ data, context }) => {
-    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new Error('The photo didn’t upload. Add it again.')
+    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new AppError('The photo didn’t upload. Add it again.')
     const [row] = await getDb()
       .update(sellerOrders)
       .set({ sellerResponse: data.note, sellerResponseKey: data.proofKey ?? null, sellerRespondedAt: new Date() })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.sellerId, context.seller.id), eq(sellerOrders.status, 'disputed')))
       .returning({ id: sellerOrders.id })
-    if (!row) throw new Error('This problem has already been decided')
+    if (!row) throw new AppError('This problem has already been decided', 'conflict')
     return { ok: true }
   })
 
@@ -368,14 +369,14 @@ export const markShipped = createServerFn({ method: 'POST' })
     const db = getDb()
     const [current] = await db.select({ method: sellerOrders.shippingMethod }).from(sellerOrders).where(eq(sellerOrders.id, data.sellerOrderId)).limit(1)
     // Couriers that give a receipt: its photo is what settles a "never arrived" claim.
-    if (current && PROOF_REQUIRED.includes(current.method) && !data.proofKey) throw new Error(FULFILMENT_COPY.proofRequired)
-    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new Error('The receipt photo didn’t upload. Add it again.')
+    if (current && PROOF_REQUIRED.includes(current.method) && !data.proofKey) throw new AppError(FULFILMENT_COPY.proofRequired)
+    if (data.proofKey && !(await ownsPrivate(data.proofKey, context.user.id))) throw new AppError('The receipt photo didn’t upload. Add it again.')
     const [part] = await db
       .update(sellerOrders)
       .set({ status: 'shipped', shippedAt: new Date(), trackingNote: data.trackingNote, proofKey: data.proofKey ?? null, autoReleaseAt: autoReleaseDate(current?.method) })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.sellerId, context.seller.id), eq(sellerOrders.status, 'to_ship')))
       .returning({ orderId: sellerOrders.orderId })
-    if (!part) throw new Error('This order isn’t waiting to be shipped')
+    if (!part) throw new AppError('This order isn’t waiting to be shipped')
     const [buyer] = await db
       .select({ email: profiles.email, number: orders.number })
       .from(orders)

@@ -6,6 +6,7 @@ import { books, listingReports, listings, profiles, sellers } from '#/db/schema'
 import { REPORT_COPY, REPORT_REASONS } from '#/data/listing-options'
 import { requireAdminMiddleware, requireUserMiddleware } from '#/server/auth'
 import { escapeHtml, sendEmail } from '#/server/email.server'
+import { AppError } from '#/server/errors.server'
 
 const reasons = REPORT_REASONS.map((r) => r.value) as [string, ...string[]]
 
@@ -51,7 +52,7 @@ export const decideReport = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const db = getDb()
     const [report] = await db.select({ listingId: listingReports.listingId }).from(listingReports).where(eq(listingReports.id, data.id)).limit(1)
-    if (!report) throw new Error('That report is gone')
+    if (!report) throw new AppError('That report is gone', 'not_found')
     await db
       .update(listingReports)
       .set({ status: data.decision, resolvedAt: new Date() })
