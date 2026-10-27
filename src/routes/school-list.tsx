@@ -165,7 +165,7 @@ function MatchRow({ line, checked, onToggle }: { line: ListLine; checked: boolea
       </div>
       <div className="min-w-0 flex-1">
         {line.book ? (
-          <p className="font-medium">
+          <p className="font-bold tracking-[-0.01em]">
             <Link to="/books/$slug" params={{ slug: line.book.slug }} className="text-ink">
               {line.book.title}
             </Link>

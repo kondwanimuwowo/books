@@ -25,5 +25,5 @@ export function detectOperator(input: string): Operator | null {
 export const OPERATOR_LABELS: Record<Operator, string> = {
   mtn: 'MTN MoMo',
   airtel: 'Airtel Money',
-  zamtel: 'Zamtel Kwacha',
+  zamtel: 'Zamtel Money',
 }

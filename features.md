@@ -1,6 +1,6 @@
 # Kuwala Books features
 
-What's live, what's waiting, and what's next. Last updated 25 October 2026.
+What's live, what's waiting, and what's next. Last updated 27 October 2026.
 
 ## Live
 
@@ -8,7 +8,7 @@ What's live, what's waiting, and what's next. Last updated 25 October 2026.
 - Catalogue from our own database, then Google Books, then Open Library, then manual entry. Covers copied to R2.
 - Search: exact words, close spellings and AI reading of requests ("grade 7 maths in Bemba"); instant results in the header; eBay-style filters.
 - Book pages: every copy for sale from every shop with photos of each copy, delivery estimate to the buyer's town, a trust strip (delivery, payment, protection), details table, about the author, more by this author, reviews with the average beside the title, share on WhatsApp.
-- Bag grouped by shop; checkout with mobile money or card (Lenco); escrow until the buyer confirms delivery.
+- Bag grouped by shop; checkout with mobile money (Airtel Money, MTN MoMo, Zamtel) through Lenco; card payments paused (`CARD_PAYMENTS` in src/data/payments.ts); escrow until the buyer confirms delivery.
 - Delivery: two prices, K50 in town and K100 out of town plus K10 per extra book (Mercury premium); each shop's parcel priced from its own town; free delivery over a shop's threshold.
 - Pickup from the seller, free, in any town: the buyer goes, or sends someone (their name and number go on the order); no address needed; 14 days before money is released.
 - eBay-style offers with one counter each side, a hidden floor and 24-hour replies.
@@ -95,3 +95,4 @@ Diaspora "buy for someone at home", price-drop alerts, WhatsApp notifications, a
 ## Decisions pending
 - Whether higher milestones earn a lower commission (would change the fixed 10%).
 - Test data to remove: the smile-banda shop.
+- The new-order email to sellers (src/server/orders.server.ts) says "ship within 3 days", but the rule (`SHIP_WITHIN_DAYS`), the reminders and the legal pages say 5. Owner to review the wording.

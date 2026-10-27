@@ -8,8 +8,9 @@ import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee } from '
 import { BLIND_DAYS, RATING_WINDOW_DAYS } from './reputation'
 import { formatMoney } from '#/lib/money'
 import { COOKIE_CATEGORIES, OPTIONAL_CATEGORIES } from './cookies'
+import { CARD_PAYMENTS, NETWORKS } from './payments'
 
-export const LEGAL_UPDATED = '2026-10-26'
+export const LEGAL_UPDATED = '2026-10-27'
 /**
  * The version of the terms people tick to accept. Bump it only for a material change (new obligations, fees,
  * liability): everyone signed in is then asked to accept again. Wording and number fixes don't need it.
@@ -69,7 +70,9 @@ const terms: LegalPage = {
         {
           list: [
             'Prices are in Zambian kwacha (ZMW). US dollar prices are shown for guidance only, at a daily rate; you always pay in kwacha.',
-            'You pay for books and delivery on Kuwala Books, by mobile money or card, through our payment provider Lenco. We never see or store your card number.',
+            CARD_PAYMENTS
+              ? 'You pay for books and delivery on Kuwala Books, by mobile money or card, through our payment provider Lenco. We never see or store your card number.'
+              : `You pay for books and delivery on Kuwala Books by mobile money (${NETWORKS.map((n) => n.name).join(', ')}), through our payment provider Lenco. You approve each payment on your own phone.`,
             'Your money is held by Kuwala Books until you confirm the books arrived, then paid to the seller. See Buyer protection.',
             'Agree and pay everything on Kuwala Books. Payments made to a seller directly are not protected, and asking for them can close a seller’s shop.',
           ],
@@ -335,7 +338,7 @@ const privacy: LegalPage = {
       blocks: [
         {
           list: [
-            'Lenco processes payments, payouts and refunds. Card details go to Lenco, not to us.',
+            CARD_PAYMENTS ? 'Lenco processes payments, payouts and refunds. Card details go to Lenco, not to us.' : 'Lenco processes payments, payouts and refunds.',
             'Supabase runs sign-in. Cloudflare hosts the site and stores photos.',
             'Resend sends our emails.',
             'Anthropic’s Claude reads book photos and school book lists you upload, to fill in details, and helps us research public information about authors. It isn’t used to train AI models.',

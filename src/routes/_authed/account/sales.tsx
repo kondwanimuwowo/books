@@ -109,7 +109,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
         <div className="min-w-0">
           <ul className="space-y-0.5">
             {sale.items.map((item) => (
-              <li key={item.id} className="font-medium">
+              <li key={item.id} className="font-bold tracking-[-0.01em]">
                 {item.quantity > 1 && <span className="text-subtle tabular-nums">{item.quantity} × </span>}
                 {item.title} <span className="text-sm font-normal text-subtle">{conditionLabel(item.condition)}</span>
               </li>

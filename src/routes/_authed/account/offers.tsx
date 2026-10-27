@@ -91,7 +91,7 @@ function OfferRow({ offer, side, who }: { offer: Made | Received; side: Side; wh
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="line-clamp-2 font-medium text-ink sm:line-clamp-1">
+            <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="line-clamp-2 font-bold tracking-[-0.01em] text-ink sm:line-clamp-1">
               {offer.book.title}
             </Link>
             <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium', pill.tone)}>{pill.label}</span>

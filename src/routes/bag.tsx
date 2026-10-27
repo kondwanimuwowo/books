@@ -117,7 +117,7 @@ function Parcel({ group: g, index, total }: { group: Group; index: number; total
                 </Link>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
-                    <Link to="/books/$slug" params={{ slug: item.book.slug }} className="line-clamp-2 font-medium text-ink">
+                    <Link to="/books/$slug" params={{ slug: item.book.slug }} className="line-clamp-2 font-bold tracking-[-0.01em] text-ink">
                       {item.book.title}
                     </Link>
                     <Price ngwee={item.lineNgwee} className="shrink-0 font-medium tabular-nums" />
