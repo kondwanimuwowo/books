@@ -53,16 +53,17 @@ function loadLencoScript(sandbox: boolean) {
 export function PaymentPanel({
   orderNumber,
   totalNgwee,
+  defaultPhone,
   onPaid,
 }: {
   orderNumber: string
   totalNgwee: number
+  defaultPhone: string
   onPaid: () => void
 }) {
   const [method, setMethod] = useState<'mobile_money' | 'card'>('mobile_money')
-  // Starts empty: the money comes from whichever number they type, which isn't always the delivery one.
-  const [phone, setPhone] = useState('')
-  const [operator, setOperator] = useState<Operator | null>(null)
+  const [phone, setPhone] = useState(defaultPhone)
+  const [operator, setOperator] = useState<Operator | null>(detectOperator(defaultPhone))
   const [stage, setStage] = useState<Stage>({ kind: 'idle' })
   const startedAt = useRef(0)
 

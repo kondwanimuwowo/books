@@ -45,7 +45,7 @@ function OrderPage() {
   const payment = pending && (
     <div className="space-y-3">
       {lastPayment?.status === 'failed' && lastPayment.failureReason && <Alert>Last try failed: {lastPayment.failureReason}</Alert>}
-      <PaymentPanel orderNumber={order.number} totalNgwee={order.totalNgwee} onPaid={onPaid} />
+      <PaymentPanel orderNumber={order.number} totalNgwee={order.totalNgwee} defaultPhone={order.shipPhone} onPaid={onPaid} />
     </div>
   )
 

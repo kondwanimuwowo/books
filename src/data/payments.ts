@@ -9,7 +9,7 @@ export const CARD_PAYMENTS = false
 export const NETWORKS: { key: Operator; name: string; logo: string }[] = [
   { key: 'airtel', name: 'Airtel Money', logo: '/brand/momo/airtel.png' },
   { key: 'mtn', name: 'MTN MoMo', logo: '/brand/momo/mtn.png' },
-  { key: 'zamtel', name: 'Zamtel Kwacha', logo: '/brand/momo/zamtel.png' },
+  { key: 'zamtel', name: 'Zamtel Money', logo: '/brand/momo/zamtel.png' },
 ]
 
 export const PAY_COPY = {
