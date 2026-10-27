@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { CheckBadgeIcon, MagnifyingGlassIcon, TrophyIcon } from '@heroicons/react/16/solid'
+import { CheckBadgeIcon, ChevronRightIcon, MagnifyingGlassIcon, TrophyIcon } from '@heroicons/react/16/solid'
 import { useMemo, useState } from 'react'
 import { DIRECTORY } from '#/data/directory'
 import type { DirectoryKind } from '#/data/directory'
@@ -107,14 +107,18 @@ export function DirectoryPage({ kind, entries, zambian, verified, tier }: { kind
               <ul className="mt-2 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((entry) => (
                   <li key={entry.slug}>
-                    <Link to={copy.to} params={{ slug: entry.slug }} className="flex items-center justify-between gap-3 rounded-md py-2.5 hover:text-accent-ink">
+                    <Link to={copy.to} params={{ slug: entry.slug }} className="flex items-center justify-between gap-3 rounded-md py-3 hover:text-accent-ink sm:py-2.5">
                       <span className="flex min-w-0 items-center gap-2">
                         <span className="truncate font-medium">{entry.name}</span>
                         {entry.isZambian && <span className="size-1.5 shrink-0 rounded-full bg-zambia" title={copy.zambianLabel} aria-label={copy.zambianLabel} />}
                         {entry.verified && <CheckBadgeIcon className="size-4 shrink-0 text-accent-ink" role="img" aria-label="Verified" />}
                         {entry.tier && <TrophyIcon className={cn('size-4 shrink-0', TIER_INK[entry.tier])} role="img" aria-label={`${tierInfo(entry.tier).label} author`} />}
                       </span>
-                      <span className="shrink-0 text-sm text-subtle tabular-nums">{entry.bookCount}</span>
+                      <span className="flex shrink-0 items-center gap-1 text-sm text-subtle tabular-nums">
+                        {entry.bookCount}
+                        {/* Phones: a full-width row reads as tappable with a chevron. */}
+                        <ChevronRightIcon className="size-4 sm:hidden" aria-hidden />
+                      </span>
                     </Link>
                   </li>
                 ))}

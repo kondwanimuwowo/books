@@ -5,9 +5,11 @@ import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
 import { SiteFooter, SiteHeader } from '#/components/site-header'
+import { TabBar } from '#/components/tab-bar'
 import { TermsGate } from '#/components/terms-consent'
 import { CookieNotice } from '#/components/cookie-notice'
 import { BARE_ROUTES } from '#/data/brand'
+import { NO_FOOTER_ROUTES, NO_TAB_ROUTES } from '#/data/navigation'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -61,6 +63,8 @@ function RootLayout() {
   // Admin brings its own shell (src/components/admin-shell.tsx) and always shows kwacha.
   const isAdmin = useMatches({ select: (matches) => matches.some((m) => m.routeId === '/admin') })
   const bare = useMatches({ select: (matches) => matches.some((m) => BARE_ROUTES.includes(m.routeId)) })
+  const tabs = useMatches({ select: (matches) => !matches.some((m) => NO_TAB_ROUTES.includes(m.routeId)) })
+  const footer = useMatches({ select: (matches) => !matches.some((m) => NO_FOOTER_ROUTES.includes(m.routeId)) })
   if (isAdmin) {
     return (
       <CurrencyProvider initial="ZMW" rate={null}>
@@ -78,12 +82,13 @@ function RootLayout() {
             <Outlet />
           </main>
         ) : (
-          <div className="flex min-h-dvh flex-col">
-            <SiteHeader user={user} />
+          <div className="flex min-h-dvh flex-col" data-tabbar={tabs}>
+            <SiteHeader user={user} tabs={tabs} />
             <main className="flex-1">
               <Outlet />
             </main>
-            <SiteFooter />
+            {footer && <SiteFooter />}
+            {tabs && <TabBar signedIn={!!user} />}
             <TermsGate />
             <CookieNotice />
           </div>

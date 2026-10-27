@@ -8,6 +8,40 @@ import {
   PencilSquareIcon,
   TagIcon,
 } from '@heroicons/react/16/solid'
+import {
+  BuildingLibraryIcon,
+  ClipboardDocumentListIcon,
+  HomeIcon,
+  MagnifyingGlassIcon,
+  PlusCircleIcon,
+  ShoppingBagIcon,
+  TrophyIcon,
+  UserCircleIcon,
+  UserGroupIcon,
+} from '@heroicons/react/24/solid'
+
+// Phones get an app-style tab bar; the native apps will use the same five tabs.
+export const TABS = [
+  { key: 'home', label: 'Home', to: '/', icon: HomeIcon, match: (path: string) => path === '/' },
+  { key: 'browse', label: 'Browse', to: '/search', icon: MagnifyingGlassIcon, match: (path: string) => /^\/(search|authors|publishers|top-20|sellers)(\/|$)/.test(path) },
+  { key: 'sell', label: 'Sell', to: '/sell', icon: PlusCircleIcon, match: (path: string) => /^\/(sell|start-selling)(\/|$)/.test(path) },
+  { key: 'bag', label: 'Bag', to: '/bag', icon: ShoppingBagIcon, match: (path: string) => path === '/bag' },
+  { key: 'account', label: 'Account', to: '/account', icon: UserCircleIcon, match: (path: string) => /^\/(account|orders|login)(\/|$)/.test(path) },
+] as const
+
+// Flows with their own bar of actions at the bottom (buy, pay, list) hide the tabs, as apps do.
+export const NO_TAB_ROUTES: readonly string[] = ['/books/$slug', '/_authed/checkout', '/_authed/sell']
+
+// Checkout keeps to the task: no footer to wander off through.
+export const NO_FOOTER_ROUTES: readonly string[] = ['/_authed/checkout']
+
+// The phone menu holds what the tabs don't.
+export const MENU_LINKS = [
+  { label: 'Zambia Top 20', to: '/top-20', icon: TrophyIcon },
+  { label: 'Authors', to: '/authors', icon: UserGroupIcon },
+  { label: 'Publishers', to: '/publishers', icon: BuildingLibraryIcon },
+  { label: 'School book list', to: '/school-list', icon: ClipboardDocumentListIcon },
+] as const
 
 export const FOOTER_NAV = [
   {

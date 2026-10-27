@@ -84,24 +84,29 @@ function OfferRow({ offer, side, who }: { offer: Made | Received; side: Side; wh
   const pill = statusPill(offer, side)
   const open = offer.status === 'pending' || offer.status === 'accepted'
   return (
-    <li className="card flex gap-4 p-4">
-      <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="w-14 shrink-0" tabIndex={-1}>
-        <BookCover src={offer.book.coverUrl} title={offer.book.title} />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="line-clamp-1 font-medium text-ink">
-            {offer.book.title}
-          </Link>
-          <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium', pill.tone)}>{pill.label}</span>
+    <li className="card p-4">
+      <div className="flex gap-4">
+        <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="w-14 shrink-0" tabIndex={-1}>
+          <BookCover src={offer.book.coverUrl} title={offer.book.title} />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <Link to="/books/$slug" params={{ slug: offer.book.slug }} className="line-clamp-2 font-medium text-ink sm:line-clamp-1">
+              {offer.book.title}
+            </Link>
+            <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium', pill.tone)}>{pill.label}</span>
+          </div>
+          <Positions offer={offer} side={side} />
+          <p className="text-sm text-subtle">
+            {who}
+            {open && <span suppressHydrationWarning>{deadline(offer)}</span>}
+          </p>
+          {'buyer' in offer && <ReaderStanding standing={offer.buyer} className="mt-1" />}
+          {offer.message && <p className="mt-2 rounded-lg bg-sunken px-3 py-2 text-sm whitespace-pre-line">{offer.message}</p>}
         </div>
-        <Positions offer={offer} side={side} />
-        <p className="text-sm text-subtle">
-          {who}
-          {open && <span suppressHydrationWarning>{deadline(offer)}</span>}
-        </p>
-        {'buyer' in offer && <ReaderStanding standing={offer.buyer} className="mt-1" />}
-        {offer.message && <p className="mt-2 rounded-lg bg-sunken px-3 py-2 text-sm whitespace-pre-line">{offer.message}</p>}
+      </div>
+      {/* Phones: actions take the card's full width, under the cover. */}
+      <div className="sm:pl-[4.5rem]">
         {offer.status === 'pending' && offer.turn === side && <Answer offer={offer} side={side} />}
         {/* On the buyer's own turn, Decline does what Withdraw would. */}
         {side === 'buyer' && (offer.status === 'accepted' || (offer.status === 'pending' && offer.turn === 'seller')) && <BuyerActions offer={offer} />}
@@ -196,8 +201,8 @@ function Answer({ offer, side }: { offer: Made | Received; side: Side }) {
           </p>
         </form>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn btn-primary btn-sm" disabled={act.pending} onClick={() => void act.run('accept')}>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <button type="button" className="btn btn-primary btn-sm col-span-2" disabled={act.pending} onClick={() => void act.run('accept')}>
             Accept <Price ngwee={accepting} className="tabular-nums" />
           </button>
           {canCounter && (
@@ -205,7 +210,7 @@ function Answer({ offer, side }: { offer: Made | Received; side: Side }) {
               Counter
             </button>
           )}
-          <button type="button" className="btn btn-ghost btn-sm" disabled={act.pending} onClick={() => void act.run('decline')}>
+          <button type="button" className={cn('btn btn-ghost btn-sm', !canCounter && 'col-span-2')} disabled={act.pending} onClick={() => void act.run('decline')}>
             Decline
           </button>
         </div>
@@ -232,7 +237,7 @@ function BuyerActions({ offer }: { offer: Made | Received }) {
       {withdraw.error && <Alert>{withdraw.error}</Alert>}
       <div className="flex flex-wrap gap-2">
         {offer.status === 'accepted' && offer.agreedNgwee !== null && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => void buy()}>
+          <button type="button" className="btn btn-primary btn-sm max-sm:flex-1" onClick={() => void buy()}>
             Buy for <Price ngwee={offer.agreedNgwee} className="tabular-nums" />
           </button>
         )}

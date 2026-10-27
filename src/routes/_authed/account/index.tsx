@@ -50,20 +50,22 @@ function Orders() {
       <ul className="space-y-3">
         {orders.map((o) => (
           <li key={o.number}>
-            <Link to="/orders/$number" params={{ number: o.number }} className="card lift flex items-center gap-5 p-4 text-ink no-underline hover:text-ink">
+            <Link to="/orders/$number" params={{ number: o.number }} className="card lift flex items-center gap-3.5 p-4 text-ink no-underline hover:text-ink sm:gap-5">
               <CoverStack books={o.books} />
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-1 font-medium">
+                <p className="line-clamp-2 font-medium sm:line-clamp-1">
                   {o.books[0]?.title ?? o.number}
                   {o.itemCount > 1 && <span className="font-normal text-subtle">{` + ${o.itemCount - 1} more`}</span>}
                 </p>
                 <p className="mt-0.5 text-sm text-subtle">
-                  {formatDate(o.createdAt)} · <span className="tabular-nums">{o.number}</span>
+                  <span className="whitespace-nowrap">{formatDate(o.createdAt)}</span> · <span className="whitespace-nowrap tabular-nums">{o.number}</span>
                 </p>
+                {/* Phones: the status sits under the details so the title keeps the width. */}
+                <OrderStatus status={o.status} className="mt-2 sm:hidden" />
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <Price ngwee={o.totalNgwee} className="font-medium tabular-nums" />
-                <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', STATUS[o.status].tone)}>{STATUS[o.status].label}</span>
+                <OrderStatus status={o.status} className="hidden sm:inline-flex" />
               </div>
             </Link>
           </li>
@@ -71,6 +73,10 @@ function Orders() {
       </ul>
     </>
   )
+}
+
+function OrderStatus({ status, className }: { status: Order['status']; className?: string }) {
+  return <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', STATUS[status].tone, className)}>{STATUS[status].label}</span>
 }
 
 /** The order's books fanned like a small stack on a table. */

@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/16/solid'
+import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from '@heroicons/react/16/solid'
 import { getChart } from '#/functions/catalog.functions'
 import { BookCover, BookGrid } from '#/components/book'
 import { Price } from '#/components/providers'
@@ -68,8 +68,9 @@ function ChartPage() {
             <h2 id="new-zambian" className="text-xl sm:text-2xl">
               New from Zambian authors
             </h2>
-            <Link to="/search" search={{ zambian: true }} className="shrink-0 btn btn-secondary btn-sm">
+            <Link to="/search" search={{ zambian: true }} className="shrink-0 btn btn-secondary btn-sm gap-1 pr-3">
               See all
+              <ChevronRightIcon className="size-4" aria-hidden />
             </Link>
           </div>
           <BookGrid books={zambian} />

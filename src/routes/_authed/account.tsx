@@ -3,6 +3,7 @@ import { signOut } from '#/functions/auth.functions'
 import { activeTab, inactiveTab, tabClass } from '#/components/tabs'
 import { SIGN_OUT_ICON, accountNav } from '#/data/navigation'
 import { cn } from '#/lib/utils'
+import { ScrollRow } from '#/components/scroll-row'
 import { CheckBadgeIcon } from '@heroicons/react/16/solid'
 import { KIND_COPY, VERIFICATION_LABELS } from '#/data/onboarding'
 import type { SellerKind } from '#/data/listing-options'
@@ -36,7 +37,7 @@ function AccountLayout() {
 
   return (
     <div className="page max-w-6xl py-8 lg:py-12">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-4xl sm:text-5xl">{user?.displayName.split(' ')[0] ?? 'Account'}</h1>
           <p className="mt-2 flex min-w-0 items-center gap-2.5 text-sm text-subtle">
@@ -44,19 +45,30 @@ function AccountLayout() {
             <span className="truncate">{user?.email}</span>
           </p>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm lg:hidden" onClick={() => void leave()}>
+        <button type="button" className="btn btn-ghost btn-sm -mr-2 shrink-0 gap-1.5 text-subtle lg:hidden" onClick={() => void leave()}>
+          <SIGN_OUT_ICON className="size-4" aria-hidden />
           Sign out
         </button>
       </header>
 
       {/* Phones: a row of tabs. Desktop: a menu beside the page. */}
-      <nav aria-label="Account" className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 py-1 sm:-mx-6 sm:px-6 lg:hidden">
-        {nav.map((item) => (
-          <Link key={item.to} to={item.to} activeOptions={{ exact: item.exact }} className={tabClass} activeProps={activeTab} inactiveProps={inactiveTab}>
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <ScrollRow className="-mx-4 mt-6 sm:-mx-6 lg:hidden">
+        <nav aria-label="Account" className="flex w-max gap-2 px-4 py-1 sm:px-6">
+          {nav.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.exact }}
+              className={cn(tabClass, 'gap-1.5 pl-3.5')}
+              activeProps={activeTab}
+              inactiveProps={inactiveTab}
+            >
+              <item.icon className="size-4 opacity-80" aria-hidden />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </ScrollRow>
 
       <div className="mt-8 lg:mt-10 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-12">
         <nav aria-label="Account" className="hidden lg:block">
