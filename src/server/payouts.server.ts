@@ -1,8 +1,8 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { payouts, sellerOrders, sellers } from '#/db/schema'
-import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayoutWindow } from '#/data/payouts'
-import { ngweeToAmount } from '#/lib/money'
+import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayoutWindow, nextPayoutDay } from '#/data/payouts'
+import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
 import { AppError } from './errors.server'
@@ -20,6 +20,28 @@ export async function sellerBalance(db: Db, sellerId: string) {
     .from(sellerOrders)
     .where(and(eq(sellerOrders.sellerId, sellerId), inArray(sellerOrders.payoutStatus, WAITING), isNull(sellerOrders.payoutId)))
   return { readyNgwee: row?.readyNgwee ?? 0, oldest: row?.oldest ? new Date(row.oldest) : null }
+}
+
+/** The seller's balance: delivered sales not yet paid out, and how and when they will be. */
+export async function loadBalance(db: Db, seller: { id: string; lencoRecipientId: string | null; payoutMethod: string | null }) {
+  const { readyNgwee, oldest } = await sellerBalance(db, seller.id)
+  return {
+    readyNgwee,
+    oldest,
+    hasDestination: !!seller.lencoRecipientId && seller.payoutMethod === 'mobile_money',
+    nextPayoutDay: nextPayoutDay(),
+    instantFeeNgwee: instantFee(readyNgwee),
+  }
+}
+
+/** "Pay me now": the whole balance at once, Lenco's transfer fee taken from it. Only delivered sales are in a balance. */
+export async function payNow(db: Db, sellerId: string) {
+  const { readyNgwee } = await sellerBalance(db, sellerId)
+  if (readyNgwee < INSTANT_MIN_NGWEE) throw new AppError(`Pay me now works from ${formatMoney(INSTANT_MIN_NGWEE)}`)
+  const result = await payOutSeller(db, sellerId, 'instant')
+  if (!result) throw new AppError('Nothing is ready to pay out')
+  if (result.status === 'failed') throw new AppError('The transfer didn’t go through. Your balance is safe; try again later.')
+  return result
 }
 
 /**
