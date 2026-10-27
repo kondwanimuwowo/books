@@ -2,34 +2,21 @@ import { NETWORKS } from '#/data/payments'
 import type { Operator } from '#/lib/phone'
 import { cn } from '#/lib/utils'
 
-const SIZES = {
-  sm: 'h-6 rounded px-1.5 text-[10px]',
-  md: 'h-8 rounded-md px-2.5 text-xs',
-} as const
+const SIZES = { sm: 'size-7 rounded-md', md: 'size-10 rounded-lg', lg: 'size-14 rounded-xl' } as const
 
-/** A network's official logo when we have the file, otherwise its name on its brand colour. */
+/** A network's official logo, as a square tile. */
 export function NetworkMark({ network, size = 'md', className }: { network: Operator; size?: keyof typeof SIZES; className?: string }) {
   const n = NETWORKS.find((x) => x.key === network)
   if (!n) return null
-  if (n.logo) {
-    return <img src={n.logo} alt={n.name} className={cn(size === 'sm' ? 'h-6' : 'h-8', 'w-auto rounded', className)} />
-  }
-  return (
-    <span
-      className={cn('inline-flex shrink-0 items-center font-bold tracking-[-0.01em] whitespace-nowrap', SIZES[size], className)}
-      style={{ backgroundColor: n.bg, color: n.fg }}
-    >
-      {n.name}
-    </span>
-  )
+  return <img src={n.logo} alt={n.name} width={192} height={192} loading="lazy" className={cn('block shrink-0 object-cover', SIZES[size], className)} />
 }
 
-/** Every network we take, in a row: checkout, the pay step and the footer. */
-export function PaymentMarks({ size = 'md', className }: { size?: keyof typeof SIZES; className?: string }) {
+/** Every network we take, in a row: checkout and the footer. */
+export function PaymentMarks({ size = 'sm', className }: { size?: keyof typeof SIZES; className?: string }) {
   return (
-    <ul className={cn('flex flex-wrap items-center gap-1.5', className)} aria-label={`We accept ${NETWORKS.map((n) => n.name).join(', ')}`}>
+    <ul className={cn('flex items-center gap-2', className)} aria-label={`We accept ${NETWORKS.map((n) => n.name).join(', ')}`}>
       {NETWORKS.map((n) => (
-        <li key={n.key} aria-hidden>
+        <li key={n.key}>
           <NetworkMark network={n.key} size={size} />
         </li>
       ))}

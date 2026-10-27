@@ -3,7 +3,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { checkPayment, startCardPayment, startMobileMoneyPayment } from '#/functions/orders.functions'
-import { detectOperator, normalizeLocalPhone, OPERATOR_LABELS } from '#/lib/phone'
+import { detectOperator, normalizeLocalPhone } from '#/lib/phone'
 import type { Operator } from '#/lib/phone'
 import { formatMoney } from '#/lib/money'
 import { cn } from '#/lib/utils'
@@ -135,12 +135,12 @@ export function PaymentPanel({
     return (
       <Swap stageKey="waiting">
         {stage.method === 'mobile_money' ? (
-          <div className="card p-6 text-center sm:p-8" role="status" aria-live="polite">
-            <PhonePrompt amount={formatMoney(totalNgwee)} network={operator ? OPERATOR_LABELS[operator] : 'Mobile money'} />
-            <h2 className="mt-6 text-2xl">{PAY_COPY.waitingTitle}</h2>
+          <div className="card px-6 py-10 text-center" role="status" aria-live="polite">
+            {operator && <NetworkMark network={operator} size="md" className="mx-auto" />}
+            <h2 className="mt-5 text-2xl">{PAY_COPY.waitingTitle}</h2>
             <p className="mt-1 text-muted">{PAY_COPY.waitingBody(formatMoney(totalNgwee), phone)}</p>
-            <LoadingLine kind="pay" className="mx-auto mt-5 max-w-xs justify-center rounded-full bg-sunken px-4 py-2.5 text-left" />
-            <p className="mt-5 text-xs text-subtle">{PAY_COPY.waitingNote}</p>
+            <LoadingLine kind="pay" stacked className="mt-8" />
+            <p className="mt-8 text-xs text-subtle">{PAY_COPY.waitingNote}</p>
           </div>
         ) : (
           <div className="card p-6 text-center" role="status" aria-live="polite">
@@ -162,13 +162,8 @@ export function PaymentPanel({
   return (
     <Swap stageKey="form">
       <div className="card p-5 sm:p-6">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Amount to pay</p>
-            <p className="mt-1 text-3xl font-bold tracking-[-0.03em] tabular-nums">{amount}</p>
-          </div>
-          <LockClosedIcon className="mb-1.5 size-5 text-subtle" aria-hidden />
-        </div>
+        <p className="eyebrow">Amount to pay</p>
+        <p className="mt-1 text-3xl font-bold tracking-[-0.03em] tabular-nums">{amount}</p>
 
         {CARD_PAYMENTS && (
           <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-sunken p-1" role="radiogroup" aria-label="Pay with">
@@ -222,7 +217,7 @@ export function PaymentPanel({
 
               <fieldset>
                 <legend className="field-label">{PAY_COPY.networkLabel}</legend>
-                <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label={PAY_COPY.networkLabel}>
+                <div className="mt-3 grid grid-cols-3 justify-items-center gap-2" role="radiogroup" aria-label={PAY_COPY.networkLabel}>
                   {NETWORKS.map((n) => {
                     const picked = operator === n.key
                     return (
@@ -231,20 +226,23 @@ export function PaymentPanel({
                         type="button"
                         role="radio"
                         aria-checked={picked}
-                        aria-label={n.name}
                         onClick={() => setOperator(n.key)}
-                        className={cn(
-                          'relative flex h-14 items-center justify-center rounded-xl border bg-surface px-1.5 transition-[border-color,box-shadow]',
-                          picked ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong',
-                        )}
+                        className="group flex flex-col items-center gap-1.5"
                       >
-                        <NetworkMark network={n.key} size="sm" className={cn(!picked && operator && 'opacity-60')} />
-                        {picked && <CheckCircleIcon className="rise absolute -top-2 -right-2 size-5 rounded-full bg-surface text-accent" aria-hidden />}
+                        <span
+                          className={cn(
+                            'relative rounded-xl transition-[box-shadow,opacity]',
+                            picked ? 'shadow-[0_0_0_2.5px_var(--color-accent)]' : operator ? 'opacity-45 group-hover:opacity-100' : '',
+                          )}
+                        >
+                          <NetworkMark network={n.key} size="lg" />
+                          {picked && <CheckCircleIcon className="rise absolute -top-2 -right-2 size-5 rounded-full bg-surface text-accent" aria-hidden />}
+                        </span>
+                        <span className={cn('text-xs', picked ? 'font-medium text-ink' : 'text-subtle')}>{n.name}</span>
                       </button>
                     )
                   })}
                 </div>
-                {operator && <p className="mt-2 text-xs text-subtle">{PAY_COPY.networkHint}</p>}
               </fieldset>
 
               <button type="button" className="btn btn-primary h-13 w-full gap-2 text-base" disabled={busy || !operator || !validPhone} onClick={() => void payMobile()}>
@@ -252,14 +250,7 @@ export function PaymentPanel({
                 {busy ? 'Sending the prompt…' : `Pay ${amount}`}
               </button>
 
-              <ol className="grid grid-cols-3 gap-2 text-center text-xs text-muted">
-                {PAY_COPY.how.map((step, i) => (
-                  <li key={step} className="flex flex-col items-center gap-1.5">
-                    <span className="grid size-6 place-items-center rounded-full bg-accent-soft text-[11px] font-bold text-accent-soft-ink tabular-nums">{i + 1}</span>
-                    {step}
-                  </li>
-                ))}
-              </ol>
+              <p className="-mt-2 text-center text-xs text-subtle">{PAY_COPY.how}</p>
             </>
           ) : (
             <>
@@ -277,24 +268,6 @@ export function PaymentPanel({
         </div>
       </div>
     </Swap>
-  )
-}
-
-/** A phone showing the approval prompt the buyer is about to receive, so they know what to look for. */
-function PhonePrompt({ amount, network }: { amount: string; network: string }) {
-  return (
-    <div aria-hidden className="mx-auto w-36 rounded-[1.4rem] bg-ink p-1.5 shadow-md">
-      <div className="flex h-44 flex-col justify-center rounded-[1.05rem] bg-canvas px-2.5">
-        <div className="animate-[rise_400ms_var(--ease-out)_both,prompt-pulse_2.4s_var(--ease-in-out)_400ms_infinite] rounded-lg bg-surface p-2.5 text-left shadow-md motion-reduce:animate-none">
-          <p className="text-[9px] font-medium tracking-[0.12em] text-subtle uppercase">{network}</p>
-          <p className="mt-1 text-[11px] leading-tight text-ink">Pay {amount} to Kuwala Books?</p>
-          <div className="mt-2 grid grid-cols-2 gap-1 text-center text-[10px] font-medium">
-            <span className="rounded bg-sunken py-1 text-subtle">Cancel</span>
-            <span className="rounded bg-accent py-1 text-on-accent">Approve</span>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 

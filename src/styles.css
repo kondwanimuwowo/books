@@ -402,11 +402,6 @@
   animation: photo-in 260ms var(--ease-out) backwards;
 }
 /* The pending payment prompt breathes so it reads as live, not frozen. */
-@keyframes prompt-pulse {
-  50% {
-    transform: translateY(-3px);
-  }
-}
 
 /*
  * Placeholders. Loading and empty share one set of shapes ("bones") that sketch the real content:
