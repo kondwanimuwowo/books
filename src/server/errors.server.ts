@@ -1,3 +1,4 @@
+import { notFound } from '@tanstack/react-router'
 import { ZodError } from 'zod'
 
 const STATUS = {
@@ -36,4 +37,21 @@ export function errorResponse(error: unknown) {
   }
   console.error('Unhandled API error', error)
   return Response.json({ error: { code: 'internal', message: 'Something went wrong. Try again.' } }, { status: 500 })
+}
+
+// A record that's missing or isn't the caller's. Server functions turn it back into the router's
+// 404 with orNotFound, which is what they threw before the logic moved out of them.
+export class NotFoundError extends AppError {
+  constructor(message = 'Not found') {
+    super(message, 'not_found')
+  }
+}
+
+export async function orNotFound<T>(work: Promise<T>) {
+  try {
+    return await work
+  } catch (error) {
+    if (error instanceof NotFoundError) throw notFound()
+    throw error
+  }
 }
