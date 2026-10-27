@@ -1,41 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { books, orderItems, orders, profiles, reviews, sellerOrders } from '#/db/schema'
-import { REVIEW_COPY, REVIEW_LIMITS } from '#/data/reputation'
-import { containsLink, containsPhoneNumber } from '#/data/safety'
+import { books, profiles, reviews } from '#/db/schema'
 import { requireAdminMiddleware, requireUserMiddleware } from '#/server/auth'
-import { AppError } from '#/server/errors.server'
-
-const reviewBody = z
-  .string()
-  .trim()
-  .max(REVIEW_LIMITS.body)
-  .refine((b) => !containsPhoneNumber(b) && !containsLink(b), REVIEW_COPY.noContact)
+import { writeBookReview } from '#/server/feedback.server'
+import { writeReviewSchema } from '#/schemas/feedback'
 
 /** Only readers who received the book can review it; writing again replaces their review. */
 export const writeReview = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])
-  .validator(z.object({ bookId: z.string().uuid(), score: z.number().int().min(1).max(5), body: reviewBody }))
-  .handler(async ({ data, context }) => {
-    const db = getDb()
-    const [received] = await db
-      .select({ sellerOrderId: sellerOrders.id })
-      .from(orderItems)
-      .innerJoin(sellerOrders, eq(sellerOrders.id, orderItems.sellerOrderId))
-      .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
-      .where(and(eq(orderItems.bookId, data.bookId), eq(orders.buyerId, context.user.id), eq(sellerOrders.status, 'delivered')))
-      .limit(1)
-    if (!received) throw new AppError('You can review a book once you’ve received it')
-    const values = { score: data.score, body: data.body || null }
-    await db
-      .insert(reviews)
-      .values({ bookId: data.bookId, profileId: context.user.id, sellerOrderId: received.sellerOrderId, ...values })
-      .onConflictDoUpdate({ target: [reviews.bookId, reviews.profileId], set: values })
-    const [book] = await db.select({ slug: books.slug, title: books.title }).from(books).where(eq(books.id, data.bookId)).limit(1)
-    return { slug: book.slug, title: book.title }
-  })
+  .validator(writeReviewSchema)
+  .handler(({ data, context }) => writeBookReview(getDb(), context.user.id, data))
 
 export const listReviews = createServerFn({ method: 'GET' })
   .middleware([requireAdminMiddleware])
