@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers'
+import { AppError } from './errors.server'
 
 // Covers are stored under a random key; the key is the only thing clients ever see.
 export const COVER_KEY = /^[0-9a-f-]{36}\.(webp|jpg|png)$/
@@ -43,8 +44,8 @@ function imageWidth(bytes: Uint8Array, ext: keyof typeof TYPES) {
 
 export async function storeCover(bytes: Uint8Array, uploaderId: string) {
   const ext = detectImage(bytes)
-  if (!ext) throw new Error('Use a JPEG or WebP photo')
-  if (bytes.byteLength > MAX_COVER_BYTES) throw new Error('That photo is too large')
+  if (!ext) throw new AppError('Use a JPEG or WebP photo')
+  if (bytes.byteLength > MAX_COVER_BYTES) throw new AppError('That photo is too large')
   const key = `${crypto.randomUUID()}.${ext}`
   await env.COVERS.put(key, bytes, { httpMetadata: { contentType: TYPES[ext] }, customMetadata: { uploader: uploaderId } })
   return key

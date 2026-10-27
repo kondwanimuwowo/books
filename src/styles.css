@@ -224,6 +224,33 @@
     background-color: var(--color-surface);
     box-shadow: 0 1px 0 var(--color-line);
   }
+  /* Phones: the tab bar's height, so pages, action bars and notices sit above it. Set by the root layout. */
+  [data-tabbar='true'] {
+    --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom));
+    padding-bottom: var(--tabbar-h);
+  }
+  @media (width >= 40rem) {
+    [data-tabbar='true'] {
+      --tabbar-h: 0px;
+    }
+  }
+  .tab-bar {
+    background-color: var(--color-surface);
+    box-shadow: 0 -1px 0 var(--color-line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* A page's own buy, pay or list bar: above the tabs when they show, at the screen's edge when not. */
+  .action-bar {
+    @apply fixed inset-x-0 z-30;
+    bottom: var(--tabbar-h, 0px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  [data-tabbar='true'] .action-bar {
+    padding-bottom: 0;
+    box-shadow:
+      0 -1px 0 var(--color-line),
+      0 1px 0 var(--color-line);
+  }
   .band {
     @apply bg-deep text-on-accent;
   }

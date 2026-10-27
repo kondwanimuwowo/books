@@ -180,7 +180,7 @@ function Checkout() {
         </aside>
       </div>
 
-      <div className="glass-bar fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <div className="glass-bar action-bar lg:hidden">
         <div className="page space-y-2 py-3">
           {action.error && <Alert>{action.error}</Alert>}
           <div className="flex items-center justify-between gap-4">

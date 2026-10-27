@@ -3,24 +3,19 @@ import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
 import { books, listingReports, listings, profiles, sellers } from '#/db/schema'
-import { REPORT_COPY, REPORT_REASONS } from '#/data/listing-options'
+import { REPORT_COPY } from '#/data/listing-options'
 import { requireAdminMiddleware, requireUserMiddleware } from '#/server/auth'
-import { escapeHtml, sendEmail } from '#/server/email.server'
-
-const reasons = REPORT_REASONS.map((r) => r.value) as [string, ...string[]]
+import { escapeHtml } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
+import { AppError } from '#/server/errors.server'
+import { fileListingReport } from '#/server/feedback.server'
+import { reportListingSchema } from '#/schemas/feedback'
 
 /** A reader flags a copy. One report per person per listing; reporting again just updates it. */
 export const reportListing = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])
-  .validator(z.object({ listingId: z.string().uuid(), reason: z.enum(reasons), note: z.string().trim().max(500) }))
-  .handler(async ({ data, context }) => {
-    const values = { reason: data.reason as (typeof REPORT_REASONS)[number]['value'], note: data.note || null, status: 'open' as const }
-    await getDb()
-      .insert(listingReports)
-      .values({ listingId: data.listingId, reporterId: context.user.id, ...values })
-      .onConflictDoUpdate({ target: [listingReports.listingId, listingReports.reporterId], set: values })
-    return { ok: true }
-  })
+  .validator(reportListingSchema)
+  .handler(({ data, context }) => fileListingReport(getDb(), context.user.id, data))
 
 export const listReports = createServerFn({ method: 'GET' })
   .middleware([requireAdminMiddleware])
@@ -51,7 +46,7 @@ export const decideReport = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const db = getDb()
     const [report] = await db.select({ listingId: listingReports.listingId }).from(listingReports).where(eq(listingReports.id, data.id)).limit(1)
-    if (!report) throw new Error('That report is gone')
+    if (!report) throw new AppError('That report is gone', 'not_found')
     await db
       .update(listingReports)
       .set({ status: data.decision, resolvedAt: new Date() })
@@ -71,7 +66,7 @@ export const decideReport = createServerFn({ method: 'POST' })
             .where(eq(sellers.id, listing.sellerId))
             .limit(1)
         : []
-      if (who) await sendEmail({ to: who.email, subject: REPORT_COPY.removedSubject(who.title), lines: REPORT_COPY.removedLines(who.title).map(escapeHtml) })
+      if (who) await notify('selling', { to: who.email, subject: REPORT_COPY.removedSubject(who.title), lines: REPORT_COPY.removedLines(who.title).map(escapeHtml) })
     }
     return { ok: true }
   })

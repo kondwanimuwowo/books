@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
-import { CheckIcon, MapPinIcon } from '@heroicons/react/16/solid'
+import { CheckIcon, MapPinIcon, ShoppingBagIcon } from '@heroicons/react/16/solid'
 import { DevicePhoneMobileIcon, ShieldCheckIcon, TruckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -222,7 +222,7 @@ function BookPage() {
       <RecentlyViewed exclude={book.slug} />
 
       {selected && (
-        <div className="glass-bar fixed inset-x-0 bottom-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <div className="glass-bar action-bar lg:hidden">
           <div className="page flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <Price ngwee={selected.priceNgwee} className="text-lg font-bold tracking-[-0.02em]" />
@@ -247,7 +247,8 @@ function AddButton({ inBag, onAdd }: { inBag: boolean; onAdd: () => void }) {
     )
   }
   return (
-    <button type="button" className="btn btn-primary w-full" onClick={onAdd}>
+    <button type="button" className="btn btn-primary w-full gap-1.5" onClick={onAdd}>
+      <ShoppingBagIcon className="size-4" aria-hidden />
       Add to bag
     </button>
   )

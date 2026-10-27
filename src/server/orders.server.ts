@@ -7,8 +7,9 @@ import { COMMISSION_RATE } from '#/data/listing-options'
 import { formatMoney } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getCollectionStatus, isPendingStatus } from './lenco.server'
-import { sendEmail } from './email.server'
+import { notify } from './notify.server'
 import { notifySoldElsewhere } from './offers.server'
+import { AppError } from './errors.server'
 
 export interface CartLine {
   listingId: string
@@ -123,13 +124,13 @@ export function quoteCart(rows: CartListing[], lines: CartLine[], to: { town: st
 export async function createOrder(db: Db, buyerId: string, lines: CartLine[], shipTo: ShipTo, methods: Record<string, ShippingMethod>) {
   const [rows, rates] = await Promise.all([loadCartListings(db, lines, buyerId), loadDeliveryRates(db)])
   const quote = quoteCart(rows, lines, shipTo, rates, buyerId)
-  if (quote.problems.length) throw new Error(quote.problems.join('. '))
-  if (!quote.groups.length) throw new Error('Your bag is empty')
-  if (quote.groups.some((g) => g.seller.profileId === buyerId)) throw new Error('You can’t buy your own listing')
+  if (quote.problems.length) throw new AppError(quote.problems.join('. '))
+  if (!quote.groups.length) throw new AppError('Your bag is empty')
+  if (quote.groups.some((g) => g.seller.profileId === buyerId)) throw new AppError('You can’t buy your own listing')
 
   const priced = quote.groups.map((g) => {
     const option = g.options.find((o) => o.method === methods[g.seller.id])
-    if (!option) throw new Error(`Choose a delivery option for ${g.seller.storeName}`)
+    if (!option) throw new AppError(`Choose a delivery option for ${g.seller.storeName}`)
     const commissionNgwee = Math.round(g.subtotalNgwee * COMMISSION_RATE)
     return { ...g, option, commissionNgwee, payoutNgwee: g.subtotalNgwee - commissionNgwee + option.totalNgwee }
   })
@@ -194,7 +195,7 @@ export type SettleResult = { status: 'pending' | 'successful' | 'failed'; reason
  */
 export async function settlePayment(db: Db, reference: string): Promise<SettleResult> {
   const [payment] = await db.select().from(payments).where(eq(payments.reference, reference)).limit(1)
-  if (!payment) throw new Error('Payment not found')
+  if (!payment) throw new AppError('Payment not found', 'not_found')
   if (payment.status !== 'pending') return { status: payment.status, reason: payment.failureReason }
 
   const collection = await getCollectionStatus(reference)
@@ -286,7 +287,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
     .where(eq(sellerOrders.orderId, orderId))
 
   await Promise.all([
-    sendEmail({
+    notify('orders', {
       to: order.email,
       subject: `Order ${order.number} confirmed`,
       lines: [
@@ -297,7 +298,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
       action: { label: 'View your order', path: `/orders/${order.number}` },
     }),
     ...sellerRows.map((s) =>
-      sendEmail({
+      notify('selling', {
         to: s.email,
         subject: `New order ${order.number}`,
         lines: [

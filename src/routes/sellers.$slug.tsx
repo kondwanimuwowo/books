@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { MapPinIcon } from '@heroicons/react/16/solid'
+import { CalendarIcon, MapPinIcon } from '@heroicons/react/16/solid'
 import { getSeller } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark } from '#/components/book'
 import { ShareOnWhatsApp } from '#/components/share'
@@ -51,7 +51,10 @@ function SellerPage() {
           <MapPinIcon className="size-3.5" aria-hidden />
           {seller.town}, {seller.province}
         </span>
-        <span>Since {formatDate(seller.createdAt)}</span>
+        <span className="inline-flex items-center gap-1">
+          <CalendarIcon className="size-3.5" aria-hidden />
+          Since {formatDate(seller.createdAt)}
+        </span>
       </p>
       {seller.bio && <p className="mt-5 max-w-prose leading-relaxed">{seller.bio}</p>}
       <ShareOnWhatsApp className="mt-5" path={`/sellers/${seller.slug}`} text={SHARE_COPY.shop({ storeName: seller.storeName, inStock: seller.books.length })} />

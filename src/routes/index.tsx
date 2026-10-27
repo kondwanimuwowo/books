@@ -1,3 +1,4 @@
+import { ChevronRightIcon } from '@heroicons/react/16/solid'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { getHomeData } from '#/functions/catalog.functions'
 import { SectionShelf, Shelf } from '#/components/book'
@@ -129,8 +130,9 @@ function Intro({ wall }: { wall: string[] }) {
 
 function MoreLink({ search }: { search: Record<string, string | boolean> }) {
   return (
-    <Link to="/search" search={search} className="shrink-0 btn btn-secondary btn-sm">
+    <Link to="/search" search={search} className="shrink-0 btn btn-secondary btn-sm gap-1 pr-3">
       See all
+      <ChevronRightIcon className="size-4" aria-hidden />
     </Link>
   )
 }

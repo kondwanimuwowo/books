@@ -12,13 +12,15 @@ import { slugify } from '#/lib/utils'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { Operator } from '#/lib/phone'
 import { optionalUserMiddleware, requireAdminMiddleware } from '#/server/auth'
-import { escapeHtml, sendEmail } from '#/server/email.server'
+import { escapeHtml } from '#/server/email.server'
+import { notify } from '#/server/notify.server'
 import { deletePrivate } from '#/server/private-files.server'
 import { uniqueSlug } from '#/server/catalog.server'
 import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 import { payOutSeller } from '#/server/payouts.server'
 import { refundParcel } from '#/server/refunds.server'
 import { CLAIM_WINDOW_DAYS } from '#/data/fulfilment'
+import { AppError } from '#/server/errors.server'
 
 const LATE_SHIPMENT_DAYS = 3
 const sellerProfile = alias(profiles, 'seller_profile')
@@ -165,7 +167,7 @@ export const resolveDispute = createServerFn({ method: 'POST' })
       .innerJoin(sellerProfile, eq(sellerProfile.id, sellers.profileId))
       .where(and(eq(sellerOrders.id, data.sellerOrderId), eq(sellerOrders.status, 'disputed')))
       .limit(1)
-    if (!part) throw new Error('This dispute has already been resolved')
+    if (!part) throw new AppError('This dispute has already been resolved', 'conflict')
 
     const resolution = { resolvedAt: new Date(), resolutionNote: data.note }
     if (data.outcome === 'release') {
@@ -184,7 +186,7 @@ export const resolveDispute = createServerFn({ method: 'POST' })
     const orderLink = `${env.APP_ORIGIN}/orders/${part.orderNumber}`
     const refunded = data.outcome === 'refund'
     await Promise.all([
-      sendEmail({
+      notify('orders', {
         to: part.buyerEmail,
         subject: `Update on your problem report for order ${part.orderNumber}`,
         lines: [
@@ -195,7 +197,7 @@ export const resolveDispute = createServerFn({ method: 'POST' })
           orderLink,
         ],
       }),
-      sendEmail({
+      notify('selling', {
         to: part.sellerEmail,
         subject: `Dispute on order ${part.orderNumber} resolved`,
         lines: [
@@ -274,7 +276,7 @@ export const saveDeliveryRate = createServerFn({ method: 'POST' })
       .set({ feeNgwee: toNgwee(data.feeKwacha), extraItemNgwee: toNgwee(data.extraItemKwacha), etaMinDays: data.etaMinDays, etaMaxDays: data.etaMaxDays })
       .where(and(eq(deliveryRates.method, data.method), eq(deliveryRates.band, data.band)))
       .returning({ method: deliveryRates.method })
-    if (!updated) throw new Error('Rate not found')
+    if (!updated) throw new AppError('Rate not found', 'not_found')
     return { ok: true }
   })
 
@@ -315,7 +317,7 @@ export const updateAuthor = createServerFn({ method: 'POST' })
       let sellerId: string | null = null
       if (data.verifiedSellerSlug) {
         const [seller] = await db.select({ id: sellers.id }).from(sellers).where(eq(sellers.slug, data.verifiedSellerSlug)).limit(1)
-        if (!seller) throw new Error(`No shop with the address "${data.verifiedSellerSlug}"`)
+        if (!seller) throw new AppError(`No shop with the address "${data.verifiedSellerSlug}"`, 'not_found')
         sellerId = seller.id
       }
       await db.update(authors).set({ verifiedSellerId: sellerId }).where(eq(authors.id, data.authorId))
@@ -359,7 +361,7 @@ export const listPublishers = createServerFn({ method: 'GET' })
 async function sellerIdForSlug(db: ReturnType<typeof getDb>, slug: string | null) {
   if (!slug) return null
   const [seller] = await db.select({ id: sellers.id }).from(sellers).where(eq(sellers.slug, slug)).limit(1)
-  if (!seller) throw new Error(`No shop with the address "${slug}"`)
+  if (!seller) throw new AppError(`No shop with the address "${slug}"`, 'not_found')
   return seller.id
 }
 
@@ -390,7 +392,7 @@ export const updatePublisher = createServerFn({ method: 'POST' })
         .from(publishers)
         .where(and(eq(publishers.slug, slug), ne(publishers.id, data.publisherId)))
         .limit(1)
-      if (taken) throw new Error(`"${name}" is already a publisher. Merge the two instead`)
+      if (taken) throw new AppError(`"${name}" is already a publisher. Merge the two instead`)
       await db.update(publishers).set({ name, slug, bio: bio || null, website: website || null }).where(eq(publishers.id, data.publisherId))
       // Books show the publisher's name as printed; keep it in step with the corrected name.
       await db.update(books).set({ publisher: name }).where(eq(books.publisherId, data.publisherId))
@@ -409,8 +411,8 @@ export const mergePublishers = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     return getDb().transaction(async (tx) => {
       const [into] = await tx.select({ id: publishers.id, name: publishers.name }).from(publishers).where(eq(publishers.slug, data.intoSlug)).limit(1)
-      if (!into) throw new Error(`No publisher with the address "${data.intoSlug}"`)
-      if (into.id === data.fromId) throw new Error('That’s the same publisher')
+      if (!into) throw new AppError(`No publisher with the address "${data.intoSlug}"`, 'not_found')
+      if (into.id === data.fromId) throw new AppError('That’s the same publisher')
       await tx.update(books).set({ publisherId: into.id, publisher: into.name }).where(eq(books.publisherId, data.fromId))
       await tx.delete(publishers).where(eq(publishers.id, data.fromId))
       return { ok: true }
@@ -471,10 +473,10 @@ export const retryPayout = createServerFn({ method: 'POST' })
       .set({ payoutStatus: 'released', payoutId: null })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), inArray(sellerOrders.payoutStatus, ['failed', 'released'])))
       .returning({ sellerId: sellerOrders.sellerId })
-    if (!row) throw new Error('This payout is not waiting or failed')
+    if (!row) throw new AppError('This payout is not waiting or failed')
     // Admin retries are free, like a weekly payout, and take the seller's whole balance with them.
     const result = await payOutSeller(db, row.sellerId, 'weekly')
-    if (result?.status === 'failed') throw new Error('Lenco refused the transfer again. Check the seller’s number.')
+    if (result?.status === 'failed') throw new AppError('Lenco refused the transfer again. Check the seller’s number.')
     return { ok: true }
   })
 
@@ -530,14 +532,14 @@ export const decideVerification = createServerFn({ method: 'POST' })
       .innerJoin(profiles, eq(profiles.id, sellers.profileId))
       .where(and(eq(verificationRequests.id, data.requestId), eq(verificationRequests.status, 'pending')))
       .limit(1)
-    if (!request) throw new Error('Already decided')
-    if (data.decision !== 'approved' && !data.note) throw new Error('Tell them why, so they can put it right')
+    if (!request) throw new AppError('Already decided')
+    if (data.decision !== 'approved' && !data.note) throw new AppError('Tell them why, so they can put it right')
     const { seller } = request
 
     let authorSlug: string | null = null
     if (data.decision === 'approved') {
       const [listed] = await db.select({ id: listings.id }).from(listings).where(eq(listings.sellerId, seller.id)).limit(1)
-      if (!listed) throw new Error('They need to list a book first')
+      if (!listed) throw new AppError('They need to list a book first')
       if (request.request.authorId) {
         // Their own words and face fill the page where the catalogue had nothing.
         const [page] = await db
@@ -545,7 +547,7 @@ export const decideVerification = createServerFn({ method: 'POST' })
           .set({ verifiedSellerId: seller.id, bio: sql`coalesce(${authors.bio}, ${seller.bio})`, photoUrl: sql`coalesce(${authors.photoUrl}, ${seller.photoUrl})` })
           .where(and(eq(authors.id, request.request.authorId), or(isNull(authors.verifiedSellerId), eq(authors.verifiedSellerId, seller.id))))
           .returning({ slug: authors.slug })
-        if (!page) throw new Error('That author page is verified to another shop now')
+        if (!page) throw new AppError('That author page is verified to another shop now')
         authorSlug = page.slug
       } else {
         const [page] = await db
@@ -565,7 +567,7 @@ export const decideVerification = createServerFn({ method: 'POST' })
       .where(eq(verificationRequests.id, data.requestId))
 
     const first = request.request.legalName.split(' ')[0]
-    await sendEmail(
+    await notify('account',
       data.decision === 'approved'
         ? {
             to: request.email,
@@ -622,9 +624,9 @@ export const deleteBook = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const db = getDb()
     const [busy] = await db.execute<{ busy: boolean }>(sql`select ${bookInUse(sql`${data.bookId}::uuid`)} as busy`)
-    if (busy?.busy) throw new Error('It has an order or offer in progress. Wait until that’s settled.')
+    if (busy?.busy) throw new AppError('It has an order or offer in progress. Wait until that’s settled.')
     const [deleted] = await db.delete(books).where(eq(books.id, data.bookId)).returning({ coverUrl: books.coverUrl })
-    if (!deleted) throw new Error('Already deleted')
+    if (!deleted) throw new AppError('Already deleted')
     const key = deleted.coverUrl?.startsWith('/covers/') ? deleted.coverUrl.slice('/covers/'.length) : null
     if (key) {
       const [shared] = await db.select({ id: books.id }).from(books).where(eq(books.coverUrl, deleted.coverUrl as string)).limit(1)
@@ -670,6 +672,6 @@ export const markRefundDone = createServerFn({ method: 'POST' })
       .set({ status: 'done_manually' })
       .where(and(eq(refunds.id, data.id), inArray(refunds.status, ['manual', 'failed'])))
       .returning({ id: refunds.id })
-    if (!row) throw new Error('This refund isn’t waiting on you')
+    if (!row) throw new AppError('This refund isn’t waiting on you')
     return { ok: true }
   })

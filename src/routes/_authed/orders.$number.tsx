@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { CheckCircleIcon, PhoneIcon } from '@heroicons/react/16/solid'
+import { CheckCircleIcon, CheckIcon, FlagIcon, PhoneIcon } from '@heroicons/react/16/solid'
 import { useCallback, useState } from 'react'
 import { confirmDelivered, getOrder, reportProblem } from '#/functions/orders.functions'
 import { BookCover } from '#/components/book'
@@ -232,10 +232,12 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
 
           {canConfirm && !reporting && (
             <div className="flex flex-wrap gap-2 pt-1">
-              <button type="button" className={cn('btn btn-sm', primary ? 'btn-primary' : 'btn-secondary')} disabled={confirm.pending} onClick={() => void confirm.run()}>
+              <button type="button" className={cn('btn btn-sm gap-1.5', primary ? 'btn-primary' : 'btn-secondary')} disabled={confirm.pending} onClick={() => void confirm.run()}>
+                <CheckIcon className="size-4" aria-hidden />
                 {confirm.pending ? 'Confirming…' : 'I have these books'}
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setReporting(true)}>
+              <button type="button" className="btn btn-ghost btn-sm gap-1.5" onClick={() => setReporting(true)}>
+                <FlagIcon className="size-4" aria-hidden />
                 Report a problem
               </button>
             </div>

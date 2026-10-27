@@ -8,6 +8,12 @@ Book marketplace for Zambia (kuwalabooks.com). Anyone can sell new or used books
 - Lenco v2 for mobile money and card payments and seller payouts. Resend for email.
 - R2 bucket `kuwala-covers` (binding `COVERS`) for uploaded covers.
 - Cron every 15 minutes runs `src/server/jobs.server.ts`.
+- Native apps are planned (`MOBILE-APP-PLAN.md`), so keep the web one client among several:
+  - Server functions stay thin: validate, call a `src/server` function, return. Business logic lives in `src/server/*.server.ts`, taking `db` and the user or seller as arguments.
+  - Input schemas live in `src/schemas/`. They, `src/data/` and `src/lib/money.ts`, `phone.ts`, `isbn.ts` must not import web-only (DOM, React, Heroicons) or server-only code; `src/data/admin.ts` and `navigation.ts` are the web-only exceptions.
+  - Throw `AppError(message, code)` (`src/server/errors.server.ts`) for anything the person can act on; the message is shown as written. Throw `NotFoundError` for a missing or someone else's record and wrap the server function in `orNotFound` to get the router's 404.
+  - Email members through `notify(topic, message)` (`src/server/notify.server.ts`), not `sendEmail`, so push can be added in one place. `sendEmail` is for the team inbox and people without an account.
+  - Sessions come from cookies (web) or an `Authorization: Bearer` Supabase access token (apps), read in `src/server/session.server.ts`.
 
 ## Commands
 - `npm run dev`, `npm run typecheck`, `npm run build` (also regenerates `src/routeTree.gen.ts`).

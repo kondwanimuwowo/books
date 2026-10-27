@@ -9,6 +9,7 @@ import { LANGUAGES } from '#/data/zambia'
 import { requireSellerMiddleware } from '#/server/auth'
 import { refreshSearchText, upsertPublisher } from '#/server/catalog.server'
 import { ownedCoverUrl } from '#/server/covers.server'
+import { AppError } from '#/server/errors.server'
 
 const LANGUAGE_CODES = LANGUAGES.map((l) => l.code) as [string, ...string[]]
 
@@ -26,7 +27,7 @@ function authoredBy(db: Db, sellerId: string) {
 async function uploadedCover(key: string | undefined, userId: string) {
   if (!key) return undefined
   const url = await ownedCoverUrl(key, userId)
-  if (!url) throw new Error('That photo didn’t upload. Add it again.')
+  if (!url) throw new AppError('That photo didn’t upload. Add it again.')
   return url
 }
 
@@ -117,7 +118,7 @@ export const saveAuthorProfile = createServerFn({ method: 'POST' })
       .set({ bio: data.bio || null, links, ...(photoUrl && { photoUrl }) })
       .where(and(eq(authors.id, data.authorId), eq(authors.verifiedSellerId, context.seller.id)))
       .returning({ id: authors.id })
-    if (!updated) throw new Error('Only the verified author can edit this page')
+    if (!updated) throw new AppError('Only the verified author can edit this page', 'forbidden')
     return { ok: true }
   })
 
@@ -157,7 +158,7 @@ export const saveAuthoredBook = createServerFn({ method: 'POST' })
       })
       .where(and(eq(books.id, data.bookId), authoredBy(db, context.seller.id)))
       .returning({ id: books.id, slug: books.slug })
-    if (!updated) throw new Error('Only a verified author of this book can edit it')
+    if (!updated) throw new AppError('Only a verified author of this book can edit it', 'forbidden')
     await refreshSearchText(db, updated.id)
     return { slug: updated.slug }
   })

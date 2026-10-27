@@ -1,3 +1,4 @@
+import { BanknotesIcon, TruckIcon } from '@heroicons/react/16/solid'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getMySales, markShipped, respondToDispute } from '#/functions/orders.functions'
@@ -156,10 +157,11 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
             {ship.error && <Alert>{ship.error}</Alert>}
             <button
               type="button"
-              className={cn('btn self-start', primary ? 'btn-primary' : 'btn-secondary')}
+              className={cn('btn gap-1.5 sm:self-start', primary ? 'btn-primary' : 'btn-secondary')}
               disabled={ship.pending || note.trim().length < 3 || (needsProof && !proof)}
               onClick={() => void ship.run()}
             >
+              <TruckIcon className="size-4" aria-hidden />
               {ship.pending ? 'Saving…' : 'Mark as shipped'}
             </button>
           </div>
@@ -202,7 +204,8 @@ function Balance({ balance }: { balance: BalanceData }) {
           </p>
         </div>
         {canInstant && !paid && (
-          <button type="button" className="btn btn-secondary" disabled={payNow.pending} onClick={() => void payNow.run()}>
+          <button type="button" className="btn btn-secondary gap-1.5" disabled={payNow.pending} onClick={() => void payNow.run()}>
+            <BanknotesIcon className="size-4" aria-hidden />
             {payNow.pending ? 'Sending…' : PAYOUT_COPY.instant}
           </button>
         )}

@@ -4,7 +4,7 @@ import { listings, orderItems, orders, payments, profiles, refunds, sellerOrders
 import { FULFILMENT_COPY, MAX_REFUND_ATTEMPTS, SHIP_REMINDER_DAYS, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
-import { sendEmail } from './email.server'
+import { notify } from './notify.server'
 import { createMobileMoneyRecipient, getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
 import { completeOrderIfSettled } from './orders.server'
 
@@ -100,7 +100,7 @@ export async function remindToShip(db: Db) {
     returning o.number, p.email, o.paid_at`)
   for (const row of due) {
     const day = new Date(new Date(row.paid_at).getTime() + SHIP_WITHIN_DAYS * 86_400_000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
-    await sendEmail({ to: row.email, subject: FULFILMENT_COPY.reminderSubject(row.number), lines: [...FULFILMENT_COPY.reminderLines(day)], action: { label: 'Your sales', path: '/account/sales' } })
+    await notify('selling', { to: row.email, subject: FULFILMENT_COPY.reminderSubject(row.number), lines: [...FULFILMENT_COPY.reminderLines(day)], action: { label: 'Your sales', path: '/account/sales' } })
   }
   return due.length
 }
@@ -137,7 +137,7 @@ export async function cancelUnshipped(db: Db) {
       .limit(1)
     const [seller] = who ? await db.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, who.sellerProfileId)).limit(1) : []
     if (who && refund) {
-      await sendEmail({
+      await notify('orders', {
         to: who.buyerEmail,
         subject: FULFILMENT_COPY.cancelledBuyerSubject(who.number),
         lines: [...FULFILMENT_COPY.cancelledBuyerLines(who.store, formatMoney(refund.amountNgwee), refund.automatic)],
@@ -145,7 +145,7 @@ export async function cancelUnshipped(db: Db) {
       })
     }
     if (who && seller) {
-      await sendEmail({ to: seller.email, subject: FULFILMENT_COPY.cancelledSellerSubject(who.number), lines: [...FULFILMENT_COPY.cancelledSellerLines], action: { label: 'Your listings', path: '/account/listings' } })
+      await notify('selling', { to: seller.email, subject: FULFILMENT_COPY.cancelledSellerSubject(who.number), lines: [...FULFILMENT_COPY.cancelledSellerLines], action: { label: 'Your listings', path: '/account/listings' } })
     }
   }
   return cancelled

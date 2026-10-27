@@ -15,6 +15,7 @@ import { findOrCreateBook, refreshSearchText, uniqueSlug } from '#/server/catalo
 import { escapeHtml, sendEmail } from '#/server/email.server'
 import { mirrorImage } from '#/server/covers.server'
 import { newToken, sha256 } from '#/server/tokens.server'
+import { AppError } from '#/server/errors.server'
 
 const LINK_KEYS = ['website', 'facebook', 'instagram', 'x', 'tiktok'] as const
 
@@ -62,8 +63,8 @@ export const createDraft = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const db = getDb()
     const reading = await draftAuthor(db, context.user.id, data)
-    if (!reading) throw new Error('The research didn’t finish. Try again in a minute.')
-    if (!reading.found) throw new Error(`Couldn’t find enough about ${data.name} online. Add a hint, like a book title or their town.`)
+    if (!reading) throw new AppError('The research didn’t finish. Try again in a minute.')
+    if (!reading.found) throw new AppError(`Couldn’t find enough about ${data.name} online. Add a hint, like a book title or their town.`)
     const links = Object.fromEntries(LINK_KEYS.flatMap((k) => (reading.links[k] ? [[k, reading.links[k]]] : []))) as AuthorLinks
     const [draft] = await db
       .insert(authorDrafts)
@@ -111,7 +112,7 @@ export const saveDraft = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const db = getDb()
     const [current] = await db.select({ contact: authorDrafts.contact, extras: authorDrafts.extras }).from(authorDrafts).where(eq(authorDrafts.id, data.id)).limit(1)
-    if (!current) throw new Error('That draft is gone')
+    if (!current) throw new AppError('That draft is gone', 'not_found')
     const links = Object.fromEntries(Object.entries(data.links).filter(([, v]) => v)) as AuthorLinks
     await db
       .update(authorDrafts)
@@ -150,13 +151,13 @@ export const publishDraft = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const db = getDb()
     const [draft] = await db.select().from(authorDrafts).where(eq(authorDrafts.id, data.id)).limit(1)
-    if (!draft) throw new Error('That draft is gone')
-    if (draft.authorId) throw new Error('Already published')
-    if (!draft.bio) throw new Error('Add a bio first')
+    if (!draft) throw new AppError('That draft is gone', 'not_found')
+    if (draft.authorId) throw new AppError('Already published')
+    if (!draft.bio) throw new AppError('Add a bio first')
 
     const slug = slugify(draft.name)
     const [existing] = await db.select().from(authors).where(eq(authors.slug, slug)).limit(1)
-    if (existing?.verifiedSellerId) throw new Error(`${existing.name} has already claimed their page`)
+    if (existing?.verifiedSellerId) throw new AppError(`${existing.name} has already claimed their page`)
     const [author] = existing
       ? await db
           .update(authors)
@@ -204,13 +205,13 @@ export const sendInvite = createServerFn({ method: 'POST' })
       .innerJoin(authors, eq(authors.id, authorDrafts.authorId))
       .where(eq(authorDrafts.id, data.id))
       .limit(1)
-    if (!row) throw new Error('Publish the page before inviting')
+    if (!row) throw new AppError('Publish the page before inviting')
     const { draft } = row
-    if (row.claimed) throw new Error('They’ve already claimed it')
-    if (draft.optedOutAt) throw new Error('They asked not to be contacted')
-    if (!draft.invite) throw new Error('Write the invite first')
+    if (row.claimed) throw new AppError('They’ve already claimed it')
+    if (draft.optedOutAt) throw new AppError('They asked not to be contacted')
+    if (!draft.invite) throw new AppError('Write the invite first')
     const to = data.channel === 'email' ? draft.contact.email : draft.contact.phone?.replace(/[^\d]/g, '')
-    if (!to) throw new Error(data.channel === 'email' ? 'Add an email address first' : 'Add a phone number first')
+    if (!to) throw new AppError(data.channel === 'email' ? 'Add an email address first' : 'Add a phone number first')
 
     const token = newToken()
     await db.update(authorDrafts).set({ inviteTokenHash: await sha256(token), invitedAt: new Date() }).where(eq(authorDrafts.id, draft.id))

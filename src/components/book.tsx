@@ -120,7 +120,7 @@ export function Shelf({ title, books, more, ranked = false }: { title: string; b
         {more}
       </div>
       {/* Vertical padding keeps the cover shadows and hover lift from being clipped by the scroller. */}
-      <ScrollRow className="-mx-4 -my-3 flex snap-x gap-5 px-4 py-3 sm:-mx-6 sm:px-6">
+      <ScrollRow className="-mx-4 -my-3 flex snap-x scroll-px-4 gap-5 px-4 py-3 sm:-mx-6 sm:scroll-px-6 sm:px-6">
         {books.map((b, i) => (
           <div key={b.slug} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
             <BookCard book={b} rank={ranked ? i + 1 : undefined} />

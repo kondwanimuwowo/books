@@ -10,6 +10,7 @@ import { AI_DAILY_LIMITS, AI_MODELS, AI_SEARCH_DAILY_CAP } from '#/data/ai'
 import type { AiKind } from '#/data/ai'
 import { CONDITIONS } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
+import { AppError } from './errors.server'
 
 // Everything here is a suggestion a person confirms. When Claude is down, slow or out of budget the
 // callers carry on without it, so every failure comes back as null rather than an error.
@@ -29,7 +30,7 @@ export async function checkAiLimit(db: Db, userId: string, kind: keyof typeof AI
     .from(aiRequests)
     .where(and(eq(aiRequests.userId, userId), eq(aiRequests.kind, kind), gt(aiRequests.createdAt, since)))
   // A plain Error, so the message reaches the seller (see src/start.ts).
-  if ((used?.n ?? 0) >= AI_DAILY_LIMITS[kind]) throw new Error('You’ve reached today’s limit for this. Fill the details in yourself, or try again tomorrow.')
+  if ((used?.n ?? 0) >= AI_DAILY_LIMITS[kind]) throw new AppError('You’ve reached today’s limit for this. Fill the details in yourself, or try again tomorrow.', 'rate_limited')
 }
 
 async function ask<T>(

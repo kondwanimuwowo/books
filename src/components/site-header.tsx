@@ -1,7 +1,8 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import type { LinkProps } from '@tanstack/react-router'
 import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
-import { FOOTER_NAV } from '#/data/navigation'
+import { FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
 import { LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
 import { openCookieSettings } from '#/lib/consent'
@@ -231,7 +232,7 @@ function QuickResults({
 
 const navLink = 'btn btn-sm text-on-deep-muted hover:bg-on-accent/10 hover:text-on-accent'
 
-export function SiteHeader({ user }: { user: HeaderUser | null }) {
+export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: boolean }) {
   const { count, ready } = useBag()
   const items = ready ? count : 0
   // Tucks away while reading down the page, returns the moment you scroll up or tab into it.
@@ -266,7 +267,11 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           {/* Outlined, not filled: the bag is always here, so it must never outshout a page's own primary action. */}
           <Link
             to="/bag"
-            className="btn btn-sm ml-1 gap-1.5 px-3 text-on-accent shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-on-accent)_30%,transparent)] hover:bg-on-accent/10 hover:text-on-accent"
+            className={cn(
+              'btn btn-sm ml-1 gap-1.5 px-3 text-on-accent shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-on-accent)_30%,transparent)] hover:bg-on-accent/10 hover:text-on-accent',
+              // Phones with the tab bar reach the bag from there.
+              tabs && 'hidden sm:inline-flex',
+            )}
             aria-label={items ? `Your bag, ${items} ${items === 1 ? 'book' : 'books'}` : 'Your bag is empty'}
           >
             <ShoppingBagIcon className="size-4" aria-hidden />
@@ -301,11 +306,25 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
         className="menu-panel band absolute inset-x-0 top-full border-t border-on-deep-muted/15 shadow-lg sm:hidden"
       >
         <ul className="page py-2">
-          <MenuLink to="/search" first>
-            Browse
-          </MenuLink>
-          <MenuLink to="/sell">Sell</MenuLink>
-          <MenuLink to={account.to}>{user ? 'Your account' : 'Sign in'}</MenuLink>
+          {/* Pages without the tab bar still need its main places. */}
+          {!tabs && (
+            <>
+              <MenuLink to="/search" icon={TABS[1].icon}>
+                Browse
+              </MenuLink>
+              <MenuLink to="/sell" icon={TABS[2].icon}>
+                Sell
+              </MenuLink>
+              <MenuLink to={account.to} icon={TABS[4].icon}>
+                {user ? 'Your account' : 'Sign in'}
+              </MenuLink>
+            </>
+          )}
+          {MENU_LINKS.map((link) => (
+            <MenuLink key={link.to} to={link.to} icon={link.icon}>
+              {link.label}
+            </MenuLink>
+          ))}
           {user?.adminUrl && (
             <li>
               <a href={user.adminUrl} className={menuItem} tabIndex={menu.open ? undefined : -1}>
@@ -326,12 +345,13 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
   )
 }
 
-const menuItem = 'block py-3 text-lg font-medium text-on-accent no-underline hover:text-on-deep-muted'
+const menuItem = 'flex items-center gap-3 py-3 text-lg font-medium text-on-accent no-underline hover:text-on-deep-muted'
 
-function MenuLink({ to, first = false, children }: { to: '/search' | '/sell' | '/account' | '/login'; first?: boolean; children: React.ReactNode }) {
+function MenuLink({ to, icon: Icon, children }: { to: LinkProps['to']; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
     <li>
-      <Link to={to} className={menuItem} data-first-menu-item={first || undefined}>
+      <Link to={to} className={menuItem}>
+        <Icon className="size-5 shrink-0 text-on-deep-muted" aria-hidden />
         {children}
       </Link>
     </li>
@@ -351,7 +371,7 @@ function useMobileMenu(headerRef: React.RefObject<HTMLElement | null>, headerHid
 
   useEffect(() => {
     if (!open) return
-    headerRef.current?.querySelector<HTMLElement>('[data-first-menu-item]')?.focus()
+    headerRef.current?.querySelector<HTMLElement>('#mobile-menu a')?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       setOpen(false)
@@ -382,9 +402,12 @@ const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
 
 export function SiteFooter() {
   return (
-    <footer className="band mt-20">
-      <div className="page grid gap-10 py-12 text-sm sm:grid-cols-[1.4fr_1fr_1fr]">
-        <Logo tone="inverse" className="h-5" />
+    <footer className="band mt-14 sm:mt-20">
+      {/* Phones: the two link groups side by side, so the footer is a glance rather than a scroll. */}
+      <div className="page grid grid-cols-2 gap-x-6 gap-y-8 py-10 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-10 sm:py-12">
+        <div className="col-span-2 sm:col-span-1">
+          <Logo tone="inverse" className="h-5" />
+        </div>
         {FOOTER_NAV.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">
             <p className="eyebrow text-on-deep-muted">{group.title}</p>

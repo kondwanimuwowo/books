@@ -1,10 +1,11 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { payouts, sellerOrders, sellers } from '#/db/schema'
-import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayoutWindow } from '#/data/payouts'
-import { ngweeToAmount } from '#/lib/money'
+import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayoutWindow, nextPayoutDay } from '#/data/payouts'
+import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
+import { AppError } from './errors.server'
 
 // Delivered parcels wait as 'released' (the seller's balance) until a payout claims them.
 const WAITING = ['released', 'failed'] as const
@@ -21,13 +22,35 @@ export async function sellerBalance(db: Db, sellerId: string) {
   return { readyNgwee: row?.readyNgwee ?? 0, oldest: row?.oldest ? new Date(row.oldest) : null }
 }
 
+/** The seller's balance: delivered sales not yet paid out, and how and when they will be. */
+export async function loadBalance(db: Db, seller: { id: string; lencoRecipientId: string | null; payoutMethod: string | null }) {
+  const { readyNgwee, oldest } = await sellerBalance(db, seller.id)
+  return {
+    readyNgwee,
+    oldest,
+    hasDestination: !!seller.lencoRecipientId && seller.payoutMethod === 'mobile_money',
+    nextPayoutDay: nextPayoutDay(),
+    instantFeeNgwee: instantFee(readyNgwee),
+  }
+}
+
+/** "Pay me now": the whole balance at once, Lenco's transfer fee taken from it. Only delivered sales are in a balance. */
+export async function payNow(db: Db, sellerId: string) {
+  const { readyNgwee } = await sellerBalance(db, sellerId)
+  if (readyNgwee < INSTANT_MIN_NGWEE) throw new AppError(`Pay me now works from ${formatMoney(INSTANT_MIN_NGWEE)}`)
+  const result = await payOutSeller(db, sellerId, 'instant')
+  if (!result) throw new AppError('Nothing is ready to pay out')
+  if (result.status === 'failed') throw new AppError('The transfer didn’t go through. Your balance is safe; try again later.')
+  return result
+}
+
 /**
  * Pays a seller's whole balance in one transfer. Weekly payouts are free; instant ones take Lenco's fee.
  * Parcels are claimed before the transfer, so two payouts can never pay the same parcel.
  */
 export async function payOutSeller(db: Db, sellerId: string, kind: 'weekly' | 'instant') {
   const [seller] = await db.select().from(sellers).where(eq(sellers.id, sellerId)).limit(1)
-  if (!seller?.lencoRecipientId || seller.payoutMethod !== 'mobile_money') throw new Error('Add your mobile money number first')
+  if (!seller?.lencoRecipientId || seller.payoutMethod !== 'mobile_money') throw new AppError('Add your mobile money number first')
 
   const reference = `po-${sellerId.slice(0, 8)}-${randomCode(6)}`
   const [payout] = await db.insert(payouts).values({ sellerId, kind, amountNgwee: 0, reference, status: 'processing' }).returning({ id: payouts.id })

@@ -2,11 +2,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { requireUserMiddleware } from '#/server/auth'
 import { storeCover } from '#/server/covers.server'
 import { storePrivate } from '#/server/private-files.server'
+import { AppError } from '#/server/errors.server'
 
 function photoFrom(data: unknown) {
-  if (!(data instanceof FormData)) throw new Error('Expected a photo')
+  if (!(data instanceof FormData)) throw new AppError('Expected a photo')
   const file = data.get('cover')
-  if (!(file instanceof File)) throw new Error('Expected a photo')
+  if (!(file instanceof File)) throw new AppError('Expected a photo')
   return file
 }
 

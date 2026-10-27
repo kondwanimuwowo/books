@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { TrashIcon } from '@heroicons/react/16/solid'
+import { PauseIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 import { getMyListings, updateListing } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
@@ -159,16 +159,19 @@ function ListingItem({ listing }: { listing: Listing }) {
 
         {mode === 'view' && listing.status !== 'removed' && (
           <div className="mt-2 flex items-center gap-1">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMode('edit')}>
+            <button type="button" className="btn btn-secondary btn-sm gap-1.5" onClick={() => setMode('edit')}>
+              <PencilIcon className="size-3.5" aria-hidden />
               Edit
             </button>
             {listing.status === 'active' && (
-              <button type="button" className="btn btn-ghost btn-sm" disabled={save.pending} onClick={() => void save.run('paused')}>
+              <button type="button" className="btn btn-ghost btn-sm gap-1.5" disabled={save.pending} onClick={() => void save.run('paused')}>
+                <PauseIcon className="size-3.5" aria-hidden />
                 Pause
               </button>
             )}
             {listing.status === 'paused' && (
-              <button type="button" className="btn btn-ghost btn-sm" disabled={save.pending} onClick={() => void save.run('active')}>
+              <button type="button" className="btn btn-ghost btn-sm gap-1.5" disabled={save.pending} onClick={() => void save.run('active')}>
+                <PlayIcon className="size-3.5" aria-hidden />
                 Resume
               </button>
             )}

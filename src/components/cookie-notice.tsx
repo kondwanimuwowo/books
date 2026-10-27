@@ -52,7 +52,7 @@ export function CookieNotice() {
             initial={{ opacity: 0, transform: 'translateY(16px)' }}
             animate={{ opacity: 1, transform: 'translateY(0px)', transition: { duration: 0.32, ease: EASE_OUT } }}
             exit={{ opacity: 0, transform: 'translateY(12px)', transition: { duration: 0.18, ease: EASE_OUT } }}
-            className="card fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 p-5 shadow-lg sm:inset-x-auto sm:left-5 sm:bottom-5 sm:w-[26rem]"
+            className="card fixed inset-x-3 bottom-[calc(0.75rem+var(--tabbar-h,env(safe-area-inset-bottom)))] z-40 p-5 shadow-lg sm:inset-x-auto sm:left-5 sm:bottom-5 sm:w-[26rem]"
           >
             <h2 className="text-base font-bold">{COOKIE_COPY.title}</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">
