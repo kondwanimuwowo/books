@@ -3,10 +3,12 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { books, orderItems, orders, payments, profiles, ratings, reviews, sellerOrders, sellers } from '#/db/schema'
 import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
+import { NOTIFY_COPY } from '#/data/notifications'
+import { formatMoney } from '#/lib/money'
 import type { DisputeResponseInput, MarkShippedInput } from '#/schemas/orders'
 import type { SessionUser } from './auth'
 import { ownOrder } from './checkout.server'
-import { escapeHtml, sendEmail } from './email.server'
+import { escapeHtml, sendEmail, teamInbox } from './email.server'
 import { AppError, NotFoundError } from './errors.server'
 import { notify } from './notify.server'
 import { autoReleaseDate, releaseToSeller } from './orders.server'
@@ -106,8 +108,39 @@ async function buyerPart(db: Db, sellerOrderId: string, buyerId: string) {
 export async function confirmBuyerDelivery(db: Db, buyerId: string, sellerOrderId: string) {
   const part = await buyerPart(db, sellerOrderId, buyerId)
   if (part.status !== 'shipped' && part.status !== 'to_ship') throw new AppError('This parcel can’t be confirmed right now')
-  await releaseToSeller(db, part.id)
+  if (await releaseToSeller(db, part.id)) await notifyDelivered(db, part.id, false)
   return { ok: true }
+}
+
+/** Both sides hear a parcel is delivered: the buyer confirmed it, or (`auto`) the window to report a problem passed. */
+export async function notifyDelivered(db: Db, sellerOrderId: string, auto: boolean) {
+  const [part] = await db
+    .select({ number: orders.number, buyerEmail: profiles.email, store: sellers.storeName, sellerProfileId: sellers.profileId, payoutNgwee: sellerOrders.payoutNgwee })
+    .from(sellerOrders)
+    .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+    .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+    .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+    .where(eq(sellerOrders.id, sellerOrderId))
+    .limit(1)
+  if (!part) return
+  const [seller] = await db.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, part.sellerProfileId)).limit(1)
+  const buyerCopy = NOTIFY_COPY.deliveredBuyer
+  const sellerCopy = NOTIFY_COPY.deliveredSeller
+  await Promise.all([
+    notify('orders', {
+      to: part.buyerEmail,
+      subject: buyerCopy.subject(part.number),
+      lines: buyerCopy.lines(escapeHtml(part.store), auto),
+      action: { label: buyerCopy.action, path: `/orders/${part.number}` },
+    }),
+    seller &&
+      notify('selling', {
+        to: seller.email,
+        subject: sellerCopy.subject(part.number),
+        lines: sellerCopy.lines(formatMoney(part.payoutNgwee), auto),
+        action: { label: sellerCopy.action, path: '/account/sales' },
+      }),
+  ])
 }
 
 export async function reportBuyerProblem(db: Db, user: SessionUser, sellerOrderId: string, note: string) {
@@ -115,7 +148,7 @@ export async function reportBuyerProblem(db: Db, user: SessionUser, sellerOrderI
   if (part.status !== 'shipped' && part.status !== 'to_ship') throw new AppError('This parcel can’t be disputed right now')
   await db.update(sellerOrders).set({ status: 'disputed', autoReleaseAt: null, disputeNote: note, disputedAt: new Date() }).where(eq(sellerOrders.id, part.id))
   await sendEmail({
-    to: env.EMAIL_FROM.match(/<(.+)>/)?.[1] ?? env.EMAIL_FROM,
+    to: teamInbox(),
     subject: 'A buyer reported a problem with an order',
     lines: [`Buyer ${user.email} reported a problem:`, note, `Resolve it at ${env.APP_ORIGIN}/admin`],
   })
@@ -142,12 +175,28 @@ export async function reportBuyerProblem(db: Db, user: SessionUser, sellerOrderI
 /** The seller's side of a problem report: what happened, with a photo as proof. Can be updated until admin decides. */
 export async function answerDispute(db: Db, seller: Seller, input: DisputeResponseInput) {
   if (input.proofKey && !(await ownsPrivate(input.proofKey, seller.profileId))) throw new AppError('The photo didn’t upload. Add it again.')
+  // Sellers can edit their side until admin decides; the buyer and the team hear about the first one only.
+  const [before] = await db
+    .select({ respondedAt: sellerOrders.sellerRespondedAt, number: orders.number, buyerEmail: profiles.email })
+    .from(sellerOrders)
+    .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+    .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+    .where(and(eq(sellerOrders.id, input.sellerOrderId), eq(sellerOrders.sellerId, seller.id)))
+    .limit(1)
   const [row] = await db
     .update(sellerOrders)
     .set({ sellerResponse: input.note, sellerResponseKey: input.proofKey ?? null, sellerRespondedAt: new Date() })
     .where(and(eq(sellerOrders.id, input.sellerOrderId), eq(sellerOrders.sellerId, seller.id), eq(sellerOrders.status, 'disputed')))
     .returning({ id: sellerOrders.id })
   if (!row) throw new AppError('This problem has already been decided', 'conflict')
+  if (before && !before.respondedAt) {
+    const copy = NOTIFY_COPY.disputeAnswered
+    const team = NOTIFY_COPY.teamDisputeAnswered(before.number, escapeHtml(seller.storeName))
+    await Promise.all([
+      notify('orders', { to: before.buyerEmail, subject: copy.subject(before.number), lines: copy.lines(), action: { label: copy.action, path: `/orders/${before.number}` } }),
+      sendEmail({ to: teamInbox(), subject: team.subject, lines: team.lines }),
+    ])
+  }
   return { ok: true }
 }
 

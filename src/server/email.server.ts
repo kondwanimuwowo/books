@@ -23,6 +23,11 @@ function render({ lines, action }: Message) {
 <p style="margin-top:28px;font-size:13px;color:#776453">Kuwala Books, Zambia's book marketplace</p></div>`
 }
 
+/** The team's own inbox: the address part of EMAIL_FROM. */
+export function teamInbox() {
+  return env.EMAIL_FROM.match(/<(.+)>/)?.[1] ?? env.EMAIL_FROM
+}
+
 // Email must never break the flow that triggered it (payment confirmation especially).
 export async function sendEmail(message: Message) {
   if (!env.RESEND_API_KEY) {
