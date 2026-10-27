@@ -295,10 +295,26 @@ About 2.5–3 months for one developer. Phases 1–2 produce a buy-only app that
   - Google sign-in? It's convenient on Android but would require Sign in with Apple on iOS too.
   - Who owns the Apple and Google developer accounts (personal or company)? This affects the D-U-N-S requirement and Google's 12-tester rule.
 
+## Groundwork already done in the web app
+
+These changes are in place and don't change how the website behaves:
+
+- **Bearer tokens:** `src/server/session.server.ts` accepts `Authorization: Bearer <Supabase access token>` as well as cookies.
+- **Error codes:** user-facing errors are `AppError` with a code and HTTP status (`src/server/errors.server.ts`). `errorResponse()` turns anything thrown into the JSON error shape above, hiding internal errors.
+- **One notification point:** member emails go through `notify(topic, message)` in `src/server/notify.server.ts`. Push gets added there.
+- **Server logic out of server functions** for catalogue, offers, orders, checkout and payments, selling, reviews, ratings and reports. The v1 routes can call these directly:
+  - `browse.server.ts`, `members.server.ts`
+  - `offers.server.ts`
+  - `checkout.server.ts`, `fulfilment.server.ts`
+  - `listings.server.ts`, `sellers.server.ts`, `payouts.server.ts`
+  - `feedback.server.ts`
+- **Shared inputs:** zod schemas for the same areas are in `src/schemas/` and can be imported by the app.
+
+Still web-shaped (fine, since they stay web-only in v1): admin, AI helpers, drafts, author pages, verification, claims and sign-in. Sign-in in the app goes straight to Supabase.
+
 ## Immediate next steps
 
 1. Start Apple Developer (organisation) enrolment and D-U-N-S application.
 2. Create the Google Play developer account.
-3. Bearer-token support in `src/server/auth.ts`.
-4. First v1 endpoints: `/site`, `/home`, `/search`, `/books/:slug`.
-5. Scaffold `mobile/` with Expo Router, NativeWind, the shared-code alias, and Home and Book screens running against the API.
+3. First v1 endpoints: `/site`, `/home`, `/search`, `/books/:slug`, wrapping the `src/server` functions above with `errorResponse()`.
+4. Scaffold `mobile/` with Expo Router, NativeWind, the shared-code alias, and Home and Book screens running against the API.
