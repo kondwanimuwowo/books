@@ -5,6 +5,7 @@ import { books, listings, offers, profiles, sellers } from '#/db/schema'
 import { MAX_COUNTERS, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS, OFFERS_PER_COPY_PER_WEEK } from '#/data/listing-options'
 import { formatMoney, toNgwee } from '#/lib/money'
 import type { AnswerOfferInput, MakeOfferInput } from '#/schemas/offers'
+import { NOTIFY_COPY } from '#/data/notifications'
 import { escapeHtml } from './email.server'
 import { AppError } from './errors.server'
 import { notify } from './notify.server'
@@ -280,6 +281,11 @@ export async function withdrawBuyerOffer(db: Db, userId: string, offerId: string
     .where(and(eq(offers.id, offerId), eq(offers.buyerId, userId), inArray(offers.status, ['pending', 'accepted'])))
     .returning({ id: offers.id })
   if (!row) throw new AppError('This offer is no longer open', 'conflict')
+  const [o] = await loadOfferParties(db, [offerId])
+  if (o) {
+    const copy = NOTIFY_COPY.offerWithdrawn
+    await notify('offers', { to: o.sellerEmail, subject: copy.subject(o.title), lines: copy.lines(escapeHtml(o.title)), action: { label: 'See your offers', path: '/account/offers' } })
+  }
   return { ok: true }
 }
 

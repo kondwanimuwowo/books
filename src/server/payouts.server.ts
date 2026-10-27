@@ -1,11 +1,13 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { payouts, sellerOrders, sellers } from '#/db/schema'
+import { payouts, profiles, sellerOrders, sellers } from '#/db/schema'
 import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee, isPayoutWindow, nextPayoutDay } from '#/data/payouts'
 import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
+import { NOTIFY_COPY } from '#/data/notifications'
 import { AppError } from './errors.server'
+import { notify } from './notify.server'
 
 // Delivered parcels wait as 'released' (the seller's balance) until a payout claims them.
 const WAITING = ['released', 'failed'] as const
@@ -91,9 +93,29 @@ async function giveBack(db: Db, payoutId: string) {
 }
 
 async function settle(db: Db, payoutId: string, status: 'paid' | 'failed' | 'processing', lencoReference: string | null, failureReason: string | null) {
-  await db.update(payouts).set({ status, lencoReference, failureReason }).where(eq(payouts.id, payoutId))
+  // Only the change into 'paid' notifies, so a reconcile that finds it already paid stays quiet.
+  const [before] = await db.select({ status: payouts.status }).from(payouts).where(eq(payouts.id, payoutId)).limit(1)
+  const [payout] = await db
+    .update(payouts)
+    .set({ status, lencoReference, failureReason })
+    .where(eq(payouts.id, payoutId))
+    .returning({ amountNgwee: payouts.amountNgwee, sellerId: payouts.sellerId })
   if (status === 'paid') await db.update(sellerOrders).set({ payoutStatus: 'paid' }).where(eq(sellerOrders.payoutId, payoutId))
   if (status === 'failed') await giveBack(db, payoutId)
+  if (status === 'paid' && before?.status !== 'paid' && payout) await notifyPayoutSent(db, payout.sellerId, payout.amountNgwee)
+}
+
+async function notifyPayoutSent(db: Db, sellerId: string, amountNgwee: number) {
+  const [seller] = await db
+    .select({ email: profiles.email, phone: sellers.payoutPhone })
+    .from(sellers)
+    .innerJoin(profiles, eq(profiles.id, sellers.profileId))
+    .where(eq(sellers.id, sellerId))
+    .limit(1)
+  if (!seller) return
+  const copy = NOTIFY_COPY.payoutSent
+  const amount = formatMoney(amountNgwee)
+  await notify('selling', { to: seller.email, subject: copy.subject(amount), lines: copy.lines(amount, seller.phone ?? 'your phone'), action: { label: copy.action, path: '/account/sales' } })
 }
 
 /** Lenco can accept a transfer as pending; payout references never reach the webhook handler. */

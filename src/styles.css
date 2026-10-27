@@ -356,6 +356,24 @@
       background-color: color-mix(in srgb, var(--color-deep) 25%, color-mix(in srgb, var(--color-on-accent) 18%, transparent));
     }
   }
+  /* The home hero's clear spot: a sharp copy of the cover wall, shown only within a small soft circle at the pointer. */
+  .hero-reveal {
+    display: none;
+    --mask: radial-gradient(circle 110px at var(--x, -999px) var(--y, -999px), #000 35%, transparent 100%);
+    -webkit-mask-image: var(--mask);
+    mask-image: var(--mask);
+    opacity: 0;
+    transition: opacity 250ms ease;
+    pointer-events: none;
+  }
+  .hero-reveal[data-active='true'] {
+    opacity: 1;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hero-reveal {
+      display: block;
+    }
+  }
   /* People who ask for less transparency get solid panels. */
   @media (prefers-reduced-transparency: reduce) {
     .frost,

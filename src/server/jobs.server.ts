@@ -5,6 +5,7 @@ import { findCoverUrls, googleCoverUrl, googleVolumeId } from './book-sources.se
 import { mirrorCover } from './covers.server'
 import { summariseDescription } from './ai.server'
 import { releaseToSeller, settlePayment } from './orders.server'
+import { notifyDelivered } from './fulfilment.server'
 import { reconcilePayout, weeklyPayouts } from './payouts.server'
 import { cancelUnshipped, remindToShip, settleRefunds } from './refunds.server'
 import { notifyLapsed } from './offers.server'
@@ -37,7 +38,9 @@ async function releaseOverdue(db: Db) {
     .from(sellerOrders)
     .where(and(eq(sellerOrders.status, 'shipped'), lte(sellerOrders.autoReleaseAt, new Date())))
     .limit(BATCH)
-  return each(due, 'releaseOverdue', (row) => releaseToSeller(db, row.id))
+  return each(due, 'releaseOverdue', async (row) => {
+    if (await releaseToSeller(db, row.id)) await notifyDelivered(db, row.id, true)
+  })
 }
 
 // Safety net for when the buyer leaves the payment page and the webhook never arrives.
