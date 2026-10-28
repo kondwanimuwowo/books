@@ -1,11 +1,11 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import type { LinkProps } from '@tanstack/react-router'
-import { Bars3Icon, MagnifyingGlassIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { Bars3Icon, ChatBubbleLeftRightIcon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
 import { PAY_COPY } from '#/data/payments'
 import { PaymentMarks } from './payment-marks'
-import { LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
+import { LEGAL_CONTACT, LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
 import { openCookieSettings } from '#/lib/consent'
 import { quickSearch } from '#/functions/catalog.functions'
@@ -401,11 +401,13 @@ function RateNote({ className, usdOnly = false }: { className?: string; usdOnly?
 }
 
 const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
+const FOOTER_PHONE = '+260976999510'
+const FOOTER_FACEBOOK = 'https://facebook.com/kuwalabooks'
 
 export function SiteFooter() {
   return (
     <footer className="band mt-14 sm:mt-20">
-      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-10 sm:py-12">
+      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-3 sm:gap-10 sm:py-12 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1.4fr]">
         <div className="col-span-2 sm:col-span-1">
           <Logo tone="inverse" className="h-5" />
         </div>
@@ -421,31 +423,69 @@ export function SiteFooter() {
                 </li>
               ))}
             </ul>
+            {group.title === 'Sell' && (
+              <div className="space-y-2 pt-3">
+                <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
+                <PaymentMarks size="sm" monochrome />
+              </div>
+            )}
           </nav>
         ))}
-      </div>
-      <div className="border-t border-on-deep-muted/20">
-        <div className="page flex flex-col gap-5 py-5 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center justify-between gap-4 sm:justify-start">
-            <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
-            <PaymentMarks size="sm" monochrome />
-          </div>
-          <div className="flex flex-col gap-3 sm:items-end">
-            <p>
-              &copy; {new Date().getFullYear()} Kuwala Books
-              <RateNote usdOnly className="mt-1 block" />
-            </p>
-            <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2 sm:justify-end">
-              {LEGAL_ORDER.map((page) => (
-                <Link key={page} to="/legal/$page" params={{ page }} className={footerLink}>
+        <nav aria-label="Legal" className="space-y-3">
+          <p className="eyebrow text-on-deep-muted">Legal</p>
+          <ul className="space-y-2">
+            {LEGAL_ORDER.map((page) => (
+              <li key={page}>
+                <Link to="/legal/$page" params={{ page }} className={footerLink}>
                   {LEGAL_PAGES[page].title}
                 </Link>
-              ))}
+              </li>
+            ))}
+            <li>
               <button type="button" onClick={openCookieSettings} className={footerLink}>
                 {COOKIE_COPY.settings}
               </button>
-            </nav>
-          </div>
+            </li>
+          </ul>
+        </nav>
+        <address className="space-y-3 not-italic">
+          <p className="eyebrow text-on-deep-muted">Contact</p>
+          <ul className="space-y-3">
+            <li>
+              <a href={`mailto:${LEGAL_CONTACT}`} className={`flex items-center gap-2 ${footerLink}`}>
+                <EnvelopeIcon aria-hidden className="size-4 shrink-0" />
+                <span>{LEGAL_CONTACT}</span>
+              </a>
+            </li>
+            <li>
+              <a href={`https://wa.me/${FOOTER_PHONE.replace(/\D/g, '')}`} className={`flex items-center gap-2 ${footerLink}`} target="_blank" rel="noreferrer">
+                <ChatBubbleLeftRightIcon aria-hidden className="size-4 shrink-0" />
+                <span>WhatsApp {FOOTER_PHONE}</span>
+              </a>
+            </li>
+            <li>
+              <a href={`tel:${FOOTER_PHONE}`} className={`flex items-center gap-2 ${footerLink}`}>
+                <PhoneIcon aria-hidden className="size-4 shrink-0" />
+                <span>Call {FOOTER_PHONE}</span>
+              </a>
+            </li>
+            <li>
+              <a href={FOOTER_FACEBOOK} className={`flex items-center gap-2 ${footerLink}`} target="_blank" rel="noreferrer">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 shrink-0 fill-current">
+                  <path d="M13.5 21v-8.2h2.8l.4-3.2h-3.2V7.5c0-.9.3-1.6 1.6-1.6h1.7V3.1c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.1H7v3.2h2.8V21h3.7Z" />
+                </svg>
+                <span>Facebook</span>
+              </a>
+            </li>
+          </ul>
+        </address>
+      </div>
+      <div className="border-t border-on-deep-muted/20">
+        <div className="page flex flex-col gap-3 py-5 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            &copy; {new Date().getFullYear()} Kuwala Books
+            <RateNote usdOnly className="mt-1 block" />
+          </p>
         </div>
       </div>
     </footer>
