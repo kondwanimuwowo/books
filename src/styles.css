@@ -264,8 +264,9 @@
   .header-bar[data-hidden='true'] {
     transform: translateY(-100%);
   }
-  /* Burgundy focus rings vanish on a burgundy bar. */
-  .header-bar :focus-visible {
+  /* Burgundy focus rings vanish on burgundy. */
+  .header-bar :focus-visible,
+  .band :focus-visible {
     outline-color: var(--color-on-accent);
   }
   /* Horizontal shelves fade at whichever edge has more to see (ScrollRow sets the data attributes). */

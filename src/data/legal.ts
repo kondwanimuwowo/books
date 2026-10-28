@@ -9,6 +9,7 @@ import { BLIND_DAYS, RATING_WINDOW_DAYS } from './reputation'
 import { formatMoney } from '#/lib/money'
 import { COOKIE_CATEGORIES, OPTIONAL_CATEGORIES } from './cookies'
 import { CARD_PAYMENTS, NETWORKS } from './payments'
+import { CONTACT } from './brand'
 
 export const LEGAL_UPDATED = '2026-10-27'
 /**
@@ -16,7 +17,7 @@ export const LEGAL_UPDATED = '2026-10-27'
  * liability): everyone signed in is then asked to accept again. Wording and number fixes don't need it.
  */
 export const TERMS_VERSION = '2026-10-26'
-export const LEGAL_CONTACT = 'support@kuwalabooks.com'
+export const LEGAL_CONTACT = CONTACT.support
 /** How quickly Kuwala Books answers a request about someone's personal data. */
 export const DATA_REQUEST_DAYS = 30
 

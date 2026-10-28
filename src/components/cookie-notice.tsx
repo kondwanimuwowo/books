@@ -54,7 +54,10 @@ export function CookieNotice() {
             exit={{ opacity: 0, transform: 'translateY(12px)', transition: { duration: 0.18, ease: EASE_OUT } }}
             className="card fixed inset-x-3 bottom-[calc(0.75rem+var(--tabbar-h,env(safe-area-inset-bottom)))] z-40 p-5 shadow-lg sm:inset-x-auto sm:left-5 sm:bottom-5 sm:w-[26rem]"
           >
-            <h2 className="text-base font-bold">{COOKIE_COPY.title}</h2>
+            <h2 className="flex items-center gap-2 text-base font-bold">
+              <CookieIcon className="size-5 shrink-0 text-accent-ink" />
+              {COOKIE_COPY.title}
+            </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">
               {hasChoices ? COOKIE_COPY.withChoices : COOKIE_COPY.essentialOnly}{' '}
               <Link to="/legal/$page" params={{ page: 'privacy' }} className="whitespace-nowrap">
@@ -117,6 +120,19 @@ export function CookieNotice() {
         )}
       </AnimatePresence>
     </MotionConfig>
+  )
+}
+
+// Heroicons has no cookie; drawn to match its 20px solid set: a disc with a bite out of it and three chips.
+function CookieIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M17.41 6.98A8 8 0 1 1 13.02 2.59 4 4 0 0 0 17.41 6.98ZM8.25 7.25a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm4.5 4a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0ZM7.5 14.5a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"
+      />
+    </svg>
   )
 }
 

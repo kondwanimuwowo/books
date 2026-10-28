@@ -17,6 +17,15 @@ export const BRAND = {
   mark: '/brand/mark-1024.png',
 } as const
 
+// info@ is the platform's general address; support@ takes help with orders, complaints and data requests, and
+// receives replies to every email we send. The phone takes calls and WhatsApp.
+export const CONTACT = {
+  email: 'info@kuwalabooks.com',
+  support: 'support@kuwalabooks.com',
+  phone: '+260 97 699 9510',
+  facebook: 'https://facebook.com/kuwalabooks',
+} as const
+
 // Shops without a logo get one of these, always the same one for a given shop.
 const SHOP_FALLBACKS = ['shop-1', 'shop-2'] as const
 

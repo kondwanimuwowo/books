@@ -1,10 +1,10 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import type { LinkProps } from '@tanstack/react-router'
-import { Bars3Icon, ChatBubbleLeftRightIcon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { Bars3Icon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
-import { FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
-import { PaymentMarks } from './payment-marks'
-import { LEGAL_CONTACT, LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
+import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
+import { CONTACT } from '#/data/brand'
+import { LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
 import { openCookieSettings } from '#/lib/consent'
 import { quickSearch } from '#/functions/catalog.functions'
@@ -399,83 +399,94 @@ function RateNote({ className, usdOnly = false }: { className?: string; usdOnly?
   return <span className={className}>{usdOnly ? `USD is a guide: ${rateNote}. You pay in kwacha.` : rateNote}</span>
 }
 
-const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
-const FOOTER_PHONE = '+260976999510'
-const FOOTER_FACEBOOK = 'https://facebook.com/kuwalabooks'
+const footerLink = 'text-on-deep-muted no-underline transition-colors hover:text-on-accent'
+
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={cn('fill-current', className)}>
+      <path d="M13.5 21v-8.2h2.8l.4-3.2h-3.2V7.5c0-.9.3-1.6 1.6-1.6h1.7V3.1c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.1H7v3.2h2.8V21h3.7Z" />
+    </svg>
+  )
+}
 
 export function SiteFooter() {
   return (
     <footer className="band mt-14 sm:mt-20">
-      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-3 sm:gap-10 sm:py-12">
-        {FOOTER_NAV.map((group) => (
-          <nav key={group.title} aria-label={group.title} className="space-y-3">
-            <p className="eyebrow text-on-deep-muted">{group.title}</p>
-            <ul className="space-y-2">
-              {group.links.map((link) => (
-                <li key={link.label}>
-                  <Link to={link.to} search={'search' in link ? link.search : undefined} className={footerLink}>
-                    {link.label}
+      <div className="page grid gap-10 py-10 text-sm sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
+        <div>
+          <div className="mb-4">
+            <Logo tone="inverse" />
+          </div>
+          <p className="max-w-sm text-base text-balance text-on-accent">{FOOTER_COPY.line}</p>
+          <address className="mt-6 flex flex-col items-start gap-1 not-italic">
+            <a href={`mailto:${CONTACT.email}`} className={cn('flex items-center gap-2.5 py-1', footerLink)}>
+              <EnvelopeIcon aria-hidden className="size-4 shrink-0" />
+              {CONTACT.email}
+            </a>
+            <a href={`tel:${CONTACT.phone.replace(/\s/g, '')}`} className={cn('flex items-center gap-2.5 py-1', footerLink)}>
+              <PhoneIcon aria-hidden className="size-4 shrink-0" />
+              {CONTACT.phone}
+            </a>
+          </address>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3">
+          {FOOTER_NAV.map((group, i) => (
+            <nav key={group.title} aria-label={group.title} className={cn(i === 0 && 'row-span-2 sm:row-span-1')}>
+              <h2 className="font-medium text-on-accent">{group.title}</h2>
+              <ul className="mt-3 space-y-1">
+                {group.links.map((link) => (
+                  <li key={'legal' in link ? link.legal : link.label}>
+                    {'legal' in link ? (
+                      <Link to="/legal/$page" params={{ page: link.legal }} className={cn('block py-1', footerLink)}>
+                        {LEGAL_PAGES[link.legal].title}
+                      </Link>
+                    ) : 'href' in link ? (
+                      <a href={link.href} className={cn('block py-1', footerLink)} {...('external' in link && { target: '_blank', rel: 'noreferrer' })}>
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link to={link.to} search={'search' in link ? link.search : undefined} className={cn('block py-1', footerLink)}>
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+      </div>
+
+      <div aria-hidden className="page @container hidden select-none overflow-hidden sm:-mt-10 sm:block lg:-mt-16">
+        <p className="-ml-[0.05em] text-[16.4cqw] leading-none tracking-[-0.04em] whitespace-nowrap text-on-accent/10">
+          <span className="font-bold">kuwala</span>books
+        </p>
+      </div>
+
+      <div className="border-t border-on-accent/10">
+        <div className="page flex items-center justify-between gap-5 py-6 text-xs text-on-deep-muted">
+          <div className="flex flex-col gap-2 sm:gap-1">
+            <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              <li className="order-last w-full sm:order-first sm:w-auto">&copy; {new Date().getFullYear()} Kuwala Books</li>
+              {FOOTER_LEGAL.map((page) => (
+                <li key={page}>
+                  <Link to="/legal/$page" params={{ page }} className={footerLink}>
+                    {LEGAL_PAGES[page].title}
                   </Link>
                 </li>
               ))}
-            </ul>
-          </nav>
-        ))}
-        <nav aria-label="Legal" className="space-y-3">
-          <p className="eyebrow text-on-deep-muted">Legal</p>
-          <ul className="space-y-2">
-            {LEGAL_ORDER.map((page) => (
-              <li key={page}>
-                <Link to="/legal/$page" params={{ page }} className={footerLink}>
-                  {LEGAL_PAGES[page].title}
-                </Link>
+              <li>
+                <button type="button" onClick={openCookieSettings} className={cn('cursor-pointer', footerLink)}>
+                  {COOKIE_COPY.settings}
+                </button>
               </li>
-            ))}
-            <li>
-              <button type="button" onClick={openCookieSettings} className={footerLink}>
-                {COOKIE_COPY.settings}
-              </button>
-            </li>
-          </ul>
-        </nav>
-        <address className="col-span-2 space-y-3 not-italic sm:col-span-1">
-          <p className="eyebrow text-on-deep-muted">Contact</p>
-          <ul className="space-y-3">
-            <li>
-              <a href={`mailto:${LEGAL_CONTACT}`} className={`flex items-center gap-2 ${footerLink}`}>
-                <EnvelopeIcon aria-hidden className="size-4 shrink-0" />
-                <span>{LEGAL_CONTACT}</span>
-              </a>
-            </li>
-            <li>
-              <span className="flex items-center gap-2">
-                <span>{FOOTER_PHONE}</span>
-                <a href={`https://wa.me/${FOOTER_PHONE.replace(/\D/g, '')}`} className={footerLink} aria-label={`WhatsApp ${FOOTER_PHONE}`} target="_blank" rel="noreferrer">
-                  <ChatBubbleLeftRightIcon aria-hidden className="size-4" />
-                </a>
-                <a href={`tel:${FOOTER_PHONE}`} className={footerLink} aria-label={`Call ${FOOTER_PHONE}`}>
-                  <PhoneIcon aria-hidden className="size-4" />
-                </a>
-              </span>
-            </li>
-            <li>
-              <a href={FOOTER_FACEBOOK} className={`flex items-center gap-2 ${footerLink}`} target="_blank" rel="noreferrer">
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 shrink-0 fill-current">
-                  <path d="M13.5 21v-8.2h2.8l.4-3.2h-3.2V7.5c0-.9.3-1.6 1.6-1.6h1.7V3.1c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.1H7v3.2h2.8V21h3.7Z" />
-                </svg>
-                <span>Facebook</span>
-              </a>
-            </li>
-          </ul>
-        </address>
-      </div>
-      <div className="border-t border-on-deep-muted/20">
-        <div className="page flex items-center justify-between gap-4 py-5 text-xs text-on-deep-muted">
-          <p>
-            &copy; {new Date().getFullYear()} Kuwala Books
-            <RateNote usdOnly className="mt-1 block" />
-          </p>
-          <PaymentMarks size="sm" monochrome sharpCorners />
+            </ul>
+            <RateNote usdOnly />
+          </div>
+          <a href={CONTACT.facebook} aria-label={FOOTER_COPY.facebook} target="_blank" rel="noreferrer" className={cn('-mr-2 shrink-0 p-2', footerLink)}>
+            <FacebookIcon className="size-5" />
+          </a>
         </div>
       </div>
     </footer>

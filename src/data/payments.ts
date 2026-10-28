@@ -14,7 +14,6 @@ export const NETWORKS: { key: Operator; name: string; logo: string }[] = [
 
 export const PAY_COPY = {
   payWith: 'Pay with mobile money',
-  footer: 'We accept',
   networkLabel: 'Network',
   numberLabel: 'Mobile money number',
   how: 'A prompt pops up on your phone. Enter your PIN to approve.',

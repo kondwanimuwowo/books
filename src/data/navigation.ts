@@ -19,6 +19,7 @@ import {
   UserCircleIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/solid'
+import { CONTACT } from './brand'
 
 // Phones get an app-style tab bar; the native apps will use the same five tabs.
 export const TABS = [
@@ -43,16 +44,40 @@ export const MENU_LINKS = [
   { label: 'School book list', to: '/school-list', icon: ClipboardDocumentListIcon },
 ] as const
 
+// Legal pages are named by slug and take their titles from LEGAL_PAGES; terms and privacy sit in the bottom row.
 export const FOOTER_NAV = [
   {
     title: 'Shop',
     links: [
       { label: 'Zambian authors', to: '/search', search: { zambian: true } },
+      { label: 'Zambia Top 20', to: '/top-20' },
       { label: 'Authors', to: '/authors' },
+      { label: 'Publishers', to: '/publishers' },
       { label: 'Used books', to: '/search', search: { condition: 'used' } },
+      { label: 'School book list', to: '/school-list' },
+    ],
+  },
+  {
+    title: 'Sell',
+    links: [{ label: 'Start selling', to: '/start-selling' }, { legal: 'seller-agreement' }],
+  },
+  {
+    title: 'Help',
+    links: [
+      { label: 'Your orders', to: '/account' },
+      { legal: 'buyer-protection' },
+      { label: 'Email support', href: `mailto:${CONTACT.support}` },
+      { label: 'WhatsApp us', href: `https://wa.me/${CONTACT.phone.replace(/\D/g, '')}`, external: true },
     ],
   },
 ] as const
+
+export const FOOTER_LEGAL = ['terms', 'privacy'] as const
+
+export const FOOTER_COPY = {
+  line: 'Connecting readers with authors, publishers and booksellers in Zambia and beyond.',
+  facebook: 'Kuwala Books on Facebook',
+}
 
 export function accountNav(isSeller: boolean, isAuthor: boolean) {
   return [

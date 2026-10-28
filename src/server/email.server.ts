@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers'
 import { Resend } from 'resend'
+import { CONTACT } from '#/data/brand'
 
 export interface Message {
   to: string
@@ -36,7 +37,7 @@ export async function sendEmail(message: Message) {
   }
   try {
     const resend = new Resend(env.RESEND_API_KEY)
-    await resend.emails.send({ from: env.EMAIL_FROM, to: message.to, subject: message.subject, html: render(message) })
+    await resend.emails.send({ from: env.EMAIL_FROM, replyTo: CONTACT.support, to: message.to, subject: message.subject, html: render(message) })
   } catch (error) {
     console.error('Email send failed', message.subject, error)
   }

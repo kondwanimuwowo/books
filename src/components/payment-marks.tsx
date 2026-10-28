@@ -11,17 +11,13 @@ export function NetworkMark({ network, size = 'md', className }: { network: Oper
   return <img src={n.logo} alt={n.name} width={192} height={192} loading="lazy" className={cn('block shrink-0 object-cover', SIZES[size], className)} />
 }
 
-/** Every network we take, in a row: checkout and the footer. */
-export function PaymentMarks({ size = 'sm', className, monochrome = false, sharpCorners = false }: { size?: keyof typeof SIZES; className?: string; monochrome?: boolean; sharpCorners?: boolean }) {
+/** Every network we take, in a row, for checkout. */
+export function PaymentMarks({ size = 'sm', className }: { size?: keyof typeof SIZES; className?: string }) {
   return (
     <ul className={cn('flex items-center gap-2', className)} aria-label={`We accept ${NETWORKS.map((n) => n.name).join(', ')}`}>
       {NETWORKS.map((n) => (
         <li key={n.key}>
-          <NetworkMark
-            network={n.key}
-            size={size}
-            className={cn(monochrome && 'grayscale opacity-70', sharpCorners && 'rounded-none')}
-          />
+          <NetworkMark network={n.key} size={size} />
         </li>
       ))}
     </ul>
