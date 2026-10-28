@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/16/solid'
 import {
   BuildingLibraryIcon,
+  BuildingStorefrontIcon as StorefrontIcon,
   ClipboardDocumentListIcon,
   HomeIcon,
   MagnifyingGlassIcon,
@@ -35,6 +36,9 @@ export const NO_TAB_ROUTES: readonly string[] = ['/books/$slug', '/_authed/check
 
 // Checkout keeps to the task: no footer to wander off through.
 export const NO_FOOTER_ROUTES: readonly string[] = ['/_authed/checkout']
+
+// Sellers get their own shop in the header and the phone menu, in place of Sell; listing a book is a button there.
+export const MY_SHOP = { label: 'My shop', icon: StorefrontIcon, list: 'List a book', edit: 'Edit shop' } as const
 
 // The phone menu holds what the tabs don't.
 export const MENU_LINKS = [

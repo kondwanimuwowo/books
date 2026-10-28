@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import type { LinkProps } from '@tanstack/react-router'
 import { Bars3Icon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
-import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
+import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, MY_SHOP, TABS } from '#/data/navigation'
 import { CONTACT } from '#/data/brand'
 import { LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
@@ -254,9 +254,15 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
           <Link to="/search" className={cn(navLink, 'hidden sm:inline-flex')}>
             Browse
           </Link>
-          <Link to="/sell" className={cn(navLink, 'hidden sm:inline-flex')}>
-            Sell
-          </Link>
+          {user?.sellerSlug ? (
+            <Link to="/sellers/$slug" params={{ slug: user.sellerSlug }} className={cn(navLink, 'hidden sm:inline-flex')}>
+              {MY_SHOP.label}
+            </Link>
+          ) : (
+            <Link to="/sell" className={cn(navLink, 'hidden sm:inline-flex')}>
+              Sell
+            </Link>
+          )}
           {user?.adminUrl && (
             <a href={user.adminUrl} className={cn(navLink, 'hidden sm:inline-flex')}>
               Admin
@@ -337,15 +343,25 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               <MenuLink to="/search" icon={TABS[1].icon}>
                 Browse
               </MenuLink>
-              <MenuLink to="/sell" icon={TABS[2].icon}>
-                Sell
-              </MenuLink>
+              {!user?.sellerSlug && (
+                <MenuLink to="/sell" icon={TABS[2].icon}>
+                  Sell
+                </MenuLink>
+              )}
               {user && (
                 <MenuLink to="/account" icon={TABS[4].icon}>
                   Your account
                 </MenuLink>
               )}
             </>
+          )}
+          {user?.sellerSlug && (
+            <li>
+              <Link to="/sellers/$slug" params={{ slug: user.sellerSlug }} className={menuItem}>
+                <MY_SHOP.icon className="size-5 shrink-0 text-on-deep-muted" aria-hidden />
+                {MY_SHOP.label}
+              </Link>
+            </li>
           )}
           {MENU_LINKS.map((link) => (
             <MenuLink key={link.to} to={link.to} icon={link.icon}>

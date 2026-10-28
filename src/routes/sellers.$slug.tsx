@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { CalendarIcon, MapPinIcon } from '@heroicons/react/16/solid'
+import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { CalendarIcon, MapPinIcon, PlusIcon } from '@heroicons/react/16/solid'
 import { getSeller } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark } from '#/components/book'
 import { ShareOnWhatsApp } from '#/components/share'
@@ -12,6 +12,7 @@ import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/compon
 import { PhotoFallback } from '#/components/photo-fallback'
 import { RatingMark } from '#/components/reputation'
 import { OFFICIAL_LABEL } from '#/data/onboarding'
+import { MY_SHOP } from '#/data/navigation'
 
 export const Route = createFileRoute('/sellers/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
@@ -35,6 +36,9 @@ export const Route = createFileRoute('/sellers/$slug')({
 
 function SellerPage() {
   const seller = Route.useLoaderData()
+  // The shop's data is publicly cached; who is looking comes from the root loader, which never is.
+  const { user } = useLoaderData({ from: '__root__' })
+  const mine = !!user?.sellerSlug && user.sellerSlug === seller.slug
   const kind = SELLER_KINDS.find((k) => k.value === seller.kind)?.label
   return (
     <div className="page rise py-10">
@@ -58,7 +62,20 @@ function SellerPage() {
         </span>
       </p>
       {seller.bio && <p className="mt-5 max-w-prose leading-relaxed">{seller.bio}</p>}
-      <ShareOnWhatsApp className="mt-5" path={`/sellers/${seller.slug}`} text={SHARE_COPY.shop({ storeName: seller.storeName, inStock: seller.books.length })} />
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        {mine && (
+          <>
+            <Link to="/sell" className="btn btn-primary btn-sm gap-1.5">
+              <PlusIcon className="size-4" aria-hidden />
+              {MY_SHOP.list}
+            </Link>
+            <Link to="/account/shop" className="btn btn-secondary btn-sm">
+              {MY_SHOP.edit}
+            </Link>
+          </>
+        )}
+        <ShareOnWhatsApp path={`/sellers/${seller.slug}`} text={SHARE_COPY.shop({ storeName: seller.storeName, inStock: seller.books.length })} />
+      </div>
       <h2 className="mt-12 mb-6 text-xl">
         {seller.books.length} in stock
       </h2>
