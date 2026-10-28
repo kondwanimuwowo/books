@@ -4,7 +4,7 @@ import { cn } from '#/lib/utils'
 import { useBag } from './providers'
 
 /** Phones only: the five places people go most, always one tap away. */
-export function TabBar({ signedIn }: { signedIn: boolean }) {
+export function TabBar({ signedIn, seller }: { signedIn: boolean; seller: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname })
   const { count, ready } = useBag()
   const items = ready ? count : 0
@@ -14,7 +14,8 @@ export function TabBar({ signedIn }: { signedIn: boolean }) {
         {TABS.map((tab) => {
           const active = tab.match(path)
           const Icon = tab.icon
-          const to = tab.key === 'account' && !signedIn ? '/welcome' : tab.to
+          // Signed out, Account is the way in; not selling yet, Sell explains it first.
+          const to = tab.key === 'account' && !signedIn ? '/welcome' : tab.key === 'sell' && !seller ? '/sell-on-kuwala' : tab.to
           return (
             <li key={tab.key}>
               <Link

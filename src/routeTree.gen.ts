@@ -18,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SchoolListRouteImport } from './routes/school-list'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SellOnKuwalaRouteImport } from './routes/sell-on-kuwala'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as Top20RouteImport } from './routes/top-20'
@@ -105,6 +106,11 @@ const SchoolListRoute = SchoolListRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SellOnKuwalaRoute = SellOnKuwalaRouteImport.update({
+  id: '/sell-on-kuwala',
+  path: '/sell-on-kuwala',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
+  '/sell-on-kuwala': typeof SellOnKuwalaRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
+  '/sell-on-kuwala': typeof SellOnKuwalaRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
@@ -442,6 +450,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
   '/search': typeof SearchRoute
+  '/sell-on-kuwala': typeof SellOnKuwalaRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
@@ -498,6 +507,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/school-list'
     | '/search'
+    | '/sell-on-kuwala'
     | '/signup'
     | '/terms'
     | '/top-20'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/school-list'
     | '/search'
+    | '/sell-on-kuwala'
     | '/signup'
     | '/terms'
     | '/top-20'
@@ -603,6 +614,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/school-list'
     | '/search'
+    | '/sell-on-kuwala'
     | '/signup'
     | '/terms'
     | '/top-20'
@@ -659,6 +671,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SchoolListRoute: typeof SchoolListRoute
   SearchRoute: typeof SearchRoute
+  SellOnKuwalaRoute: typeof SellOnKuwalaRoute
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   Top20Route: typeof Top20Route
@@ -740,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sell-on-kuwala': {
+      id: '/sell-on-kuwala'
+      path: '/sell-on-kuwala'
+      fullPath: '/sell-on-kuwala'
+      preLoaderRoute: typeof SellOnKuwalaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -1156,6 +1176,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SchoolListRoute: SchoolListRoute,
   SearchRoute: SearchRoute,
+  SellOnKuwalaRoute: SellOnKuwalaRoute,
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   Top20Route: Top20Route,

@@ -88,7 +88,7 @@ function RootLayout() {
               <Outlet />
             </main>
             {footer && <SiteFooter />}
-            {tabs && <TabBar signedIn={!!user} />}
+            {tabs && <TabBar signedIn={!!user} seller={!!user?.sellerSlug} />}
             <TermsGate />
             <CookieNotice />
           </div>

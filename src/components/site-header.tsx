@@ -259,7 +259,8 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               {MY_SHOP.label}
             </Link>
           ) : (
-            <Link to="/sell" className={cn(navLink, 'hidden sm:inline-flex')}>
+            // Not selling yet: the page that explains it comes before any sign-in.
+            <Link to="/sell-on-kuwala" className={cn(navLink, 'hidden sm:inline-flex')}>
               Sell
             </Link>
           )}
@@ -344,7 +345,7 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
                 Browse
               </MenuLink>
               {!user?.sellerSlug && (
-                <MenuLink to="/sell" icon={TABS[2].icon}>
+                <MenuLink to="/sell-on-kuwala" icon={TABS[2].icon}>
                   Sell
                 </MenuLink>
               )}

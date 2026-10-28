@@ -80,7 +80,7 @@ function Home() {
             <h2 className="text-xl sm:text-2xl">Books gathering dust?</h2>
             <p className="mt-1 text-muted">Sell them here. Get paid by mobile money.</p>
           </div>
-          <Link to="/sell" className="btn btn-secondary">
+          <Link to="/sell-on-kuwala" className="btn btn-secondary">
             Sell your books
           </Link>
         </section>

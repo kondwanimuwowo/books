@@ -26,7 +26,7 @@ import { CONTACT } from './brand'
 export const TABS = [
   { key: 'home', label: 'Home', to: '/', icon: HomeIcon, match: (path: string) => path === '/' },
   { key: 'browse', label: 'Browse', to: '/search', icon: MagnifyingGlassIcon, match: (path: string) => /^\/(search|authors|publishers|top-20|sellers)(\/|$)/.test(path) },
-  { key: 'sell', label: 'Sell', to: '/sell', icon: PlusCircleIcon, match: (path: string) => /^\/(sell|start-selling)(\/|$)/.test(path) },
+  { key: 'sell', label: 'Sell', to: '/sell', icon: PlusCircleIcon, match: (path: string) => /^\/(sell|start-selling|sell-on-kuwala)(\/|$)/.test(path) },
   { key: 'bag', label: 'Bag', to: '/bag', icon: ShoppingBagIcon, match: (path: string) => path === '/bag' },
   { key: 'account', label: 'Account', to: '/account', icon: UserCircleIcon, match: (path: string) => /^\/(account|orders|login|welcome)(\/|$)/.test(path) },
 ] as const
@@ -63,7 +63,7 @@ export const FOOTER_NAV = [
   },
   {
     title: 'Sell',
-    links: [{ label: 'Start selling', to: '/start-selling' }, { legal: 'seller-agreement' }],
+    links: [{ label: 'Sell on Kuwala', to: '/sell-on-kuwala' }, { legal: 'seller-agreement' }],
   },
   {
     title: 'Help',
