@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { ArrowLeftIcon, CameraIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/react/16/solid'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -18,8 +18,11 @@ import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
 import { OfferSettings, offerSettingsData } from '#/components/seller-forms'
 import { DescriptionField } from '#/components/description-field'
+import { Confetti } from '#/components/confetti'
+import { ShareOnWhatsApp } from '#/components/share'
+import { SHARE_COPY } from '#/data/share'
 import type { OfferSettingsValue } from '#/components/seller-forms'
-import { COMMISSION_RATE, CONDITIONS, FORMATS, LISTING_RULES, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
+import { COMMISSION_RATE, CONDITIONS, FORMATS, LISTED_COPY, LISTING_RULES, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
 import { ListingPhotos } from '#/components/listing-photos'
 import type { ListingPhoto } from '#/components/listing-photos'
 import { instantFee } from '#/data/payouts'
@@ -64,15 +67,77 @@ const optionCard = (selected: boolean) =>
     selected ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
   )
 
+type Published = { slug: string; title: string; authorNames: string | null; coverUrl: string | null; condition: Condition; priceNgwee: number }
+
 function SellPage() {
   const { seller } = Route.useLoaderData()
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [published, setPublished] = useState<Published | null>(null)
 
+  if (published) {
+    return (
+      <Listed
+        listing={published}
+        onAnother={() => {
+          setPublished(null)
+          setSelection(null)
+          window.scrollTo({ top: 0 })
+        }}
+      />
+    )
+  }
   return (
     <div className={cn('page py-10 lg:py-14', selection ? 'max-w-5xl' : 'max-w-3xl')}>
       <p className="eyebrow">{seller.storeName}</p>
       <h1 className="mt-2 text-4xl sm:text-5xl">Sell a book</h1>
-      <div className="mt-8">{selection ? <DetailsStep key={selection.kind === 'existing' ? selection.id : selection.kind} selection={selection} onBack={() => setSelection(null)} onSwitch={setSelection} /> : <FindStep onSelect={setSelection} />}</div>
+      <div className="mt-8">
+        {selection ? (
+          <DetailsStep
+            key={selection.kind === 'existing' ? selection.id : selection.kind}
+            selection={selection}
+            onBack={() => setSelection(null)}
+            onSwitch={setSelection}
+            onPublished={(listing) => {
+              setPublished(listing)
+              window.scrollTo({ top: 0 })
+            }}
+          />
+        ) : (
+          <FindStep onSelect={setSelection} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** After Publish: a short celebration, what went live, and the next step. */
+function Listed({ listing, onAnother }: { listing: Published; onAnother: () => void }) {
+  return (
+    <div className="page relative max-w-md py-12 text-center lg:py-16">
+      <Confetti />
+      <div className="rise">
+        <div className="mx-auto w-32">
+          <BookCover src={listing.coverUrl} title={listing.title} author={listing.authorNames} className="shadow-lg" />
+        </div>
+        <h1 className="mt-8 text-3xl sm:text-4xl">{LISTED_COPY.title}</h1>
+        <p className="mt-2 text-muted">{LISTED_COPY.line(listing.title)}</p>
+        <p className="mt-3 text-sm text-subtle">
+          {conditionLabel(listing.condition)} · {formatMoney(listing.priceNgwee)}
+        </p>
+        <div className="mt-8 space-y-3">
+          <button type="button" className="btn btn-primary w-full" onClick={onAnother}>
+            {LISTED_COPY.another}
+          </button>
+          <Link to="/books/$slug" params={{ slug: listing.slug }} className="btn btn-secondary w-full">
+            {LISTED_COPY.view}
+          </Link>
+          <ShareOnWhatsApp
+            className="w-full"
+            path={`/books/${listing.slug}`}
+            text={SHARE_COPY.book({ title: listing.title, authors: listing.authorNames ?? '', fromNgwee: listing.priceNgwee })}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -292,9 +357,18 @@ const loadTitles = async (query: string) =>
 
 const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher: '', year: '', pages: '', language: 'en', description: '' }
 
-function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; onBack: () => void; onSwitch: (s: Selection) => void }) {
+function DetailsStep({
+  selection,
+  onBack,
+  onSwitch,
+  onPublished,
+}: {
+  selection: Selection
+  onBack: () => void
+  onSwitch: (s: Selection) => void
+  onPublished: (listing: Published) => void
+}) {
   const { categories } = Route.useLoaderData()
-  const navigate = useNavigate()
   const photos = selection.photos
   const [manual, setManual] = useState(selection.kind === 'manual' && selection.prefill ? { ...emptyManual, ...selection.prefill } : emptyManual)
   const [categorySlug, setCategorySlug] = useState('')
@@ -377,7 +451,14 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         photoKeys: copyPhotos.map((p) => p.key),
       },
     })
-    await navigate({ to: '/books/$slug', params: { slug } })
+    onPublished({
+      slug,
+      title: heading.title,
+      authorNames: heading.authorNames,
+      coverUrl: heading.coverUrl ?? cover?.preview ?? null,
+      condition,
+      priceNgwee: Math.round(Number(price) * 100),
+    })
   })
 
   const priceNgwee = Math.round(Number(price) * 100) || 0

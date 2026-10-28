@@ -44,6 +44,14 @@ export const OFFERS_PER_COPY_PER_WEEK = 3
 
 export const MAX_LISTING_PHOTOS = 3
 
+// The moment after Publish: what's live, and the next thing a seller with a stack of books wants to do.
+export const LISTED_COPY = {
+  title: 'Your book is listed',
+  line: (title: string) => `Buyers across Zambia can find ${title} now.`,
+  another: 'List another book',
+  view: 'See your listing',
+} as const
+
 export const PHOTOS_COPY = {
   heading: 'Photos of your copy',
   used: 'Up to three: the front, the back and any wear. Buyers trust what they can see. At least one.',
