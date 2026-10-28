@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { listings, orderItems, orders, payments, profiles, refunds, sellerOrders, sellers } from '#/db/schema'
-import { FULFILMENT_COPY, MAX_REFUND_ATTEMPTS, SHIP_REMINDER_DAYS, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
+import { FULFILMENT_COPY, MAX_REFUND_ATTEMPTS, SHIP_REMINDER_HOUR, SHIP_REMINDER_MIN_HOURS, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
 import { notify } from './notify.server'
@@ -89,18 +89,32 @@ export async function settleRefunds(db: Db) {
   return open.length + failed.length
 }
 
-/** Reminds sellers of paid parcels still not shipped after a few days. */
+const LUSAKA_OFFSET_HOURS = 2
+
+/** Start of today in Lusaka, as a UTC instant. */
+function lusakaToday(now = new Date()) {
+  const local = new Date(now.getTime() + LUSAKA_OFFSET_HOURS * 3_600_000)
+  return { start: new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - LUSAKA_OFFSET_HOURS * 3_600_000), hour: local.getUTCHours() }
+}
+
+/** One reminder per parcel each morning until it's shipped, counting down to the cancellation day. */
 export async function remindToShip(db: Db) {
+  const today = lusakaToday()
+  if (today.hour < SHIP_REMINDER_HOUR) return 0
   const due = await db.execute<{ number: string; email: string; paid_at: Date }>(sql`
     update seller_orders so set ship_reminder_at = now()
     from orders o, sellers s, profiles p
     where o.id = so.order_id and s.id = so.seller_id and p.id = s.profile_id
-      and so.status = 'to_ship' and so.ship_reminder_at is null
-      and o.paid_at < now() - make_interval(days => ${SHIP_REMINDER_DAYS})
+      and so.status = 'to_ship'
+      and (so.ship_reminder_at is null or so.ship_reminder_at < ${today.start.toISOString()}::timestamptz)
+      and o.paid_at < now() - make_interval(hours => ${SHIP_REMINDER_MIN_HOURS})
+      and o.paid_at > now() - make_interval(days => ${SHIP_WITHIN_DAYS})
     returning o.number, p.email, o.paid_at`)
   for (const row of due) {
-    const day = new Date(new Date(row.paid_at).getTime() + SHIP_WITHIN_DAYS * 86_400_000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
-    await notify('selling', { to: row.email, subject: FULFILMENT_COPY.reminderSubject(row.number), lines: [...FULFILMENT_COPY.reminderLines(day)], action: { label: 'Your sales', path: '/account/sales' } })
+    const deadline = new Date(new Date(row.paid_at).getTime() + SHIP_WITHIN_DAYS * 86_400_000)
+    const daysLeft = Math.max(1, Math.ceil((deadline.getTime() - Date.now()) / 86_400_000))
+    const day = deadline.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+    await notify('selling', { to: row.email, subject: FULFILMENT_COPY.reminderSubject(row.number, daysLeft), lines: [...FULFILMENT_COPY.reminderLines(day, daysLeft)], action: { label: 'Your sales', path: '/account/sales' } })
   }
   return due.length
 }

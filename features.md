@@ -31,7 +31,7 @@ What's live, what's waiting, and what's next. Last updated 27 October 2026.
 - AI-researched author pages (admin): web research, sources shown, admin publishes, invite by email or WhatsApp with a single-use link and opt-out.
 
 ### Orders and refunds
-- Sellers are reminded on day 3 to ship; a parcel not shipped within 5 days of payment is cancelled, the buyer refunded in full and the listing paused.
+- Sellers get a ship reminder every morning (from 08:00 Lusaka) until the parcel is shipped; a parcel not shipped within 5 days of payment is cancelled, the buyer refunded in full and the listing paused.
 - Proof of shipping: Platinum, Mercury and bus parcels need a photo of the courier receipt (private, for admin); Yango needs the trip link.
 - Refunds go back to the buyer's mobile money automatically, retried up to 3 times; card refunds wait in admin's Refunds list to be done in the Lenco dashboard.
 

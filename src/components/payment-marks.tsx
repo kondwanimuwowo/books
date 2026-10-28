@@ -12,12 +12,12 @@ export function NetworkMark({ network, size = 'md', className }: { network: Oper
 }
 
 /** Every network we take, in a row: checkout and the footer. */
-export function PaymentMarks({ size = 'sm', className }: { size?: keyof typeof SIZES; className?: string }) {
+export function PaymentMarks({ size = 'sm', className, monochrome = false }: { size?: keyof typeof SIZES; className?: string; monochrome?: boolean }) {
   return (
     <ul className={cn('flex items-center gap-2', className)} aria-label={`We accept ${NETWORKS.map((n) => n.name).join(', ')}`}>
       {NETWORKS.map((n) => (
         <li key={n.key}>
-          <NetworkMark network={n.key} size={size} />
+          <NetworkMark network={n.key} size={size} className={monochrome ? 'grayscale opacity-70' : undefined} />
         </li>
       ))}
     </ul>

@@ -3,7 +3,7 @@
 // refunds, disputes, data), update the text here and LEGAL_UPDATED in the same change.
 import { CONDITIONS, COMMISSION_RATE, MAX_LISTING_PHOTOS, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS } from './listing-options'
 import { AUTO_RELEASE_DAYS, PICKUP_RELEASE_DAYS } from './shipping'
-import { BUS_PARCEL_GRACE_DAYS, CLAIM_FLAG_AT, CLAIM_WINDOW_DAYS, DECISION_WORKING_DAYS, DISPUTE_REPLY_HOURS, MAX_REFUND_ATTEMPTS, SHIP_REMINDER_DAYS, SHIP_WITHIN_DAYS } from './fulfilment'
+import { BUS_PARCEL_GRACE_DAYS, CLAIM_FLAG_AT, CLAIM_WINDOW_DAYS, DECISION_WORKING_DAYS, DISPUTE_REPLY_HOURS, MAX_REFUND_ATTEMPTS, SHIP_WITHIN_DAYS } from './fulfilment'
 import { INSTANT_MIN_NGWEE, MAX_WAIT_DAYS, WEEKLY_MIN_NGWEE, instantFee } from './payouts'
 import { BLIND_DAYS, RATING_WINDOW_DAYS } from './reputation'
 import { formatMoney } from '#/lib/money'
@@ -251,7 +251,7 @@ const sellerAgreement: LegalPage = {
       blocks: [
         {
           list: [
-            `Ship within ${days(SHIP_WITHIN_DAYS)} of the buyer’s payment. We remind you after ${days(SHIP_REMINDER_DAYS)}. If it isn’t marked as shipped in time, the order is cancelled, the buyer is refunded, you aren’t paid for it, and the listing is paused.`,
+            `Ship within ${days(SHIP_WITHIN_DAYS)} of the buyer’s payment. We remind you by email every morning until it’s marked as shipped. If it isn’t shipped in time, the order is cancelled, the buyer is refunded, you aren’t paid for it, and the listing is paused.`,
             'When you mark a parcel as shipped with Platinum, Mercury or a bus, add a photo of the courier’s receipt. For Yango, add the trip link. This is your proof if a buyer says it never arrived.',
             'Pickup from you can be by the buyer or someone they send, using the name and number on the order.',
           ],

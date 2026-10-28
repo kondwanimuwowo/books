@@ -405,14 +405,9 @@ const footerLink = 'text-on-deep-muted no-underline hover:text-on-accent'
 export function SiteFooter() {
   return (
     <footer className="band mt-14 sm:mt-20">
-      {/* Phones: the two link groups side by side, so the footer is a glance rather than a scroll. */}
-      <div className="page grid grid-cols-2 gap-x-6 gap-y-8 py-10 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-10 sm:py-12">
-        <div className="col-span-2 flex flex-col items-start gap-6 sm:col-span-1">
+      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-10 sm:py-12">
+        <div className="col-span-2 sm:col-span-1">
           <Logo tone="inverse" className="h-5" />
-          <div className="space-y-2">
-            <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
-            <PaymentMarks size="sm" />
-          </div>
         </div>
         {FOOTER_NAV.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">
@@ -429,21 +424,29 @@ export function SiteFooter() {
           </nav>
         ))}
       </div>
-      <div className="page flex flex-wrap items-center justify-between gap-3 border-t border-on-deep-muted/20 py-5 text-xs text-on-deep-muted">
-        <p>
-          &copy; {new Date().getFullYear()} Kuwala Books
-          <RateNote usdOnly className="mt-1 block" />
-        </p>
-        <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
-          {LEGAL_ORDER.map((page) => (
-            <Link key={page} to="/legal/$page" params={{ page }} className={footerLink}>
-              {LEGAL_PAGES[page].title}
-            </Link>
-          ))}
-          <button type="button" onClick={openCookieSettings} className={footerLink}>
-            {COOKIE_COPY.settings}
-          </button>
-        </nav>
+      <div className="border-t border-on-deep-muted/20">
+        <div className="page flex flex-col gap-5 py-5 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-4 sm:justify-start">
+            <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
+            <PaymentMarks size="sm" monochrome />
+          </div>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <p>
+              &copy; {new Date().getFullYear()} Kuwala Books
+              <RateNote usdOnly className="mt-1 block" />
+            </p>
+            <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2 sm:justify-end">
+              {LEGAL_ORDER.map((page) => (
+                <Link key={page} to="/legal/$page" params={{ page }} className={footerLink}>
+                  {LEGAL_PAGES[page].title}
+                </Link>
+              ))}
+              <button type="button" onClick={openCookieSettings} className={footerLink}>
+                {COOKIE_COPY.settings}
+              </button>
+            </nav>
+          </div>
+        </div>
       </div>
     </footer>
   )

@@ -4,8 +4,10 @@ import type { ShippingMethod } from './shipping'
 
 /** A paid parcel not shipped by then is cancelled and the buyer refunded in full. */
 export const SHIP_WITHIN_DAYS = 5
-/** The seller is reminded this long after payment. */
-export const SHIP_REMINDER_DAYS = 3
+/** Sellers get one reminder each morning (Lusaka time) until the parcel is shipped, starting the morning after payment. */
+export const SHIP_REMINDER_HOUR = 8
+/** A parcel paid this recently waits for the next morning's reminder. */
+export const SHIP_REMINDER_MIN_HOURS = 12
 /** Automatic refunds that fail this often go to admin to send by hand. */
 export const MAX_REFUND_ATTEMPTS = 3
 
@@ -23,9 +25,10 @@ export const FULFILMENT_COPY = {
   proofHint: 'The courier’s receipt or waybill. Only Kuwala sees it, if there’s ever a problem.',
   proofRequired: 'Add a photo of the courier’s receipt',
   shipBy: (day: string) => `Ship by ${day}, or the order is refunded to the buyer.`,
-  reminderSubject: (number: string) => `Ship order ${number} by tomorrow`,
-  reminderLines: (day: string) => [
-    `A buyer paid for books from your shop ${SHIP_REMINDER_DAYS} days ago and they haven’t been marked as shipped.`,
+  reminderSubject: (number: string, daysLeft: number) =>
+    daysLeft <= 1 ? `Last day: ship order ${number} today` : `Ship order ${number}: ${daysLeft} days left`,
+  reminderLines: (day: string, daysLeft: number) => [
+    daysLeft <= 1 ? 'Today is the last day to ship this order.' : `A buyer is waiting for books from your shop. You have ${daysLeft} days left to ship them.`,
     `Ship them and mark them shipped by ${day}. After that the order is cancelled and the buyer refunded.`,
   ],
   cancelledBuyerSubject: (number: string) => `Refund for order ${number}`,
