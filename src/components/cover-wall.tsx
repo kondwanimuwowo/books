@@ -4,7 +4,7 @@ import { cn } from '#/lib/utils'
 
 // How far each spot closes the gap to what it follows, per 60fps frame. The clear spot trails the pointer and two
 // fainter ones trail it in turn, so a quick flick leaves a short soft trail that settles back into one circle.
-const FOLLOW = [0.1, 0.065, 0.04]
+const FOLLOW = [0.07, 0.045, 0.028]
 const SETTLED_PX = 0.4
 
 /**
