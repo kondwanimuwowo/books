@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import { deleteCookie, getCookie } from '@tanstack/react-start/server'
 import { getDb } from '#/db/client.server'
 import { adoptProviderName } from '#/server/members.server'
+import { OAUTH_NEXT_COOKIE } from '#/server/session.server'
 import { getSupabase } from '#/server/supabase.server'
 
 // Plain Response (not Response.redirect) so the session cookies from the exchange can be appended.
@@ -17,7 +19,9 @@ export const Route = createFileRoute('/auth/callback')({
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url)
-        const next = url.searchParams.get('next') ?? '/'
+        // Email links carry ?next=; Google sign-in left it in a cookie.
+        const next = url.searchParams.get('next') ?? getCookie(OAUTH_NEXT_COOKIE) ?? '/'
+        if (getCookie(OAUTH_NEXT_COOKIE)) deleteCookie(OAUTH_NEXT_COOKIE, { path: '/auth' })
         const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/'
         const tokenHash = url.searchParams.get('token_hash')
         const type = url.searchParams.get('type') as EmailOtpType | null

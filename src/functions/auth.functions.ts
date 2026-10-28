@@ -2,13 +2,14 @@ import { createServerFn } from '@tanstack/react-start'
 import { env } from 'cloudflare:workers'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { getRequest } from '@tanstack/react-start/server'
+import { getRequest, setCookie } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { consents, profiles } from '#/db/schema'
 import { TERMS_VERSION } from '#/data/legal'
 import { optionalUserMiddleware, requireUserMiddleware } from '#/server/auth'
 import { getSupabase } from '#/server/supabase.server'
 import { AppError } from '#/server/errors.server'
+import { OAUTH_NEXT_COOKIE } from '#/server/session.server'
 
 // Safe in-app paths only, so ?next= can't bounce people to another site.
 const nextPath = z
@@ -65,11 +66,11 @@ export const signIn = createServerFn({ method: 'POST' })
 export const signInWithGoogle = createServerFn({ method: 'POST' })
   .validator(z.object({ next: nextPath }))
   .handler(async ({ data }) => {
-    const callback = new URL('/auth/callback', env.APP_ORIGIN)
-    callback.searchParams.set('next', data.next ?? '/')
+    // The bare callback URL, so it matches Supabase's redirect allowlist exactly; where to go next waits in a cookie.
+    setCookie(OAUTH_NEXT_COOKIE, data.next ?? '/', { path: '/auth', maxAge: 600, httpOnly: true, sameSite: 'lax', secure: env.APP_ORIGIN.startsWith('https') })
     const { data: result, error } = await getSupabase().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: callback.toString(), skipBrowserRedirect: true },
+      options: { redirectTo: new URL('/auth/callback', env.APP_ORIGIN).toString(), skipBrowserRedirect: true },
     })
     if (error || !result.url) throw new AppError('Google sign-in isn’t available right now. Use your email instead.')
     return { url: result.url }

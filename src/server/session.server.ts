@@ -35,3 +35,6 @@ export function readUser(): Promise<SessionUser | null> {
   }
   return user
 }
+
+/** Where a Google sign-in returns to, kept between leaving for Google and /auth/callback. */
+export const OAUTH_NEXT_COOKIE = 'kuwala_oauth_next'
