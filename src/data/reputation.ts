@@ -39,6 +39,7 @@ export const REMINDER_UNTIL_DAYS = 14
 
 export const REVIEW_COPY = {
   heading: 'Reviews',
+  formerMember: 'Former member',
   write: (title: string) => `Review ${title}`,
   placeholder: 'What did you think? No spoilers in the first line.',
   verified: 'Verified purchase',

@@ -11,7 +11,7 @@ import { COOKIE_CATEGORIES, OPTIONAL_CATEGORIES } from './cookies'
 import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { CONTACT } from './brand'
 
-export const LEGAL_UPDATED = '2026-10-27'
+export const LEGAL_UPDATED = '2026-10-28'
 /**
  * The version of the terms people tick to accept. Bump it only for a material change (new obligations, fees,
  * liability): everyone signed in is then asked to accept again. Wording and number fixes don't need it.
@@ -61,6 +61,7 @@ const terms: LegalPage = {
             'You need an account to buy, sell, make offers, review or rate. Every account starts as a reader account.',
             'Give your real name and a phone number you use. Keep your password to yourself; you are responsible for what happens on your account.',
             'You must be 18 or older to sell, or have a parent or guardian’s permission.',
+            'You can delete your account any time under Settings, once nothing you bought or sold is still on its way or waiting to be paid.',
           ],
         },
       ],
@@ -311,7 +312,7 @@ const privacy: LegalPage = {
       blocks: [
         {
           list: [
-            'Account details: your name, email address and password (stored only as a secure hash by our sign-in provider).',
+            'Account details: your name, email address and password (stored only as a secure hash by our sign-in provider). If you sign in with Google, Google gives us your name and email address instead of a password.',
             'For orders: the name, phone number, town and address for delivery, and what you bought.',
             'For sellers: shop details, photos, and the mobile money number and registered name you are paid to.',
             'For author verification: your legal name, a photo of your NRC or passport and a photo with your book, kept privately and deleted once we decide.',
@@ -362,7 +363,7 @@ const privacy: LegalPage = {
           list: [
             'Order records are kept as long as the law requires for business records.',
             'Verification documents are deleted as soon as we decide.',
-            'If you ask us to close your account, we delete your personal details except what we must keep for orders and the law.',
+            'When you delete your account under Settings, we remove your personal details straight away. Order and payment records stay, no longer linked to you, as long as the law requires. Your book reviews stay up as from a former member.',
           ],
         },
       ],

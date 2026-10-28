@@ -5,6 +5,8 @@ import { Alert, useAction } from '#/components/form'
 import { Placeholder, RowShapes } from '#/components/placeholder'
 import { formatMoney } from '#/lib/money'
 import { formatDate } from '#/lib/utils'
+import { DELETED_ACCOUNT } from '#/data/admin'
+import { FULFILMENT_COPY } from '#/data/fulfilment'
 
 export const Route = createFileRoute('/admin/_shell/refunds')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading refunds" shapes={<RowShapes cover={false} />} />,
@@ -59,10 +61,10 @@ function RefundRow({ refund: r }: { refund: Refund }) {
           {formatMoney(r.amountNgwee)} <StatusPill label={status.label} tone={status.tone} />
         </p>
         <p className="text-muted">
-          {r.orderNumber} · {r.storeName} · {REASON[r.reason]} · {formatDate(r.createdAt)}
+          {r.orderNumber} · {r.storeName ?? FULFILMENT_COPY.closedShop} · {REASON[r.reason]} · {formatDate(r.createdAt)}
         </p>
         <p className="text-subtle">
-          {r.buyerEmail}
+          {r.buyerEmail ?? <em>{DELETED_ACCOUNT}</em>}
           {r.phone && ` · to ${r.phone}`}
           {r.attempts > 1 && ` · ${r.attempts} attempts`}
         </p>

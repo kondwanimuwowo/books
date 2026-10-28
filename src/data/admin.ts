@@ -14,3 +14,6 @@ export const ADMIN_NAV = [
   { to: '/admin/publishers', label: 'Publishers', icon: BuildingLibraryIcon, exact: false },
   { to: '/admin/delivery', label: 'Delivery', icon: TruckIcon, exact: false },
 ] as const
+
+// An order or refund whose buyer has since deleted their account.
+export const DELETED_ACCOUNT = 'Deleted account'

@@ -21,6 +21,8 @@ export const SHIP_FORM: Partial<Record<ShippingMethod, { label: string; placehol
 export const SHIP_FORM_DEFAULT = { label: 'Receipt or waybill number', placeholder: 'Platinum waybill 12345, arriving Thursday' }
 
 export const FULFILMENT_COPY = {
+  // A shop whose owner deleted their account; only finished parcels can be left behind like this.
+  closedShop: 'Closed shop',
   proofLabel: 'Photo of the receipt',
   proofHint: 'The courier’s receipt or waybill. Only Kuwala sees it, if there’s ever a problem.',
   proofRequired: 'Add a photo of the courier’s receipt',

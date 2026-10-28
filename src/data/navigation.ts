@@ -4,7 +4,7 @@ import {
   BanknotesIcon,
   BookOpenIcon,
   BuildingStorefrontIcon,
-  KeyIcon,
+  Cog6ToothIcon,
   PencilSquareIcon,
   TagIcon,
 } from '@heroicons/react/16/solid'
@@ -93,7 +93,7 @@ export function accountNav(isSeller: boolean, isAuthor: boolean) {
     isSeller
       ? ({ to: '/account/shop', label: 'Shop and payouts', exact: false, icon: BuildingStorefrontIcon } as const)
       : ({ to: '/start-selling', label: 'Start selling', exact: false, icon: BuildingStorefrontIcon } as const),
-    { to: '/account/password', label: 'Password', exact: false, icon: KeyIcon },
+    { to: '/account/settings', label: 'Settings', exact: false, icon: Cog6ToothIcon },
   ] as const
 }
 

@@ -90,6 +90,9 @@ export const ONBOARDING = {
 } as const
 
 /** Shown on the account page beside the name. */
+// Kuwala Books' own shop, in place of Verified.
+export const OFFICIAL_LABEL = 'Official'
+
 export const VERIFICATION_LABELS = {
   pending: 'In review',
   approved: 'Verified',

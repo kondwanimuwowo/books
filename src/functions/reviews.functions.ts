@@ -27,7 +27,7 @@ export const listReviews = createServerFn({ method: 'GET' })
         book: { slug: books.slug, title: books.title },
       })
       .from(reviews)
-      .innerJoin(profiles, eq(profiles.id, reviews.profileId))
+      .leftJoin(profiles, eq(profiles.id, reviews.profileId))
       .innerJoin(books, eq(books.id, reviews.bookId))
       .orderBy(desc(reviews.createdAt))
       .limit(200)

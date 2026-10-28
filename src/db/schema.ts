@@ -181,6 +181,8 @@ export const sellers = pgTable(
     town: text('town').notNull(),
     province: text('province').notNull(),
     verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    // Run by Kuwala Books itself, shown as Official instead of Verified. Set by hand in the database, never by a seller.
+    official: boolean('official').notNull().default(false),
     payoutMethod: payoutMethod('payout_method'),
     payoutPhone: text('payout_phone'),
     payoutOperator: momoOperator('payout_operator'),
@@ -481,9 +483,8 @@ export const orders = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     number: text('number').notNull(),
-    buyerId: uuid('buyer_id')
-      .notNull()
-      .references(() => profiles.id),
+    // Null once the buyer has deleted their account; the order itself is kept for the records.
+    buyerId: uuid('buyer_id').references(() => profiles.id, { onDelete: 'set null' }),
     status: orderStatus('status').notNull().default('pending_payment'),
     subtotalNgwee: integer('subtotal_ngwee').notNull(),
     shippingNgwee: integer('shipping_ngwee').notNull(),
@@ -511,9 +512,8 @@ export const sellerOrders = pgTable(
     orderId: uuid('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    sellerId: uuid('seller_id')
-      .notNull()
-      .references(() => sellers.id),
+    // Null once the seller has deleted their account (only possible with nothing left to ship or pay).
+    sellerId: uuid('seller_id').references(() => sellers.id, { onDelete: 'set null' }),
     status: sellerOrderStatus('status').notNull().default('awaiting_payment'),
     shippingMethod: shippingMethod('shipping_method').notNull(),
     subtotalNgwee: integer('subtotal_ngwee').notNull(),
@@ -644,9 +644,8 @@ export const reviews = pgTable(
     bookId: uuid('book_id')
       .notNull()
       .references(() => books.id, { onDelete: 'cascade' }),
-    profileId: uuid('profile_id')
-      .notNull()
-      .references(() => profiles.id, { onDelete: 'cascade' }),
+    // Null once the reader has deleted their account: the review stays, shown as from a former member.
+    profileId: uuid('profile_id').references(() => profiles.id, { onDelete: 'set null' }),
     // The delivered parcel that makes it a verified purchase.
     sellerOrderId: uuid('seller_order_id').references(() => sellerOrders.id, { onDelete: 'set null' }),
     score: integer('score').notNull(),
@@ -734,9 +733,7 @@ export const payouts = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     // Only set on per_order payouts; batched ones are found through seller_orders.payout_id.
     sellerOrderId: uuid('seller_order_id').references(() => sellerOrders.id),
-    sellerId: uuid('seller_id')
-      .notNull()
-      .references(() => sellers.id),
+    sellerId: uuid('seller_id').references(() => sellers.id, { onDelete: 'set null' }),
     kind: payoutKind('kind').notNull().default('per_order'),
     // What reached the seller, after any fee.
     amountNgwee: integer('amount_ngwee').notNull(),

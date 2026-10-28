@@ -207,6 +207,7 @@ export async function getBookBySlug(db: Db, slug: string) {
           town: sellers.town,
           province: sellers.province,
           verified: sql<boolean>`${sellers.verifiedAt} is not null`,
+          official: sellers.official,
           deliveryMethods: sellers.deliveryMethods,
           freeDeliveryOverNgwee: sellers.freeDeliveryOverNgwee,
         },
@@ -267,17 +268,18 @@ async function getBookReviews(db: Db, bookId: string) {
         verified: sql<boolean>`${reviews.sellerOrderId} is not null`,
       })
       .from(reviews)
-      .innerJoin(profiles, eq(profiles.id, reviews.profileId))
+      .leftJoin(profiles, eq(profiles.id, reviews.profileId))
       .where(visible)
       .orderBy(sql`${reviews.body} is null`, desc(reviews.createdAt))
       .limit(REVIEW_LIMITS.shown),
     db.select({ average: sql<number | null>`round(avg(${reviews.score}), 1)::float`, count: sql<number>`count(*)::int` }).from(reviews).where(visible),
   ])
-  const standings = await readerStandings(db, rows.map((r) => r.profileId))
+  const standings = await readerStandings(db, rows.flatMap((r) => (r.profileId ? [r.profileId] : [])))
   return {
     average: summary?.count ? summary.average : null,
     count: summary?.count ?? 0,
-    items: rows.map(({ profileId, name, ...r }) => ({ ...r, reviewer: name.split(' ')[0], badge: standings.get(profileId)?.badge ?? null })),
+    // A null reviewer is a deleted account; the page says so.
+    items: rows.map(({ profileId, name, ...r }) => ({ ...r, reviewer: name ? name.split(' ')[0] : null, badge: profileId ? (standings.get(profileId)?.badge ?? null) : null })),
   }
 }
 
@@ -428,6 +430,7 @@ export async function getSellerBySlug(db: Db, slug: string) {
       town: sellers.town,
       province: sellers.province,
       verified: sql<boolean>`${sellers.verifiedAt} is not null`,
+      official: sellers.official,
       createdAt: sellers.createdAt,
     })
     .from(sellers)

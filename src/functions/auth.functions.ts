@@ -98,7 +98,7 @@ export const requestPasswordReset = createServerFn({ method: 'POST' })
   .validator(z.object({ email: z.string().trim().email() }))
   .handler(async ({ data }) => {
     const callback = new URL('/auth/callback', env.APP_ORIGIN)
-    callback.searchParams.set('next', '/account/password')
+    callback.searchParams.set('next', '/account/settings')
     // Same response whether or not the email exists.
     await getSupabase().auth.resetPasswordForEmail(data.email, { redirectTo: callback.toString() })
     return { ok: true }

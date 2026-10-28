@@ -102,7 +102,7 @@ async function settle(db: Db, payoutId: string, status: 'paid' | 'failed' | 'pro
     .returning({ amountNgwee: payouts.amountNgwee, sellerId: payouts.sellerId })
   if (status === 'paid') await db.update(sellerOrders).set({ payoutStatus: 'paid' }).where(eq(sellerOrders.payoutId, payoutId))
   if (status === 'failed') await giveBack(db, payoutId)
-  if (status === 'paid' && before?.status !== 'paid' && payout) await notifyPayoutSent(db, payout.sellerId, payout.amountNgwee)
+  if (status === 'paid' && before?.status !== 'paid' && payout?.sellerId) await notifyPayoutSent(db, payout.sellerId, payout.amountNgwee)
 }
 
 async function notifyPayoutSent(db: Db, sellerId: string, amountNgwee: number) {

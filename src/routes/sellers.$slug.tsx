@@ -11,6 +11,7 @@ import { shopFallback } from '#/data/brand'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
 import { RatingMark } from '#/components/reputation'
+import { OFFICIAL_LABEL } from '#/data/onboarding'
 
 export const Route = createFileRoute('/sellers/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading shop" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />,
@@ -45,7 +46,7 @@ function SellerPage() {
         </div>
       </div>
       <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-        {seller.verified && <VerifiedMark />}
+        {seller.official ? <VerifiedMark label={OFFICIAL_LABEL} /> : seller.verified && <VerifiedMark />}
         <RatingMark rating={seller.rating} />
         <span className="inline-flex items-center gap-1">
           <MapPinIcon className="size-3.5" aria-hidden />

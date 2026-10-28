@@ -52,7 +52,7 @@ function ReviewRow({ review: r }: { review: Review }) {
           {r.book.title}
         </a>
         <span className="text-subtle">
-          {r.reviewer} · {formatDate(r.createdAt)}
+          {r.reviewer ?? <em>{REVIEW_COPY.formerMember}</em>} · {formatDate(r.createdAt)}
         </span>
         {r.hidden && <StatusPill label={REVIEW_COPY.hidden} tone="bg-sunken text-muted" />}
       </div>

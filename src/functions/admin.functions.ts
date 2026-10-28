@@ -436,7 +436,7 @@ export const listRecentOrders = createServerFn({ method: 'GET' })
         buyerEmail: profiles.email,
       })
       .from(orders)
-      .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+      .leftJoin(profiles, eq(profiles.id, orders.buyerId))
       .where(data.unpaid ? eq(orders.status, 'pending_payment') : ne(orders.status, 'pending_payment'))
       .orderBy(desc(orders.createdAt))
       .limit(50)
@@ -452,7 +452,7 @@ export const listRecentOrders = createServerFn({ method: 'GET' })
             payoutNgwee: sellerOrders.payoutNgwee,
           })
           .from(sellerOrders)
-          .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+          .leftJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
           .where(
             inArray(
               sellerOrders.orderId,
@@ -474,6 +474,7 @@ export const retryPayout = createServerFn({ method: 'POST' })
       .where(and(eq(sellerOrders.id, data.sellerOrderId), inArray(sellerOrders.payoutStatus, ['failed', 'released'])))
       .returning({ sellerId: sellerOrders.sellerId })
     if (!row) throw new AppError('This payout is not waiting or failed')
+    if (!row.sellerId) throw new AppError('This shop has been deleted')
     // Admin retries are free, like a weekly payout, and take the seller's whole balance with them.
     const result = await payOutSeller(db, row.sellerId, 'weekly')
     if (result?.status === 'failed') throw new AppError('Lenco refused the transfer again. Check the seller’s number.')
@@ -655,8 +656,8 @@ export const listRefunds = createServerFn({ method: 'GET' })
       .from(refunds)
       .innerJoin(sellerOrders, eq(sellerOrders.id, refunds.sellerOrderId))
       .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
-      .innerJoin(profiles, eq(profiles.id, orders.buyerId))
-      .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+      .leftJoin(profiles, eq(profiles.id, orders.buyerId))
+      .leftJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
       // What needs a person first: card refunds to send by hand, then anything still moving.
       .orderBy(sql`${refunds.status} = 'manual' desc`, sql`${refunds.status} in ('processing', 'failed') desc`, desc(refunds.createdAt))
       .limit(100)

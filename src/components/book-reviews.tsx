@@ -8,7 +8,7 @@ interface Review {
   score: number
   body: string | null
   createdAt: Date | string
-  reviewer: string
+  reviewer: string | null
   badge: string | null
   verified: boolean
 }
@@ -39,7 +39,7 @@ export function BookReviews({ slug, title, reviews }: { slug: string; title: str
                   <StarIcon key={n} className={cn('size-4', n <= r.score ? 'text-gold' : 'text-line-strong')} aria-hidden />
                 ))}
               </span>
-              <span className="font-medium">{r.reviewer}</span>
+              {r.reviewer ? <span className="font-medium">{r.reviewer}</span> : <span className="text-muted italic">{REVIEW_COPY.formerMember}</span>}
               {r.badge && <span className="text-xs text-subtle">{r.badge}</span>}
               {r.verified && (
                 <span className="inline-flex items-center gap-1 text-xs text-success">
@@ -54,7 +54,7 @@ export function BookReviews({ slug, title, reviews }: { slug: string; title: str
               <ShareOnWhatsApp
                 className="mt-2"
                 path={`/books/${slug}#review-${r.id}`}
-                text={`“${r.body.length > 140 ? `${r.body.slice(0, 140).trimEnd()}…` : r.body}” ${r.reviewer} on ${title}, Kuwala Books`}
+                text={`“${r.body.length > 140 ? `${r.body.slice(0, 140).trimEnd()}…` : r.body}” ${r.reviewer ?? REVIEW_COPY.formerMember} on ${title}, Kuwala Books`}
               />
             )}
           </li>

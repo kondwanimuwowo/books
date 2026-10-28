@@ -36,10 +36,12 @@ export async function loadMember(db: Db, user: SessionUser) {
     .leftJoin(sellers, eq(sellers.profileId, profiles.id))
     .where(eq(profiles.id, user.id))
     .limit(1)
+  // A token outliving its deleted account (they last up to an hour): treat it as signed out.
+  if (!row) return null
   return {
     id: user.id,
     email: user.email,
-    displayName: row?.displayName ?? user.email,
+    displayName: row.displayName,
     isAdmin: row?.isAdmin ?? false,
     // Admin runs on its own host with its own sign-in.
     adminUrl: row?.isAdmin ? (env.ADMIN_ORIGIN ?? '/admin') : null,

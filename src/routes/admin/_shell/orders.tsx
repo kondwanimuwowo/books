@@ -5,6 +5,8 @@ import { Empty, PageHeader, StatusPill } from '#/components/admin'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
 import { PAYOUT_STATUS, SELLER_ORDER_STATUS } from '#/data/statuses'
+import { DELETED_ACCOUNT } from '#/data/admin'
+import { FULFILMENT_COPY } from '#/data/fulfilment'
 import { cn, formatDate } from '#/lib/utils'
 import { Placeholder, RowShapes } from '#/components/placeholder'
 
@@ -65,7 +67,7 @@ function OrderRow({ order: o }: { order: Order }) {
         <Price ngwee={o.totalNgwee} className="font-medium" />
       </div>
       <p className="text-sm text-muted">
-        {o.buyerName}, {o.shipTown} · {o.buyerEmail}
+        {o.buyerName}, {o.shipTown} · {o.buyerEmail ?? <em>{DELETED_ACCOUNT}</em>}
       </p>
       <ul className="mt-3 divide-y divide-line border-t border-line">
         {o.parts.map((p) => (
@@ -87,7 +89,7 @@ function PartRow({ part: p }: { part: Order['parts'][number] }) {
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
-      <span className="font-medium">{p.storeName}</span>
+      <span className="font-medium">{p.storeName ?? FULFILMENT_COPY.closedShop}</span>
       <span className="flex flex-wrap items-center gap-2">
         <StatusPill label={status.label} tone={status.tone} />
         <StatusPill label={payout.label} tone={payout.tone} />

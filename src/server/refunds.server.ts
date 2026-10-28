@@ -142,13 +142,15 @@ export async function cancelUnshipped(db: Db) {
     const refund = await refundParcel(db, id, 'not_shipped')
     await completeOrderIfSettled(db, part.orderId)
 
-    const [who] = await db
-      .select({ number: orders.number, buyerEmail: profiles.email, store: sellers.storeName, sellerProfileId: sellers.profileId })
-      .from(orders)
-      .innerJoin(profiles, eq(profiles.id, orders.buyerId))
-      .innerJoin(sellers, eq(sellers.id, part.sellerId))
-      .where(eq(orders.id, part.orderId))
-      .limit(1)
+    const [who] = part.sellerId
+      ? await db
+          .select({ number: orders.number, buyerEmail: profiles.email, store: sellers.storeName, sellerProfileId: sellers.profileId })
+          .from(orders)
+          .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+          .innerJoin(sellers, eq(sellers.id, part.sellerId))
+          .where(eq(orders.id, part.orderId))
+          .limit(1)
+      : []
     const [seller] = who ? await db.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, who.sellerProfileId)).limit(1) : []
     if (who && refund) {
       await notify('orders', {

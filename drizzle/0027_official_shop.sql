@@ -1,0 +1,1 @@
+ALTER TABLE "sellers" ADD COLUMN "official" boolean DEFAULT false NOT NULL;

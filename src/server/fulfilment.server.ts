@@ -22,7 +22,7 @@ export async function loadBuyerOrder(db: Db, buyerId: string, number: string) {
   const parts = await db
     .select({ so: sellerOrders, seller: { storeName: sellers.storeName, slug: sellers.slug, phone: sellers.phone, town: sellers.town } })
     .from(sellerOrders)
-    .innerJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+    .leftJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
     .where(eq(sellerOrders.orderId, order.id))
   const items = parts.length
     ? await db
@@ -54,11 +54,13 @@ export async function loadBuyerOrder(db: Db, buyerId: string, number: string) {
     lastPayment: lastPayment ?? null,
     parts: parts.map((p) => ({
       ...p.so,
-      seller: {
-        ...p.seller,
-        // Seller contact is only shared once the buyer has paid.
-        phone: order.status === 'pending_payment' ? null : p.seller.phone,
-      },
+      seller: p.seller
+        ? {
+            ...p.seller,
+            // Seller contact is only shared once the buyer has paid.
+            phone: order.status === 'pending_payment' ? null : p.seller.phone,
+          }
+        : { storeName: FULFILMENT_COPY.closedShop, slug: null, phone: null, town: null },
       items: items
         .filter((i) => i.item.sellerOrderId === p.so.id)
         .map((i) => ({ ...i.item, slug: i.book?.slug ?? null, coverUrl: i.book?.coverUrl ?? null, myReview: reviewed.find((r) => r.bookId === i.item.bookId) ?? null })),
@@ -225,14 +227,14 @@ export async function listSales(db: Db, sellerId: string) {
   const [items, given, standings] = await Promise.all([
     ids.length ? db.select().from(orderItems).where(inArray(orderItems.sellerOrderId, ids)) : [],
     ids.length ? db.select({ sellerOrderId: ratings.sellerOrderId, score: ratings.score }).from(ratings).where(and(inArray(ratings.sellerOrderId, ids), eq(ratings.rater, 'seller'))) : [],
-    readerStandings(db, parts.map((p) => p.order.buyerId)),
+    readerStandings(db, parts.flatMap((p) => (p.order.buyerId ? [p.order.buyerId] : []))),
   ])
   return parts.map(({ so, order: { buyerId, ...order } }) => ({
     ...so,
     order,
     items: items.filter((i) => i.sellerOrderId === so.id),
     myRating: given.find((g) => g.sellerOrderId === so.id)?.score ?? null,
-    buyer: standings.get(buyerId) ?? null,
+    buyer: buyerId ? (standings.get(buyerId) ?? null) : null,
   }))
 }
 

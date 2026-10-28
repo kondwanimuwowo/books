@@ -24,6 +24,7 @@ import { ogMeta } from '#/lib/og'
 import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholder'
 import { RatingMark } from '#/components/reputation'
 import { BookReviews } from '#/components/book-reviews'
+import { OFFICIAL_LABEL } from '#/data/onboarding'
 
 export const Route = createFileRoute('/books/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading book" shapes={<BookPageShapes />} />,
@@ -350,7 +351,13 @@ function CopyOption({
       {offer.notes && <span className="mt-1 block text-sm text-muted">{offer.notes}</span>}
       <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
         {mine ? <span className="rounded-full bg-sunken px-2 py-0.5 font-medium text-ink">Your listing</span> : <span className="font-medium text-muted">{offer.seller.storeName}</span>}
-        {offer.fromAuthor ? <VerifiedMark label="From the author" /> : offer.seller.verified && <VerifiedMark />}
+        {offer.fromAuthor ? (
+          <VerifiedMark label="From the author" />
+        ) : offer.seller.official ? (
+          <VerifiedMark label={OFFICIAL_LABEL} />
+        ) : (
+          offer.seller.verified && <VerifiedMark />
+        )}
         <RatingMark rating={offer.seller.rating} className="text-xs" />
         <span className="inline-flex items-center gap-0.5">
           <MapPinIcon className="size-3.5" aria-hidden />

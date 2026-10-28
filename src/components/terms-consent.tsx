@@ -28,8 +28,8 @@ export function TermsCheckbox({ checked, onChange }: { checked: boolean; onChang
   )
 }
 
-// Reading the documents must stay possible while the box is waiting.
-const OPEN_PATHS = ['/legal/', '/login', '/signup', '/auth/']
+// Reading the documents must stay possible while the box is waiting, and so must deleting the account instead.
+const OPEN_PATHS = ['/legal/', '/login', '/signup', '/auth/', '/account/settings']
 
 /**
  * Accounts that haven't accepted the current terms (created before the checkbox, or after a material change)

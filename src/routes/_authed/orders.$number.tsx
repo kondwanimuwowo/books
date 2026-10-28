@@ -178,7 +178,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
         <span className="text-xs text-subtle">{shippingLabel(part.shippingMethod)}</span>
       </header>
 
-      {!pending && <ParcelRoute from={part.seller.town} to={destination} status={part.status} />}
+      {!pending && part.seller.town && <ParcelRoute from={part.seller.town} to={destination} status={part.status} />}
 
       <ul className="divide-y divide-line">
         {part.items.map((item) => (

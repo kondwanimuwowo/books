@@ -78,7 +78,8 @@ export async function rateSellerOrder(db: Db, profileId: string, input: RateParc
   const tags = [...new Set(input.tags)].filter((t) => allowed.includes(t))
   const [saved] = await db.insert(ratings).values({ sellerOrderId: input.sellerOrderId, rater, score: input.score, tags }).onConflictDoNothing().returning({ score: ratings.score })
   if (!saved) throw new AppError('You’ve already rated this', 'conflict')
-  await notifyRated(db, input.sellerOrderId, rater, input.score, part)
+  // A buyer who has deleted their account can't hear about it.
+  if (part.buyerId) await notifyRated(db, input.sellerOrderId, rater, input.score, { ...part, buyerId: part.buyerId })
   return { ok: true }
 }
 
