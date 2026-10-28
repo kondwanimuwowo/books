@@ -12,6 +12,11 @@ import { AppError } from './errors.server'
 
 type Seller = typeof sellers.$inferSelect
 
+export async function bookDescription(db: Db, bookId: string) {
+  const [row] = await db.select({ description: books.description }).from(books).where(eq(books.id, bookId)).limit(1)
+  return row?.description ?? null
+}
+
 /** Sellers may add a description only where a book has none; changing one stays with its verified author. */
 async function fillMissingDescription(db: Db, bookId: string, description: string | undefined) {
   if (!description) return

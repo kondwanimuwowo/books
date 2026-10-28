@@ -3,7 +3,7 @@ import { ArrowLeftIcon, CameraIcon, MagnifyingGlassIcon, SparklesIcon } from '@h
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
-import { browseCatalogue, createListing, findBookForSale, getMySeller, getPriceGuide, suggestTitles } from '#/functions/sell.functions'
+import { browseCatalogue, createListing, findBookForSale, getCatalogueDescription, getMySeller, getPriceGuide, suggestTitles } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-input'
@@ -16,7 +16,8 @@ import { suggestTidyName } from '#/functions/ai.functions'
 import type { PhotoPrefill, PhotoResult } from '#/functions/ai.functions'
 import { PHOTO_COPY, TITLE_NOISE } from '#/data/ai'
 import { Alert, Field, errorMessage, useAction } from '#/components/form'
-import { MissingDescription, OfferSettings, offerSettingsData } from '#/components/seller-forms'
+import { OfferSettings, offerSettingsData } from '#/components/seller-forms'
+import { DescriptionField } from '#/components/description-field'
 import type { OfferSettingsValue } from '#/components/seller-forms'
 import { COMMISSION_RATE, CONDITIONS, FORMATS, LISTING_RULES, PHOTOS_COPY, conditionLabel } from '#/data/listing-options'
 import { ListingPhotos } from '#/components/listing-photos'
@@ -304,10 +305,16 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState(photos?.conditionNotes ?? '')
   const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({ open: false, floor: '' })
-  const [description, setDescription] = useState(photos?.description ?? '')
-  // Books saved without a description (or found online without one) get a chance to gain one here.
-  const missingDescription =
-    selection.kind === 'existing' ? (selection.hasDescription ? null : selection.isbn13) : selection.kind === 'external' && !selection.candidate.description ? selection.candidate.isbn13 : undefined
+  const [description, setDescription] = useState(photos?.description ?? (selection.kind === 'manual' ? selection.prefill?.description : '') ?? '')
+  // A description the book came with (on Kuwala, or from the online search) is shared by every listing: read-only.
+  // One read from the seller's own back-cover photo is theirs to edit.
+  const [catalogueDescription, setCatalogueDescription] = useState<string | null | undefined>(selection.kind === 'existing' && selection.hasDescription ? undefined : null)
+  const fixedDescription =
+    selection.kind === 'existing'
+      ? catalogueDescription
+      : selection.kind === 'external' && selection.candidate.description && selection.candidate.description !== photos?.description
+        ? selection.candidate.description
+        : null
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
   const [cover, setCover] = useState<{ key: string; preview: string } | null>(photos?.cover ? { key: photos.cover.key, preview: photos.cover.url } : null)
   const [coverBusy, setCoverBusy] = useState(false)
@@ -317,7 +324,9 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
   const used = condition !== 'new'
 
   useEffect(() => {
-    if (selection.kind === 'existing') void getPriceGuide({ data: { bookId: selection.id } }).then(setGuide)
+    if (selection.kind !== 'existing') return
+    void getPriceGuide({ data: { bookId: selection.id } }).then(setGuide)
+    if (selection.hasDescription) void getCatalogueDescription({ data: { bookId: selection.id } }).then(({ description }) => setCatalogueDescription(description))
   }, [selection])
 
   const submit = useAction(async () => {
@@ -326,7 +335,11 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
       selection.kind === 'existing'
         ? { kind: 'existing' as const, bookId: selection.id }
         : selection.kind === 'external'
-          ? { kind: 'external' as const, source: selection.candidate.source, candidate: selection.candidate }
+          ? {
+              kind: 'external' as const,
+              source: selection.candidate.source,
+              candidate: fixedDescription ? selection.candidate : { ...selection.candidate, description: description.trim() || null },
+            }
           : {
               kind: 'manual' as const,
               candidate: {
@@ -342,7 +355,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
                 publishedYear: manual.year ? Number(manual.year) : null,
                 pageCount: manual.pages ? Number(manual.pages) : null,
                 language: manual.language,
-                description: manual.description.trim() || null,
+                description: description.trim() || null,
                 coverUrl: null,
               },
             }
@@ -357,7 +370,7 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         quantity: Number(quantity),
         notes: notes || undefined,
         ...offerSettingsData(offerSettings),
-        description: missingDescription !== undefined ? description.trim() || undefined : undefined,
+        description: fixedDescription === null ? description.trim() || undefined : undefined,
         summary: photos?.summary ?? undefined,
         coverKey: cover?.key,
         photoKeys: copyPhotos.map((p) => p.key),
@@ -376,6 +389,21 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
       : selection.kind === 'external'
         ? { title: selection.candidate.title, authorNames: selection.candidate.authors.join(', '), coverUrl: selection.candidate.coverUrl }
         : { title: manual.title || 'Your book', authorNames: manual.authors || null, coverUrl: null }
+  // What Find with AI searches for.
+  const describedBook =
+    selection.kind === 'existing'
+      ? { title: selection.title, authors: selection.authorNames?.split(', ') ?? [], isbn: selection.isbn13, publisher: null }
+      : selection.kind === 'external'
+        ? { title: selection.candidate.title, authors: selection.candidate.authors, isbn: selection.candidate.isbn13, publisher: selection.candidate.publisher }
+        : {
+            title: manual.title.trim(),
+            authors: manual.authors
+              .split(',')
+              .map((a) => a.trim())
+              .filter(Boolean),
+            isbn: manual.isbn.trim() || null,
+            publisher: manual.publisher.trim() || null,
+          }
   const guideHint =
     guide && guide.count > 0
       ? [guide.newMin !== null && `New from ${formatMoney(guide.newMin)}`, guide.usedMin !== null && `used from ${formatMoney(guide.usedMin)}`].filter(Boolean).join(', ')
@@ -399,6 +427,17 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-accent-ink">
           <ArrowLeftIcon className="size-3.5" aria-hidden /> Another book
         </button>
+
+        {/* Phones and tablets: the book stays in view while the form scrolls. Desktop has it in the sidebar. */}
+        <div className="glass-bar sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-2.5 sm:-mx-6 sm:px-6 lg:hidden">
+          <div className="w-10 shrink-0">
+            <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-bold">{heading.title}</p>
+            {heading.authorNames && <p className="truncate text-sm text-subtle">{heading.authorNames}</p>}
+          </div>
+        </div>
 
         {photos && <Alert tone="info">{PHOTO_COPY.filled}</Alert>}
 
@@ -443,14 +482,19 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
               <Field label="Language">
                 <Select value={manual.language} options={LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} onChange={(language) => setManual((m) => ({ ...m, language }))} />
               </Field>
-              <Field label="Description" className="sm:col-span-2">
-                <textarea className="input" rows={4} value={manual.description} onChange={setM('description')} />
-              </Field>
             </div>
           </section>
         )}
 
-        {missingDescription !== undefined && <MissingDescription isbn={missingDescription} value={description} onChange={setDescription} />}
+        <DescriptionField
+          fixed={fixedDescription}
+          fixedFrom={selection.kind === 'existing' ? 'catalogue' : 'online'}
+          lookupIsbn={selection.kind === 'existing' ? selection.isbn13 : selection.kind === 'external' ? selection.candidate.isbn13 : null}
+          fromPhoto={!!photos?.description}
+          book={describedBook}
+          value={description}
+          onChange={setDescription}
+        />
 
         {!heading.coverUrl && (
           <section aria-labelledby="cover-heading">
@@ -540,7 +584,8 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
             <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} className="shadow-lg" />
           </div>
           <div className="text-center">
-            <p className="line-clamp-2 font-medium">{heading.title}</p>
+            <p className="line-clamp-2 font-bold">{heading.title}</p>
+            {heading.authorNames && <p className="line-clamp-1 text-sm text-muted">{heading.authorNames}</p>}
             <p className="text-sm text-subtle">
               {conditionLabel(condition)}
               {priceNgwee > 0 && ` · ${formatMoney(priceNgwee)}`}

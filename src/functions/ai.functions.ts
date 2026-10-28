@@ -1,13 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { getDb } from '#/db/client.server'
-import { PHOTO_SLOTS } from '#/data/ai'
+import { DESCRIPTION_COPY, PHOTO_SLOTS } from '#/data/ai'
 import { MAX_LIST_PHOTOS } from '#/data/school-list'
 import type { PhotoSlot } from '#/data/ai'
 import { CONDITIONS } from '#/data/listing-options'
 import type { Condition } from '#/data/listing-options'
 import { toIsbn13 } from '#/lib/isbn'
-import { checkAiLimit, readBookList, readBookPhotos, tidyBookName } from '#/server/ai.server'
+import { checkAiLimit, describeBook, readBackCover, readBookList, readBookPhotos, tidyBookName } from '#/server/ai.server'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { lookupIsbn, sameBook, sameSurname } from '#/server/book-sources.server'
 import type { BookCandidate } from '#/server/book-sources.server'
@@ -212,4 +212,43 @@ export const readSchoolList = createServerFn({ method: 'POST' })
       }
     })
     return { school: reading.school, grade: reading.grade, lines }
+  })
+
+/** The blurb from one photo of a back cover, for the description box on the sell form. */
+export const readBackCoverPhoto = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .validator((data: unknown) => {
+    const file = data instanceof FormData ? data.get('photo') : null
+    if (!(file instanceof File)) throw new AppError('Add a photo of the back cover')
+    if (file.size > MAX_PHOTO_BYTES) throw new AppError('That photo is too large')
+    return file
+  })
+  .handler(async ({ data, context }) => {
+    const db = getDb()
+    await checkAiLimit(db, context.user.id, 'blurb')
+    const bytes = new Uint8Array(await data.arrayBuffer())
+    const type = detectImage(bytes)
+    if (!type) throw new AppError('Use a JPEG, WebP or PNG photo')
+    const blurb = await readBackCover(db, context.user.id, { bytes, mediaType: MEDIA_TYPES[type] })
+    if (!blurb) throw new AppError(DESCRIPTION_COPY.noBlurb)
+    return { description: blurb }
+  })
+
+/** A short description written from what Claude finds about the book on the web, with where it came from. */
+export const findDescriptionWithAi = createServerFn({ method: 'POST' })
+  .middleware([requireSellerMiddleware])
+  .validator(
+    z.object({
+      title: z.string().trim().min(1).max(300),
+      authors: z.array(z.string().trim().max(120)).max(10),
+      isbn: z.string().trim().max(20).nullable(),
+      publisher: z.string().trim().max(200).nullable(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const db = getDb()
+    await checkAiLimit(db, context.user.id, 'describe')
+    const found = await describeBook(db, context.user.id, data)
+    if (!found?.found || !found.description) throw new AppError(DESCRIPTION_COPY.notFound)
+    return { description: found.description, source: found.sourceTitle ?? 'the web', sourceUrl: found.sourceUrl }
   })

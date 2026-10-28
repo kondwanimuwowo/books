@@ -4,13 +4,16 @@ export const AI_MODELS = {
   light: 'claude-haiku-5-5',
 } as const
 
-export type AiKind = 'photos' | 'tidy' | 'summary' | 'list' | 'search' | 'author'
+export type AiKind = 'photos' | 'tidy' | 'summary' | 'list' | 'search' | 'author' | 'blurb' | 'describe'
 
 // Per person per day. Generous for a real seller, a hard stop for a script.
 export const AI_DAILY_LIMITS: Record<Exclude<AiKind, 'summary' | 'search' | 'author'>, number> = {
   photos: 40,
   tidy: 150,
   list: 15,
+  blurb: 60,
+  // Each one runs a few web searches, so fewer.
+  describe: 30,
 }
 
 export const PHOTO_SLOTS = [
@@ -29,6 +32,23 @@ export const SEARCH_REQUEST_WORDS = /\b(grade|form|standard|in (bemba|nyanja|ton
 
 // Words sellers type into a title that belong elsewhere on the listing.
 export const TITLE_NOISE = /\b(hard\s?cover|hardback|paper\s?back|soft\s?cover|edition|by)\b/i
+
+// The description on the sell form: shown read-only when the book already has one, otherwise filled from the
+// back cover or by AI and always editable.
+export const DESCRIPTION_COPY = {
+  label: 'Description',
+  fixedCatalogue: 'This book’s description on Kuwala. Every listing of it shares this one.',
+  fixedOnline: 'Found online with the book. Every listing of it will share this one.',
+  lookedUp: 'Found online. Check it matches, and edit it if needed.',
+  empty: 'This book has none yet. Yours will show on its page.',
+  readCover: 'Read back cover',
+  findAi: 'Find with AI',
+  fromCover: 'Read from your back cover. Check it word for word.',
+  fromAi: (source: string) => `Written by AI from ${source}. Check it before you publish.`,
+  needsTitle: 'Add the title first.',
+  notFound: 'Couldn’t find this book online. Read the back cover instead, or write a few lines yourself.',
+  noBlurb: 'Couldn’t read a description on that photo. Try a sharper photo of the back cover.',
+} as const
 
 export const PHOTO_COPY = {
   open: 'Read it from photos',

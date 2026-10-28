@@ -1,4 +1,4 @@
-export type LoadingKind = 'find' | 'read' | 'list' | 'research' | 'pay'
+export type LoadingKind = 'find' | 'read' | 'list' | 'research' | 'pay' | 'describe'
 
 /** How long each line stays before the next one rolls in. */
 export const LOADING_LINE_MS = 2800
@@ -81,6 +81,36 @@ export const LOADING_LINES: Record<LoadingKind, { after: number; lines: string[]
         'Pretending we read it in school…',
         'Still squinting. That print is tiny…',
         'Checking the year it was printed…',
+      ],
+    },
+    { after: 25000, lines: SLOW_NETWORK },
+  ],
+  // Find with AI on the sell form: searching the web and writing the description.
+  describe: [
+    {
+      after: 0,
+      lines: [
+        'Googling it so you don’t have to…',
+        'Asking the publisher what it’s about…',
+        'Reading the reviews, skipping the spoilers…',
+        'Asking the book club what they thought…',
+        'Writing a blurb worth judging a book by…',
+        'Summarising without giving away the ending…',
+        'Checking it’s the right book, not its cousin…',
+        'Taking notes like it’s exam week…',
+        'Asking someone who actually finished it…',
+        'Writing in our own words, like the teacher said…',
+      ],
+    },
+    {
+      after: 12000,
+      lines: [
+        'Still reading. It’s a long one…',
+        'Two websites disagree. Asking a third…',
+        'Picking plain words over fancy ones…',
+        'Crossing out the boring sentences…',
+        'Nearly done. Just the last paragraph…',
+        'Making sure we didn’t make anything up…',
       ],
     },
     { after: 25000, lines: SLOW_NETWORK },
@@ -179,4 +209,5 @@ export const LOADING_LABEL: Record<LoadingKind, string> = {
   list: 'Reading your list',
   research: 'Researching the author',
   pay: 'Waiting for you to approve the payment',
+  describe: 'Finding a description for this book',
 }

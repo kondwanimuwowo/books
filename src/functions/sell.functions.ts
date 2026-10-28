@@ -3,7 +3,7 @@ import { getDb } from '#/db/client.server'
 import { requireSellerMiddleware, requireUserMiddleware } from '#/server/auth'
 import { findDescription } from '#/server/book-sources.server'
 import { findCatalogueMatches, suggestNames } from '#/server/catalog.server'
-import { createSellerListing, findBooksToSell, listSellerListings, priceGuide, updateSellerListing } from '#/server/listings.server'
+import { bookDescription, createSellerListing, findBooksToSell, listSellerListings, priceGuide, updateSellerListing } from '#/server/listings.server'
 import { loadBalance, payNow } from '#/server/payouts.server'
 import { loadSellerSetup, savePayoutDestination, saveSellerProfileFor, updateDeliverySettings } from '#/server/sellers.server'
 import {
@@ -50,6 +50,12 @@ export const getBookDescription = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
   .validator(isbnInput)
   .handler(async ({ data }) => ({ description: await findDescription(data.isbn) }))
+
+/** A catalogue book's own description, shown read-only on the sell form. */
+export const getCatalogueDescription = createServerFn({ method: 'GET' })
+  .middleware([requireUserMiddleware])
+  .validator(bookIdInput)
+  .handler(async ({ data }) => ({ description: await bookDescription(getDb(), data.bookId) }))
 
 export const findBookForSale = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])

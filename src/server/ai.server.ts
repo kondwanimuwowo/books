@@ -335,3 +335,86 @@ export async function draftAuthor(db: Db, userId: string, input: { name: string;
     .catch((error: unknown) => console.error('[ai] usage log failed', error))
   return result
 }
+
+const blurbReading = z.object({
+  blurb: nullableText.describe('The blurb on this back cover, transcribed word for word. Leave out review quotes, prices, barcodes and publisher addresses. Null if the photo shows no blurb.'),
+})
+
+/** The blurb from a photo of a back cover the seller is holding, word for word. */
+export async function readBackCover(db: Db, userId: string, photo: { bytes: Uint8Array; mediaType: 'image/jpeg' | 'image/webp' | 'image/png' }) {
+  const result = await ask(db, {
+    kind: 'blurb',
+    userId,
+    model: AI_MODELS.reader,
+    system:
+      'You transcribe the blurb from a photo of a book’s back cover for its listing on Kuwala Books, a Zambian book marketplace. Copy only what is printed, exactly, keeping paragraph breaks. Never fill in words you can’t read or add anything from memory. Books may be in English or in Bemba, Nyanja, Tonga, Lozi, Kaonde, Lunda or Luvale; copy them as printed.',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: photo.mediaType, data: toBase64(photo.bytes) } },
+      { type: 'text', text: 'Transcribe the blurb.' },
+    ],
+    schema: blurbReading,
+    maxTokens: 3000,
+  })
+  return result?.blurb?.trim() || null
+}
+
+const describedBook = z.object({
+  found: z.boolean().describe('True only if a source clearly describes this exact book (same title and author).'),
+  description: nullableText.describe(
+    'Two short paragraphs, 60 to 120 words, in your own words, saying what the book is about and who it is for. Only facts the sources state; no praise, no quotes, no spoilers. Null if found is false.',
+  ),
+  sourceTitle: nullableText.describe('Name of the site the main facts came from, e.g. "the publisher’s website" or "Goodreads".'),
+  sourceUrl: nullableText.describe('URL of that page.'),
+})
+
+export type DescribedBook = z.infer<typeof describedBook>
+
+const DESCRIBE_SYSTEM = `You write the description for a book a seller is listing on Kuwala Books, a Zambian book marketplace.
+Search the web for this exact book: the publisher's page, the author's site, Goodreads, Google Books, bookshops. Read a page or two rather than relying on snippets.
+Write the description in your own words from what the sources say. Never copy a publisher's blurb or a review, and never quote.
+If you can't find a source that clearly describes this book, with the same title and author, set found to false. A made-up description is far worse than none, because buyers trust it.
+When done, call record_description once.`
+
+const DESCRIBE_TOOL = 'record_description'
+const DESCRIBE_ROUNDS = 4
+
+/** Looks the book up on the web and writes a short description from what it finds, or reports that it found nothing. */
+export async function describeBook(db: Db, userId: string, book: { title: string; authors: string[]; isbn: string | null; publisher: string | null }) {
+  const anthropic = claude()
+  if (!anthropic) return null
+  const tools: BetaToolUnion[] = [
+    { type: 'web_search_20260209', name: 'web_search', max_uses: 4 },
+    { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3 },
+    { name: DESCRIBE_TOOL, description: 'Record the description. Call once, at the end.', input_schema: z.toJSONSchema(describedBook) as BetaTool.InputSchema },
+  ]
+  const facts = [`Title: ${book.title}`, book.authors.length && `Author: ${book.authors.join(', ')}`, book.isbn && `ISBN: ${book.isbn}`, book.publisher && `Publisher: ${book.publisher}`]
+  const messages: BetaMessageParam[] = [{ role: 'user', content: facts.filter(Boolean).join('\n') }]
+  let usage = { input_tokens: 0, output_tokens: 0 }
+  let result: DescribedBook | null = null
+  try {
+    for (let round = 0; round < DESCRIBE_ROUNDS && !result; round++) {
+      const force = round === DESCRIBE_ROUNDS - 1 || (messages.length > 1 && messages[messages.length - 1].role === 'user')
+      const response = await anthropic.beta.messages.create(
+        { model: AI_MODELS.reader, max_tokens: 4000, system: DESCRIBE_SYSTEM, tools, messages, ...(force && { tool_choice: { type: 'tool', name: DESCRIBE_TOOL } }) },
+        { timeout: 90_000 },
+      )
+      usage = { input_tokens: usage.input_tokens + response.usage.input_tokens, output_tokens: usage.output_tokens + response.usage.output_tokens }
+      const recorded = response.content.find((b) => b.type === 'tool_use' && b.name === DESCRIBE_TOOL)
+      if (recorded && recorded.type === 'tool_use') {
+        const parsed = describedBook.safeParse(recorded.input)
+        if (parsed.success) result = parsed.data
+        break
+      }
+      if (response.stop_reason === 'refusal') break
+      messages.push({ role: 'assistant', content: response.content })
+      if (response.stop_reason !== 'pause_turn') messages.push({ role: 'user', content: `Record what you found with ${DESCRIBE_TOOL}.` })
+    }
+  } catch (error) {
+    console.error('[ai] describe failed', error instanceof Anthropic.APIError ? `${error.status} ${error.message}` : error)
+  }
+  await db
+    .insert(aiRequests)
+    .values({ userId, kind: 'describe', model: AI_MODELS.reader, inputTokens: usage.input_tokens, outputTokens: usage.output_tokens, ok: result !== null })
+    .catch((error: unknown) => console.error('[ai] usage log failed', error))
+  return result
+}
