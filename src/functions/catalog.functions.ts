@@ -6,7 +6,7 @@ import { optionalUserMiddleware } from '#/server/auth'
 import { categoriesWithCounts, getAuthorBySlug, getBookBySlug, getPublisherBySlug, getSellerBySlug, listDirectory } from '#/server/catalog.server'
 import { getZmwPerUsd } from '#/server/fx.server'
 import { loadDeliveryRates } from '#/server/orders.server'
-import { loadChartPage, loadHome, quickSearchBooks, runSearch } from '#/server/browse.server'
+import { loadChartPage, loadCoverWall, loadHome, quickSearchBooks, runSearch } from '#/server/browse.server'
 import { loadMember } from '#/server/members.server'
 import { directoryInput, quickSearchSchema, searchSchema, slugInput } from '#/schemas/catalog'
 
@@ -32,6 +32,12 @@ export const getHomeData = createServerFn({ method: 'GET' }).handler(async () =>
   const home = await loadHome(getDb())
   publicCache(60)
   return home
+})
+
+export const getCoverWall = createServerFn({ method: 'GET' }).handler(async () => {
+  const wall = await loadCoverWall(getDb())
+  publicCache(300)
+  return wall
 })
 
 export const getChart = createServerFn({ method: 'GET' }).handler(async () => {

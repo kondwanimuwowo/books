@@ -54,6 +54,8 @@
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2a1e17 10%, transparent);
   --shadow-md: 0 4px 14px -4px color-mix(in srgb, #2a1e17 16%, transparent);
   --shadow-lg: 0 14px 32px -10px color-mix(in srgb, #2a1e17 24%, transparent);
+  /* Glass on the burgundy band, in both themes: lifted by a close shadow rather than outlined. */
+  --shadow-frost: 0 4px 12px -4px rgb(0 0 0 / 0.45);
 
   /* Motion. Strong curves replace Tailwind's weak defaults, so ease-out / ease-in-out utilities use them. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -341,15 +343,13 @@
     background-color: color-mix(in srgb, var(--color-deep) 60%, transparent);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--color-on-accent) 12%, transparent),
-      var(--shadow-lg);
+    box-shadow: var(--shadow-frost);
   }
   .frost-pill {
     background-color: color-mix(in srgb, var(--color-deep) 45%, transparent);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
     backdrop-filter: blur(12px) saturate(140%);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-on-accent) 16%, transparent);
+    box-shadow: var(--shadow-frost);
     transition: background-color 200ms ease;
   }
   @media (hover: hover) and (pointer: fine) {
@@ -357,10 +357,14 @@
       background-color: color-mix(in srgb, var(--color-deep) 25%, color-mix(in srgb, var(--color-on-accent) 18%, transparent));
     }
   }
-  /* The home hero's clear spot: a sharp copy of the cover wall, shown only within a small soft circle at the pointer. */
+  /* The cover wall's clear spot: a sharp copy of the wall, shown within a soft circle that trails the pointer, plus two
+     fainter, smaller circles trailing it (useCoverReveal), so a fast flick leaves a short trail. */
   .hero-reveal {
     display: none;
-    --mask: radial-gradient(circle 110px at var(--x, -999px) var(--y, -999px), #000 35%, transparent 100%);
+    --mask:
+      radial-gradient(circle 110px at var(--x0, -999px) var(--y0, -999px), #000 35%, transparent 100%),
+      radial-gradient(circle 84px at var(--x1, -999px) var(--y1, -999px), rgb(0 0 0 / 0.55) 20%, transparent 100%),
+      radial-gradient(circle 60px at var(--x2, -999px) var(--y2, -999px), rgb(0 0 0 / 0.3) 10%, transparent 100%);
     -webkit-mask-image: var(--mask);
     mask-image: var(--mask);
     opacity: 0;
@@ -369,6 +373,9 @@
   }
   .hero-reveal[data-active='true'] {
     opacity: 1;
+  }
+  .hero-reveal[data-still='true'] {
+    --mask: radial-gradient(circle 110px at var(--x0, -999px) var(--y0, -999px), #000 35%, transparent 100%);
   }
   @media (hover: hover) and (pointer: fine) {
     .hero-reveal {

@@ -20,6 +20,12 @@ export async function loadHome(db: Db) {
   return { chart: chart.entries.slice(0, 10), zambian, recent, bargains, categories, wall }
 }
 
+/** The cover wall alone, for the sign-in pages' panel. */
+export async function loadCoverWall(db: Db) {
+  const [zambian, recent] = await Promise.all([shelf(db, 'zambian'), shelf(db, 'recent')])
+  return coverWall([...new Set([...recent, ...zambian].map((b) => b.coverUrl).filter((c): c is string => !!c))].slice(0, 24))
+}
+
 function shuffle<T>(items: T[]) {
   const out = [...items]
   for (let i = out.length - 1; i > 0; i--) {

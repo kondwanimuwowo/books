@@ -1,6 +1,9 @@
 import { Link, useCanGoBack, useRouter } from '@tanstack/react-router'
 import { ArrowLeftIcon } from '@heroicons/react/20/solid'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { getCoverWall } from '#/functions/catalog.functions'
+import { CoverWallBackdrop, useCoverReveal } from './cover-wall'
 import { NAME_ENTRY } from '#/data/brand'
 import { AUTH_COPY } from '#/data/auth'
 import { cn } from '#/lib/utils'
@@ -25,10 +28,7 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[1fr_1.1fr]">
-      <aside aria-hidden className="band hidden flex-col justify-end p-14 lg:flex">
-        <p className="text-7xl leading-none font-bold tracking-[-0.05em]">{NAME_ENTRY.word}</p>
-        <p className="mt-4 max-w-xs text-2xl leading-snug text-on-deep-muted">{NAME_ENTRY.meaning}</p>
-      </aside>
+      <NameEntry />
       <div className="page flex flex-col py-8 sm:py-10">
         <div className="flex items-center justify-between gap-4">
           <BackButton />
@@ -43,6 +43,36 @@ export function AuthShell({
         </div>
       </div>
     </div>
+  )
+}
+
+/** Desktop only: the name like a dictionary entry, over the cover wall from the home page. */
+function NameEntry() {
+  const [tiles, setTiles] = useState<string[]>([])
+  const { reveal, onPointerMove, onPointerLeave } = useCoverReveal()
+  // Decorative, so it loads after the form is usable, and only where the panel shows.
+  useEffect(() => {
+    if (!window.matchMedia('(min-width: 64rem)').matches) return
+    void getCoverWall().then(setTiles, () => {})
+  }, [])
+
+  return (
+    <aside
+      aria-hidden
+      className="band relative hidden flex-col justify-end overflow-hidden p-14 lg:flex"
+      onPointerMove={tiles.length ? onPointerMove : undefined}
+      onPointerLeave={tiles.length ? onPointerLeave : undefined}
+    >
+      {tiles.length > 0 && (
+        <div className="rise absolute inset-0">
+          <CoverWallBackdrop tiles={tiles} reveal={reveal} />
+        </div>
+      )}
+      <div className={cn('relative', tiles.length > 0 && 'frost w-fit rounded-2xl px-8 py-7')}>
+        <p className="text-7xl leading-none font-bold tracking-[-0.05em]">{NAME_ENTRY.word}</p>
+        <p className="mt-4 max-w-xs text-2xl leading-snug text-on-deep-muted">{NAME_ENTRY.meaning}</p>
+      </div>
+    </aside>
   )
 }
 

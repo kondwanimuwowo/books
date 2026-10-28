@@ -1,10 +1,10 @@
 import { ChevronRightIcon } from '@heroicons/react/16/solid'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useRef } from 'react'
 import { getHomeData } from '#/functions/catalog.functions'
 import { SectionShelf, Shelf } from '#/components/book'
 import { RecentlyViewed } from '#/components/recently-viewed'
 import { QUICK_SEARCHES } from '#/data/home'
+import { CoverWallBackdrop, useCoverReveal } from '#/components/cover-wall'
 import { EmptyMessage, PageShapes, Placeholder, ShelfShapes } from '#/components/placeholder'
 import { cn } from '#/lib/utils'
 
@@ -94,35 +94,11 @@ function Home() {
 function Intro({ wall }: { wall: string[] }) {
   // Shuffled on the server, so the page and its hydration agree on the order.
   const tiles = wall
-  const reveal = useRef<HTMLDivElement>(null)
-
-  // The clear spot follows the pointer through CSS variables, so moving the mouse never re-renders React.
-  const move = (e: React.PointerEvent<HTMLElement>) => {
-    const el = reveal.current
-    if (!el || e.pointerType !== 'mouse') return
-    const box = e.currentTarget.getBoundingClientRect()
-    el.style.setProperty('--x', `${e.clientX - box.left}px`)
-    el.style.setProperty('--y', `${e.clientY - box.top}px`)
-    el.dataset.active = 'true'
-  }
-  const leave = () => {
-    if (reveal.current) reveal.current.dataset.active = 'false'
-  }
+  const { reveal, onPointerMove, onPointerLeave } = useCoverReveal()
 
   return (
-    <section className="band relative overflow-hidden" onPointerMove={tiles.length ? move : undefined} onPointerLeave={tiles.length ? leave : undefined}>
-      {tiles.length > 0 && (
-        <>
-          {/* Blurred so the words lead; phones keep it light so the books still show through. */}
-          <CoverWall tiles={tiles} className="blur-[2px] sm:blur-[7px]" />
-          <div aria-hidden className="absolute inset-0 bg-deep/75" />
-          {/* Mouse only: a small clear spot where the pointer is, to look at a book by hovering over it. */}
-          <div ref={reveal} aria-hidden data-active="false" className="hero-reveal absolute inset-0">
-            <CoverWall tiles={tiles} />
-            <div className="absolute inset-0 bg-deep/30" />
-          </div>
-        </>
-      )}
+    <section className="band relative overflow-hidden" onPointerMove={tiles.length ? onPointerMove : undefined} onPointerLeave={tiles.length ? onPointerLeave : undefined}>
+      {tiles.length > 0 && <CoverWallBackdrop tiles={tiles} reveal={reveal} />}
       <div className="page rise relative py-8 sm:py-12">
         {/* Over the cover wall the words sit on frosted glass so they read; on the plain band they don't need it. */}
         <div className={cn(tiles.length > 0 && 'frost -mx-1 w-fit max-w-2xl rounded-2xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
@@ -142,22 +118,6 @@ function Intro({ wall }: { wall: string[] }) {
         </ul>
       </div>
     </section>
-  )
-}
-
-function CoverWall({ tiles, className }: { tiles: string[]; className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={cn(
-        'absolute -inset-6 grid -rotate-[4deg] grid-cols-[repeat(auto-fill,minmax(116px,1fr))] content-start gap-3 sm:grid-cols-[repeat(auto-fill,minmax(152px,1fr))]',
-        className,
-      )}
-    >
-      {tiles.map((src, i) => (
-        <img key={i} src={src} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-md object-cover" />
-      ))}
-    </div>
   )
 }
 
