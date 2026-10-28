@@ -54,7 +54,7 @@
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2a1e17 10%, transparent);
   --shadow-md: 0 4px 14px -4px color-mix(in srgb, #2a1e17 16%, transparent);
   --shadow-lg: 0 14px 32px -10px color-mix(in srgb, #2a1e17 24%, transparent);
-  /* Glass on the burgundy band, in both themes: lifted by a close shadow rather than outlined. */
+  /* Glass on the burgundy band, in both themes: a close shadow under its hairline. */
   --shadow-frost: 0 4px 12px -4px rgb(0 0 0 / 0.45);
 
   /* Motion. Strong curves replace Tailwind's weak defaults, so ease-out / ease-in-out utilities use them. */
@@ -343,13 +343,17 @@
     background-color: color-mix(in srgb, var(--color-deep) 60%, transparent);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
-    box-shadow: var(--shadow-frost);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-on-accent) 12%, transparent),
+      var(--shadow-frost);
   }
   .frost-pill {
     background-color: color-mix(in srgb, var(--color-deep) 45%, transparent);
     -webkit-backdrop-filter: blur(12px) saturate(140%);
     backdrop-filter: blur(12px) saturate(140%);
-    box-shadow: var(--shadow-frost);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-on-accent) 16%, transparent),
+      var(--shadow-frost);
     transition: background-color 200ms ease;
   }
   @media (hover: hover) and (pointer: fine) {
