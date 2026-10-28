@@ -3,7 +3,6 @@ import type { LinkProps } from '@tanstack/react-router'
 import { Bars3Icon, ChatBubbleLeftRightIcon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
 import { FOOTER_NAV, MENU_LINKS, TABS } from '#/data/navigation'
-import { PAY_COPY } from '#/data/payments'
 import { PaymentMarks } from './payment-marks'
 import { LEGAL_CONTACT, LEGAL_ORDER, LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
@@ -407,10 +406,7 @@ const FOOTER_FACEBOOK = 'https://facebook.com/kuwalabooks'
 export function SiteFooter() {
   return (
     <footer className="band mt-14 sm:mt-20">
-      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-3 sm:gap-10 sm:py-12 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1.4fr]">
-        <div className="col-span-2 sm:col-span-1">
-          <Logo tone="inverse" className="h-5" />
-        </div>
+      <div className="page grid grid-cols-2 gap-x-8 gap-y-8 py-9 text-sm sm:grid-cols-3 sm:gap-10 sm:py-12">
         {FOOTER_NAV.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">
             <p className="eyebrow text-on-deep-muted">{group.title}</p>
@@ -423,12 +419,6 @@ export function SiteFooter() {
                 </li>
               ))}
             </ul>
-            {group.title === 'Sell' && (
-              <div className="space-y-2 pt-3">
-                <p className="eyebrow text-on-deep-muted">{PAY_COPY.footer}</p>
-                <PaymentMarks size="sm" monochrome />
-              </div>
-            )}
           </nav>
         ))}
         <nav aria-label="Legal" className="space-y-3">
@@ -448,7 +438,7 @@ export function SiteFooter() {
             </li>
           </ul>
         </nav>
-        <address className="space-y-3 not-italic">
+        <address className="col-span-2 space-y-3 not-italic sm:col-span-1">
           <p className="eyebrow text-on-deep-muted">Contact</p>
           <ul className="space-y-3">
             <li>
@@ -458,16 +448,15 @@ export function SiteFooter() {
               </a>
             </li>
             <li>
-              <a href={`https://wa.me/${FOOTER_PHONE.replace(/\D/g, '')}`} className={`flex items-center gap-2 ${footerLink}`} target="_blank" rel="noreferrer">
-                <ChatBubbleLeftRightIcon aria-hidden className="size-4 shrink-0" />
-                <span>WhatsApp {FOOTER_PHONE}</span>
-              </a>
-            </li>
-            <li>
-              <a href={`tel:${FOOTER_PHONE}`} className={`flex items-center gap-2 ${footerLink}`}>
-                <PhoneIcon aria-hidden className="size-4 shrink-0" />
-                <span>Call {FOOTER_PHONE}</span>
-              </a>
+              <span className="flex items-center gap-2">
+                <span>{FOOTER_PHONE}</span>
+                <a href={`https://wa.me/${FOOTER_PHONE.replace(/\D/g, '')}`} className={footerLink} aria-label={`WhatsApp ${FOOTER_PHONE}`} target="_blank" rel="noreferrer">
+                  <ChatBubbleLeftRightIcon aria-hidden className="size-4" />
+                </a>
+                <a href={`tel:${FOOTER_PHONE}`} className={footerLink} aria-label={`Call ${FOOTER_PHONE}`}>
+                  <PhoneIcon aria-hidden className="size-4" />
+                </a>
+              </span>
             </li>
             <li>
               <a href={FOOTER_FACEBOOK} className={`flex items-center gap-2 ${footerLink}`} target="_blank" rel="noreferrer">
@@ -481,11 +470,12 @@ export function SiteFooter() {
         </address>
       </div>
       <div className="border-t border-on-deep-muted/20">
-        <div className="page flex flex-col gap-3 py-5 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="page flex items-center justify-between gap-4 py-5 text-xs text-on-deep-muted">
           <p>
             &copy; {new Date().getFullYear()} Kuwala Books
             <RateNote usdOnly className="mt-1 block" />
           </p>
+          <PaymentMarks size="sm" monochrome sharpCorners />
         </div>
       </div>
     </footer>
