@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { signIn } from '#/functions/auth.functions'
 import { AuthShell } from '#/components/auth-shell'
+import { GoogleButton, OrDivider } from '#/components/google-button'
+import { AUTH_COPY, authReason } from '#/data/auth'
 import { Alert, Field, useAction } from '#/components/form'
 import { safeNext } from '#/lib/utils'
 
@@ -23,17 +25,16 @@ function LoginPage() {
   })
 
   return (
-    <AuthShell
-      title="Sign in"
-      footer={
-        <>
-          New?{' '}
-          <Link to="/signup" search={{ next }} className="font-medium">
-            Create an account
-          </Link>
-        </>
-      }
-    >
+    <AuthShell title="Sign in" subtitle={authReason(next)} mode="signin" next={next}>
+      {linkError && (
+        <div className="mb-4">
+          <Alert>{linkError === 'google' ? AUTH_COPY.googleFailed : AUTH_COPY.linkExpired}</Alert>
+        </div>
+      )}
+      <GoogleButton next={next} />
+      <div className="my-6">
+        <OrDivider />
+      </div>
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -41,7 +42,6 @@ function LoginPage() {
           void action.run()
         }}
       >
-        {linkError && <Alert>That link has expired. Sign in or ask for a new one.</Alert>}
         {action.error && <Alert>{action.error}</Alert>}
         <Field label="Email">
           <input className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

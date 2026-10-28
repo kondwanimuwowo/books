@@ -6,6 +6,8 @@ import { signUp } from '#/functions/auth.functions'
 import { getClaim } from '#/functions/claims.functions'
 import { TermsCheckbox } from '#/components/terms-consent'
 import { AuthShell } from '#/components/auth-shell'
+import { GoogleButton, OrDivider } from '#/components/google-button'
+import { authReason } from '#/data/auth'
 import { Alert, Field, useAction } from '#/components/form'
 import { safeNext } from '#/lib/utils'
 
@@ -62,17 +64,11 @@ function SignupPage() {
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value })
 
   return (
-    <AuthShell
-      title="Create an account"
-      footer={
-        <>
-          Have an account?{' '}
-          <Link to="/login" search={{ next }} className="font-medium">
-            Sign in
-          </Link>
-        </>
-      }
-    >
+    <AuthShell title="Create an account" subtitle={authReason(next)} mode="signup" next={next}>
+      <GoogleButton next={next} />
+      <div className="my-6">
+        <OrDivider />
+      </div>
       <form
         className="space-y-4"
         onSubmit={(e) => {

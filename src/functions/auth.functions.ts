@@ -60,6 +60,21 @@ export const signIn = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+// Returns Google's consent URL; the PKCE verifier rides in a cookie set here and is read back in /auth/callback.
+// Terms are accepted afterwards through the TermsGate, since Google sign-ups never see the checkbox.
+export const signInWithGoogle = createServerFn({ method: 'POST' })
+  .validator(z.object({ next: nextPath }))
+  .handler(async ({ data }) => {
+    const callback = new URL('/auth/callback', env.APP_ORIGIN)
+    callback.searchParams.set('next', data.next ?? '/')
+    const { data: result, error } = await getSupabase().auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: callback.toString(), skipBrowserRedirect: true },
+    })
+    if (error || !result.url) throw new AppError('Google sign-in isn’t available right now. Use your email instead.')
+    return { url: result.url }
+  })
+
 /** A signed-in person ticks the box to accept the current terms (existing accounts, or after a material change). */
 export const acceptTerms = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])

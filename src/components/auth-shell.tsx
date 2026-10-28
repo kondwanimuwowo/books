@@ -1,11 +1,28 @@
-import { useCanGoBack, useRouter } from '@tanstack/react-router'
+import { Link, useCanGoBack, useRouter } from '@tanstack/react-router'
 import { ArrowLeftIcon } from '@heroicons/react/20/solid'
 import type { ReactNode } from 'react'
 import { NAME_ENTRY } from '#/data/brand'
+import { AUTH_COPY } from '#/data/auth'
+import { cn } from '#/lib/utils'
 import { Logo } from './site-header'
 
 /** These pages have no store header: Back returns where they came from, the logo leads home. Desktop sets the name beside the form like a dictionary entry. */
-export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+  footer,
+  mode,
+  next,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+  footer?: ReactNode
+  /** Sign in and Create account side by side, so landing on the wrong one costs one tap. */
+  mode?: 'signin' | 'signup'
+  next?: string
+}) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[1fr_1.1fr]">
       <aside aria-hidden className="band hidden flex-col justify-end p-14 lg:flex">
@@ -18,6 +35,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <Logo />
         </div>
         <div className="rise mx-auto my-auto w-full max-w-sm py-12">
+          {mode && <ModeSwitch mode={mode} next={next} />}
           <h1 className="text-3xl sm:text-4xl">{title}</h1>
           {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
           <div className="mt-8">{children}</div>
@@ -25,6 +43,21 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
         </div>
       </div>
     </div>
+  )
+}
+
+function ModeSwitch({ mode, next }: { mode: 'signin' | 'signup'; next?: string }) {
+  const tab = (active: boolean) =>
+    cn('flex h-9 items-center justify-center rounded-full text-sm font-medium no-underline transition-colors', active ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink')
+  return (
+    <nav aria-label="Account" className="mb-8 grid grid-cols-2 rounded-full bg-sunken p-1">
+      <Link to="/login" search={{ next }} replace aria-current={mode === 'signin' ? 'page' : undefined} className={tab(mode === 'signin')}>
+        {AUTH_COPY.signIn}
+      </Link>
+      <Link to="/signup" search={{ next }} replace aria-current={mode === 'signup' ? 'page' : undefined} className={tab(mode === 'signup')}>
+        {AUTH_COPY.createAccount}
+      </Link>
+    </nav>
   )
 }
 

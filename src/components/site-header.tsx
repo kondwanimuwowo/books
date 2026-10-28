@@ -6,6 +6,7 @@ import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, TABS } from '#/data/
 import { CONTACT } from '#/data/brand'
 import { LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
+import { AUTH_COPY } from '#/data/auth'
 import { openCookieSettings } from '#/lib/consent'
 import { quickSearch } from '#/functions/catalog.functions'
 import { BookCover } from './book'
@@ -232,6 +233,9 @@ function QuickResults({
 }
 
 const navLink = 'btn btn-sm text-on-deep-muted hover:bg-on-accent/10 hover:text-on-accent'
+// Outlined, not filled: header actions are always there, so they must never outshout a page's own primary action.
+const outlinedOnBand =
+  'btn btn-sm text-on-accent shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-on-accent)_30%,transparent)] hover:bg-on-accent/10 hover:text-on-accent'
 
 export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: boolean }) {
   const { count, ready } = useBag()
@@ -239,7 +243,6 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
   // Tucks away while reading down the page, returns the moment you scroll up or tab into it.
   const { ref, hidden, reveal } = useHideOnScroll<HTMLElement>()
   const menu = useMobileMenu(ref, hidden)
-  const account = { to: user ? '/account' : '/login', label: user ? user.displayName.split(' ')[0] : 'Sign in' } as const
   return (
     <header ref={ref} data-hidden={hidden} onFocus={reveal} className="header-bar sticky top-0 z-30">
       <div className="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3 md:flex-nowrap md:py-4">
@@ -259,17 +262,28 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               Admin
             </a>
           )}
-          <Link to={account.to} className={cn(navLink, 'hidden max-w-[140px] sm:inline-flex')}>
-            <span className="truncate">{account.label}</span>
-          </Link>
+          {user ? (
+            <Link to="/account" className={cn(navLink, 'hidden max-w-[140px] sm:inline-flex')}>
+              <span className="truncate">{user.displayName.split(' ')[0]}</span>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className={cn(navLink, 'hidden sm:inline-flex')}>
+                {AUTH_COPY.signIn}
+              </Link>
+              <Link to="/signup" className={cn(outlinedOnBand, 'hidden px-4 xl:inline-flex')}>
+                {AUTH_COPY.createAccount}
+              </Link>
+            </>
+          )}
           <div className="hidden sm:block">
             <CurrencySwitch />
           </div>
-          {/* Outlined, not filled: the bag is always here, so it must never outshout a page's own primary action. */}
           <Link
             to="/bag"
             className={cn(
-              'btn btn-sm ml-1 gap-1.5 px-3 text-on-accent shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-on-accent)_30%,transparent)] hover:bg-on-accent/10 hover:text-on-accent',
+              outlinedOnBand,
+              'ml-1 gap-1.5 px-3',
               // Phones with the tab bar reach the bag from there.
               tabs && 'hidden sm:inline-flex',
             )}
@@ -306,6 +320,16 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
         data-open={menu.open}
         className="menu-panel band absolute inset-x-0 top-full border-t border-on-deep-muted/15 shadow-lg sm:hidden"
       >
+        {!user && (
+          <div className="page grid grid-cols-2 gap-3 pt-4 pb-2">
+            <Link to="/signup" className="btn btn-sm bg-on-accent text-deep hover:bg-on-accent/90 hover:text-deep" tabIndex={menu.open ? undefined : -1}>
+              {AUTH_COPY.createAccount}
+            </Link>
+            <Link to="/login" className={outlinedOnBand} tabIndex={menu.open ? undefined : -1}>
+              {AUTH_COPY.signIn}
+            </Link>
+          </div>
+        )}
         <ul className="page py-2">
           {/* Pages without the tab bar still need its main places. */}
           {!tabs && (
@@ -316,9 +340,11 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               <MenuLink to="/sell" icon={TABS[2].icon}>
                 Sell
               </MenuLink>
-              <MenuLink to={account.to} icon={TABS[4].icon}>
-                {user ? 'Your account' : 'Sign in'}
-              </MenuLink>
+              {user && (
+                <MenuLink to="/account" icon={TABS[4].icon}>
+                  Your account
+                </MenuLink>
+              )}
             </>
           )}
           {MENU_LINKS.map((link) => (

@@ -1,8 +1,21 @@
 import { env } from 'cloudflare:workers'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { authors, profiles, sellers } from '#/db/schema'
 import type { SessionUser } from './auth'
+
+/**
+ * The sign-up trigger only knows our own display_name field, so a Google sign-up starts out named after its email.
+ * Take the name Google gave us instead, but never over one the person has set themselves.
+ */
+export async function adoptProviderName(db: Db, user: { id: string; email?: string; user_metadata: Record<string, unknown> }) {
+  const name = String(user.user_metadata.full_name ?? user.user_metadata.name ?? '').trim().slice(0, 80)
+  if (name.length < 2 || !user.email) return
+  await db
+    .update(profiles)
+    .set({ displayName: name })
+    .where(and(eq(profiles.id, user.id), eq(profiles.displayName, user.email.split('@')[0])))
+}
 
 /** What every page needs to know about the signed-in member. */
 export async function loadMember(db: Db, user: SessionUser) {

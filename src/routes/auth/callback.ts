@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import { getDb } from '#/db/client.server'
+import { adoptProviderName } from '#/server/members.server'
 import { getSupabase } from '#/server/supabase.server'
 
 // Plain Response (not Response.redirect) so the session cookies from the exchange can be appended.
@@ -9,7 +11,7 @@ function redirectTo(path: string) {
 
 const OTP_TYPES: EmailOtpType[] = ['signup', 'email', 'recovery', 'email_change', 'invite', 'magiclink']
 
-// Landing point for Supabase email links (sign-up confirmation, password reset).
+// Landing point for Supabase email links (sign-up confirmation, password reset) and Google sign-in.
 export const Route = createFileRoute('/auth/callback')({
   server: {
     handlers: {
@@ -26,8 +28,14 @@ export const Route = createFileRoute('/auth/callback')({
           const { error } = await getSupabase().auth.verifyOtp({ token_hash: tokenHash, type })
           if (!error) return redirectTo(safeNext)
         } else if (code) {
-          const { error } = await getSupabase().auth.exchangeCodeForSession(code)
-          if (!error) return redirectTo(safeNext)
+          const { data, error } = await getSupabase().auth.exchangeCodeForSession(code)
+          if (!error) {
+            if (data.user.app_metadata.provider === 'google') await adoptProviderName(getDb(), data.user)
+            return redirectTo(safeNext)
+          }
+        } else if (url.searchParams.has('error')) {
+          // Google sends people back with ?error= when they cancel on its consent screen.
+          return redirectTo(`/login?error=google&next=${encodeURIComponent(safeNext)}`)
         }
         return redirectTo('/login?error=link')
       },

@@ -14,7 +14,7 @@ export function TabBar({ signedIn }: { signedIn: boolean }) {
         {TABS.map((tab) => {
           const active = tab.match(path)
           const Icon = tab.icon
-          const to = tab.key === 'account' && !signedIn ? '/login' : tab.to
+          const to = tab.key === 'account' && !signedIn ? '/welcome' : tab.to
           return (
             <li key={tab.key}>
               <Link
@@ -37,7 +37,7 @@ export function TabBar({ signedIn }: { signedIn: boolean }) {
                     </span>
                   )}
                 </span>
-                {tab.key === 'account' && !signedIn ? 'Sign in' : tab.label}
+                {tab.label}
               </Link>
             </li>
           )

@@ -27,7 +27,7 @@ export const TABS = [
   { key: 'browse', label: 'Browse', to: '/search', icon: MagnifyingGlassIcon, match: (path: string) => /^\/(search|authors|publishers|top-20|sellers)(\/|$)/.test(path) },
   { key: 'sell', label: 'Sell', to: '/sell', icon: PlusCircleIcon, match: (path: string) => /^\/(sell|start-selling)(\/|$)/.test(path) },
   { key: 'bag', label: 'Bag', to: '/bag', icon: ShoppingBagIcon, match: (path: string) => path === '/bag' },
-  { key: 'account', label: 'Account', to: '/account', icon: UserCircleIcon, match: (path: string) => /^\/(account|orders|login)(\/|$)/.test(path) },
+  { key: 'account', label: 'Account', to: '/account', icon: UserCircleIcon, match: (path: string) => /^\/(account|orders|login|welcome)(\/|$)/.test(path) },
 ] as const
 
 // Flows with their own bar of actions at the bottom (buy, pay, list) hide the tabs, as apps do.
