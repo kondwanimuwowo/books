@@ -305,16 +305,17 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState(photos?.conditionNotes ?? '')
   const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({ open: false, floor: '' })
-  const [description, setDescription] = useState(photos?.description ?? (selection.kind === 'manual' ? selection.prefill?.description : '') ?? '')
   // A description the book came with (on Kuwala, or from the online search) is shared by every listing: read-only.
-  // One read from the seller's own back-cover photo is theirs to edit.
+  // One read from the seller's own back-cover photo is theirs to edit. Online records are sometimes another book's,
+  // so one that names neither the title nor the author starts editable, and any online one can be replaced.
+  const online = selection.kind === 'external' && selection.candidate.description !== photos?.description ? selection.candidate.description : null
+  const onlineLooksRight = !!online && selection.kind === 'external' && mentionsBook(online, selection.candidate.title, selection.candidate.authors)
+  const [replaced, setReplaced] = useState(false)
+  const [description, setDescription] = useState(
+    photos?.description ?? (selection.kind === 'manual' ? selection.prefill?.description : online && !onlineLooksRight ? online : '') ?? '',
+  )
   const [catalogueDescription, setCatalogueDescription] = useState<string | null | undefined>(selection.kind === 'existing' && selection.hasDescription ? undefined : null)
-  const fixedDescription =
-    selection.kind === 'existing'
-      ? catalogueDescription
-      : selection.kind === 'external' && selection.candidate.description && selection.candidate.description !== photos?.description
-        ? selection.candidate.description
-        : null
+  const fixedDescription = selection.kind === 'existing' ? catalogueDescription : onlineLooksRight && !replaced ? online : null
   const [guide, setGuide] = useState<Awaited<ReturnType<typeof getPriceGuide>> | null>(null)
   const [cover, setCover] = useState<{ key: string; preview: string } | null>(photos?.cover ? { key: photos.cover.key, preview: photos.cover.url } : null)
   const [coverBusy, setCoverBusy] = useState(false)
@@ -489,8 +490,17 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
         <DescriptionField
           fixed={fixedDescription}
           fixedFrom={selection.kind === 'existing' ? 'catalogue' : 'online'}
-          lookupIsbn={selection.kind === 'existing' ? selection.isbn13 : selection.kind === 'external' ? selection.candidate.isbn13 : null}
+          lookupIsbn={selection.kind === 'existing' ? selection.isbn13 : selection.kind === 'external' && !online ? selection.candidate.isbn13 : null}
           fromPhoto={!!photos?.description}
+          suspect={!!online && !onlineLooksRight}
+          onReplace={
+            onlineLooksRight
+              ? () => {
+                  setReplaced(true)
+                  setDescription('')
+                }
+              : undefined
+          }
           book={describedBook}
           value={description}
           onChange={setDescription}
@@ -612,6 +622,19 @@ function DetailsStep({ selection, onBack, onSwitch }: { selection: Selection; on
 const TIDY_DELAY_MS = 900
 
 // Shouting capitals, or format and author words typed into the title.
+const STOP_WORDS = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'your', 'book', 'books', 'volume', 'edition'])
+
+/** Whether an online description names the book it came with: a real word of the title, or an author's surname. */
+function mentionsBook(description: string, title: string, authors: string[]) {
+  const text = description.toLowerCase()
+  const titleWords = title
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 4 && !STOP_WORDS.has(w))
+  const surnames = authors.map((a) => a.trim().split(/\s+/).pop()?.toLowerCase() ?? '').filter((s) => s.length >= 3)
+  return [...titleWords, ...surnames].some((w) => text.includes(w))
+}
+
 function looksUntidy(title: string, authors: string) {
   const letters = (value: string) => value.replace(/[^a-zA-Z]/g, '')
   const shouting = (value: string) => letters(value).length >= 4 && value === value.toUpperCase()

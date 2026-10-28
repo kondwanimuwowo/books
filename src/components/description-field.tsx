@@ -14,7 +14,7 @@ export interface DescribedBookInput {
   publisher: string | null
 }
 
-type Note = { kind: 'empty' } | { kind: 'lookedUp' } | { kind: 'cover' } | { kind: 'ai'; source: string }
+type Note = { kind: 'empty' } | { kind: 'lookedUp' } | { kind: 'suspect' } | { kind: 'cover' } | { kind: 'ai'; source: string }
 
 /**
  * The book's description on the sell form. One that came with the book (from Kuwala or the online search) is shared
@@ -26,6 +26,8 @@ export function DescriptionField({
   fixedFrom,
   lookupIsbn,
   fromPhoto,
+  suspect = false,
+  onReplace,
   book,
   value,
   onChange,
@@ -37,11 +39,15 @@ export function DescriptionField({
   lookupIsbn: string | null
   /** The box was filled from the seller's back-cover photo at the start. */
   fromPhoto: boolean
+  /** The box holds an online description that may belong to another book. */
+  suspect?: boolean
+  /** Shown under a locked online description: lets the seller swap a wrong one for their own. */
+  onReplace?: () => void
   book: DescribedBookInput
   value: string
   onChange: (value: string) => void
 }) {
-  const [note, setNote] = useState<Note>(fromPhoto ? { kind: 'cover' } : { kind: 'empty' })
+  const [note, setNote] = useState<Note>(fromPhoto ? { kind: 'cover' } : suspect ? { kind: 'suspect' } : { kind: 'empty' })
   const [looking, setLooking] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -89,7 +95,9 @@ export function DescriptionField({
         ? COPY.fromAi(note.source)
         : note.kind === 'lookedUp'
           ? COPY.lookedUp
-          : COPY.empty
+          : note.kind === 'suspect'
+            ? COPY.suspect
+            : COPY.empty
 
   return (
     <section className="space-y-3" aria-label={COPY.label}>
@@ -102,6 +110,11 @@ export function DescriptionField({
           <textarea className="input" rows={6} maxLength={8000} value={value} disabled={busy} onChange={(e) => onChange(e.target.value)} />
         )}
       </Field>
+      {locked && onReplace && fixed && (
+        <button type="button" onClick={onReplace} className="-mt-1 text-sm font-medium text-accent-ink">
+          {COPY.replace}
+        </button>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn btn-secondary btn-sm gap-1.5" disabled={locked || busy} onClick={() => fileRef.current?.click()}>

@@ -45,8 +45,16 @@ function year(value: string | undefined) {
   return match ? Number(match[0]) : null
 }
 
+// Sources tack legal lines onto descriptions ("Copyright © Libri GmbH. All rights reserved."); they don't belong on a book page.
+const LEGAL_TAIL = /\s*(?:(?:copyright|\(c\)|©)[^.]*\.?\s*)?all rights reserved\.?\s*$|\s*(?:copyright\s*)?©[^.]*\.?\s*$/i
+
+function cleanBlurb(value: string | null | undefined) {
+  const text = value?.replace(LEGAL_TAIL, '').trim()
+  return text || null
+}
+
 function stripHtml(value: string | undefined) {
-  return value ? value.replace(/<[^>]+>/g, '').trim() : null
+  return value ? cleanBlurb(value.replace(/<[^>]+>/g, '')) : null
 }
 
 // The API's thumbnails are 128px wide; the publisher image behind them goes to 800. Only volumes with a
@@ -164,8 +172,7 @@ async function openLibraryCover(isbn13: string) {
 type OpenLibraryText = string | { value?: string } | undefined
 
 function olText(value: OpenLibraryText) {
-  const text = typeof value === 'string' ? value : value?.value
-  return text?.trim() || null
+  return cleanBlurb(typeof value === 'string' ? value : value?.value)
 }
 
 /** The edition's own description, or else its work's (where Open Library usually keeps it). */

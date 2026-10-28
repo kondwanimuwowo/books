@@ -40,6 +40,9 @@ export const DESCRIPTION_COPY = {
   fixedCatalogue: 'This book’s description on Kuwala. Every listing of it shares this one.',
   fixedOnline: 'Found online with the book. Every listing of it will share this one.',
   lookedUp: 'Found online. Check it matches, and edit it if needed.',
+  // Online records are sometimes another book's; one that names neither the title nor the author isn't trusted.
+  suspect: 'Found online, but it may be another book’s. Check it, or replace it using the buttons below.',
+  replace: 'Not this book’s description? Replace it',
   empty: 'This book has none yet. Yours will show on its page.',
   readCover: 'Read back cover',
   findAi: 'Find with AI',
