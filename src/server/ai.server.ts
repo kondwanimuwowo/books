@@ -361,7 +361,7 @@ export async function readBackCover(db: Db, userId: string, photo: { bytes: Uint
 const describedBook = z.object({
   found: z.boolean().describe('True only if a source clearly describes this exact book (same title and author).'),
   description: nullableText.describe(
-    'Two short paragraphs, 60 to 120 words, in your own words, saying what the book is about and who it is for. Only facts the sources state; no praise, no quotes, no spoilers. Null if found is false.',
+    'The blurb a bookshop would print for this book: 40 to 100 words, in your own words, about what the book says or tells and who it is for. Shorter is better than padded. Null if found is false.',
   ),
   sourceTitle: nullableText.describe('Name of the site the main facts came from, e.g. "the publisher’s website" or "Goodreads".'),
   sourceUrl: nullableText.describe('URL of that page.'),
@@ -369,11 +369,22 @@ const describedBook = z.object({
 
 export type DescribedBook = z.infer<typeof describedBook>
 
-const DESCRIBE_SYSTEM = `You write the description for a book a seller is listing on Kuwala Books, a Zambian book marketplace.
+const DESCRIBE_SYSTEM = `You write the description for a book a seller is listing on Kuwala Books, a Zambian book marketplace. It appears on the book's page, shared by every copy anyone sells.
 Search the web for this exact book: the publisher's page, the author's site, Goodreads, Google Books, bookshops. Read a page or two rather than relying on snippets.
-Write the description in your own words from what the sources say. Never copy a publisher's blurb or a review, and never quote.
+
+Use only what the sources say, but write it as a bookshop blurb about the book itself, in the present tense, stating plainly what it covers:
+- Never mention your research: no "the listings say", "sources describe", "according to", "other editions". The reader must not be able to tell it was researched.
+- Describe the book, not a copy or an edition: no publisher, year, format, price or page count.
+- Don't hedge ("meant to", "roughly", "is described as"). If something is uncertain, leave it out.
+- At most one short clause about the author, and only if it helps explain the book.
+- No praise, quotes or spoilers, and never copy a publisher's blurb or a review word for word.
+- If the sources say little, write two good sentences rather than padding.
+
 If you can't find a source that clearly describes this book, with the same title and author, set found to false. A made-up description is far worse than none, because buyers trust it.
 When done, call record_description once.`
+
+// Research talk and copy details that slip into a description now and then; such a draft is sent back once.
+const DESCRIPTION_SLIPS = /\b(listings?|sources?|according to|described as|other editions?|this (copy|edition)|paperback|hardcover|roughly)\b/i
 
 const DESCRIBE_TOOL = 'record_description'
 const DESCRIBE_ROUNDS = 4
@@ -402,6 +413,22 @@ export async function describeBook(db: Db, userId: string, book: { title: string
       const recorded = response.content.find((b) => b.type === 'tool_use' && b.name === DESCRIBE_TOOL)
       if (recorded && recorded.type === 'tool_use') {
         const parsed = describedBook.safeParse(recorded.input)
+        const slip = parsed.success && parsed.data.description?.match(DESCRIPTION_SLIPS)
+        if (slip && round < DESCRIBE_ROUNDS - 1) {
+          messages.push({ role: 'assistant', content: response.content })
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: recorded.id,
+                is_error: true,
+                content: `Rewrite it as a bookshop blurb about the book itself. It mentions "${slip[0]}": leave out any talk of listings, sources or editions, and any publisher, format or page count. Call ${DESCRIBE_TOOL} again.`,
+              },
+            ],
+          })
+          continue
+        }
         if (parsed.success) result = parsed.data
         break
       }
