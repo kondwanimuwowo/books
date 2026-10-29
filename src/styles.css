@@ -1,15 +1,37 @@
 @import 'tailwindcss';
 
 /*
+ * Stand-ins while the web fonts load: Arial resized and re-spaced to take exactly the room Poppins and Manrope will,
+ * so text doesn't jump when they arrive (it matters on slow connections). Numbers from Capsize's font metrics;
+ * Roboto stands in on Android, which has no Arial.
+ */
+@font-face {
+  font-family: 'Poppins Fallback';
+  src: local('Arial'), local('ArialMT'), local('Roboto');
+  ascent-override: 93.6182%;
+  descent-override: 31.2061%;
+  line-gap-override: 8.916%;
+  size-adjust: 112.1577%;
+}
+@font-face {
+  font-family: 'Manrope Fallback';
+  src: local('Arial'), local('ArialMT'), local('Roboto');
+  ascent-override: 103.3095%;
+  descent-override: 29.074%;
+  line-gap-override: 0%;
+  size-adjust: 103.1851%;
+}
+
+/*
  * Kuwala Books design tokens: the only colours, type and effects the UI may use.
  * One accent (burgundy) + warm neutrals. Extra hues only where they carry meaning:
  * success, danger, warning, and terracotta for the Zambian author mark.
  * Light values live here; dark values are redefined below. Every text pairing is AA (4.5:1) in both.
  */
 @theme {
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-  /* Headings and book titles: Manrope, a crisper geometric face beside the body's Plus Jakarta Sans. */
-  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Poppins', 'Poppins Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Headings and book titles in Manrope; body and UI in Poppins. */
+  --font-display: 'Manrope', 'Manrope Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 
   /* The smallest text is fine print only; 13px keeps it readable on a phone in daylight. */
   --text-xs: 0.8125rem;
@@ -128,7 +150,7 @@
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }
-  /* Body and UI in Plus Jakarta Sans (400 body, 500 UI, 700 emphasis); page and section headings in Manrope. */
+  /* Body and UI in Poppins (400 body, 500 UI, 700 emphasis); page and section headings in Manrope. */
   h1,
   h2 {
     @apply font-display font-bold tracking-[-0.025em];
