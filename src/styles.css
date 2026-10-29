@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 /*
- * Stand-ins while the web fonts load: Arial resized and re-spaced to take exactly the room Poppins and Manrope will,
+ * Stand-ins while the web fonts load: Arial resized and re-spaced to take exactly the room Inter and Manrope will,
  * so text doesn't jump when they arrive (it matters on slow connections). Numbers from Capsize's font metrics;
  * Roboto stands in on Android, which has no Arial.
  */
 @font-face {
-  font-family: 'Poppins Fallback';
+  font-family: 'Inter Fallback';
   src: local('Arial'), local('ArialMT'), local('Roboto');
-  ascent-override: 93.6182%;
-  descent-override: 31.2061%;
-  line-gap-override: 8.916%;
-  size-adjust: 112.1577%;
+  ascent-override: 90.4365%;
+  descent-override: 22.518%;
+  line-gap-override: 0%;
+  size-adjust: 107.1194%;
 }
 @font-face {
   font-family: 'Manrope Fallback';
@@ -29,13 +29,9 @@
  * Light values live here; dark values are redefined below. Every text pairing is AA (4.5:1) in both.
  */
 @theme {
-  --font-sans: 'Poppins', 'Poppins Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  /* Headings and book titles in Manrope; body and UI in Poppins. */
+  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Headings and book titles in Manrope; body and UI in Inter. */
   --font-display: 'Manrope', 'Manrope Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-
-  /* The smallest text is fine print only; 13px keeps it readable on a phone in daylight. */
-  --text-xs: 0.8125rem;
-  --text-xs--line-height: 1.125rem;
 
   --color-*: initial;
   --color-transparent: transparent;
@@ -150,7 +146,7 @@
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }
-  /* Body and UI in Poppins (400 body, 500 UI, 700 emphasis); page and section headings in Manrope. */
+  /* Body and UI in Inter (400 body, 500 UI, 700 emphasis); page and section headings in Manrope. */
   h1,
   h2 {
     @apply font-display font-bold tracking-[-0.025em];
