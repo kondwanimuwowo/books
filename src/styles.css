@@ -229,12 +229,7 @@
   .btn-sm {
     @apply h-9 px-4 text-sm;
   }
-  /* A book cover as an object: a close shadow beneath, and on top a hairline edge and a faint spine on the left. */
-  .book-cover {
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.1),
-      0 8px 18px -8px rgb(0 0 0 / 0.35);
-  }
+  /* A book cover as an object: a hairline edge and a faint spine on the left. No shadow in lists and shelves. */
   .book-cover::after {
     content: '';
     position: absolute;
