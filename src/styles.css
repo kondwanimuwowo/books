@@ -8,21 +8,27 @@
  */
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Headings and book titles: an editorial serif, so the page reads as a place for books. */
+  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
+
+  /* The smallest text is fine print only; 13px keeps it readable on a phone in daylight. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
 
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;
 
-  --color-canvas: #f8f3ec;
+  --color-canvas: #fbf9f6;
   --color-surface: #ffffff;
-  --color-sunken: #f3ece2;
-  --color-sunken-strong: #eadbc8;
-  --color-line: #eadbc8;
-  --color-line-strong: #c9b49b;
+  --color-sunken: #f4f1ec;
+  --color-sunken-strong: #e8e3dc;
+  --color-line: #e6e0d8;
+  --color-line-strong: #cdc4b8;
 
   --color-ink: #2a1e17;
   --color-muted: #5b4a3c;
-  --color-subtle: #776453;
+  --color-subtle: #6c5b4d;
 
   --color-accent: #722f37;
   --color-accent-hover: #5b252c;
@@ -122,10 +128,10 @@
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }
-  /* Three weights: 400 body, 500 UI, 700 display. Page and section headings carry the 700. */
+  /* Body and UI in Plus Jakarta Sans (400 body, 500 UI, 700 emphasis); page and section headings in Newsreader. */
   h1,
   h2 {
-    @apply font-bold tracking-[-0.03em];
+    @apply font-serif font-semibold tracking-[-0.015em];
   }
   h3,
   h4 {
@@ -204,6 +210,21 @@
   }
   .btn-sm {
     @apply h-9 px-4 text-sm;
+  }
+  /* A book cover as an object: a close shadow beneath, and on top a hairline edge and a faint spine on the left. */
+  .book-cover {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.1),
+      0 8px 18px -8px rgb(0 0 0 / 0.35);
+  }
+  .book-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.16), rgb(255 255 255 / 0.1) 1.2%, transparent 3.5%);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
   }
   /* A surface that sits on the canvas: hairline + a whisper of elevation. */
   .card {

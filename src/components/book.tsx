@@ -1,17 +1,22 @@
 import { Link } from '@tanstack/react-router'
 import { CheckBadgeIcon } from '@heroicons/react/16/solid'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '#/lib/utils'
 import { Price } from './providers'
 import { ScrollRow } from './scroll-row'
 
-// Shadow here is physical, not decoration: it makes a cover read as an object you could pick up.
+// The shadow and spine are physical, not decoration: they make a cover read as a book you could pick up.
 export function BookCover({ src, title, author, className }: { src: string | null; title: string; author?: string | null; className?: string }) {
   const [failed, setFailed] = useState(false)
+  const img = useRef<HTMLImageElement>(null)
+  // An image that failed before the page hydrated never reports it to React; catch it once mounted.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth === 0) setFailed(true)
+  }, [src])
   return (
-    <div className={cn('relative aspect-[2/3] overflow-hidden rounded-md bg-sunken-strong shadow-md', className)}>
+    <div className={cn('book-cover relative aspect-[2/3] overflow-hidden rounded-[4px] bg-sunken-strong', className)}>
       {src && !failed ? (
-        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="h-full w-full object-cover" />
+        <img ref={img} src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="h-full w-full object-cover" />
       ) : (
         <TypeCover title={title} author={author} />
       )}
@@ -26,7 +31,7 @@ function TypeCover({ title, author }: { title: string; author?: string | null })
       <span aria-hidden className="absolute inset-y-0 left-[7%] w-px bg-on-deep-muted/30" />
       <span />
       <div>
-        <p className="line-clamp-5 text-[clamp(0.8rem,11cqw,1.15rem)] leading-[1.15] font-medium tracking-[-0.02em] text-on-accent">{title}</p>
+        <p className="line-clamp-5 font-serif text-[clamp(0.85rem,12cqw,1.25rem)] leading-[1.12] font-medium text-on-accent">{title}</p>
         {author && <p className="mt-2 line-clamp-2 text-[clamp(0.6rem,7cqw,0.75rem)] tracking-[0.08em] text-on-deep-muted uppercase">{author}</p>}
       </div>
     </div>
@@ -76,7 +81,7 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
         </span>
       )}
       <div className="mt-3 space-y-0.5">
-        <p className="line-clamp-2 text-[15px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
+        <p className="line-clamp-2 font-serif text-[17px] leading-snug font-semibold">{book.title}</p>
         {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
         {book.isZambian && <ZambianMark className="mt-1" />}
         <p className="pt-1 text-sm">
