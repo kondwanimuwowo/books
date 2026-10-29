@@ -123,7 +123,7 @@ export function ParcelShapes() {
           <div className="flex-1 space-y-2 pt-1">
             <Bone className="h-4 w-2/3" />
             <Bone className="h-3 w-1/4" />
-            <Bone className="mt-3 h-9 w-28 rounded-full" />
+            <Bone className="mt-3 h-9 w-28 rounded-control" />
           </div>
         </div>
       ))}
@@ -177,7 +177,7 @@ export function BookPageShapes() {
           <div className="mt-4">
             <CopyShapes />
           </div>
-          <Bone className="mt-5 h-11 w-full rounded-full" />
+          <Bone className="mt-5 h-11 w-full rounded-control" />
         </div>
       </div>
     </div>

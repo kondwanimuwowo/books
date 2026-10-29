@@ -39,7 +39,7 @@ function SellOnKuwala() {
       <section className="band relative overflow-hidden" onPointerMove={wall.length ? onPointerMove : undefined} onPointerLeave={wall.length ? onPointerLeave : undefined}>
         {wall.length > 0 && <CoverWallBackdrop tiles={wall} reveal={reveal} />}
         <div className="page rise relative py-14 sm:py-20">
-          <div className={cn(wall.length > 0 && 'frost w-fit max-w-2xl rounded-2xl px-6 py-7 sm:px-9 sm:py-9')}>
+          <div className={cn(wall.length > 0 && 'frost w-fit max-w-2xl rounded-xl px-6 py-7 sm:px-9 sm:py-9')}>
             <h1 className="max-w-2xl text-[2.25rem] leading-[1.06] font-normal sm:text-6xl">
               {PAGE.hero.title} <span className="block font-bold">{PAGE.hero.titleBold}</span>
             </h1>

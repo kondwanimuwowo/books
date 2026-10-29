@@ -344,12 +344,12 @@ function CopyOption({
       <span className="flex items-baseline justify-between gap-3">
         <span className="text-sm">
           <span className="font-medium">{conditionLabel(offer.condition)}</span>
-          <span className="text-subtle"> · {formatLabel(offer.format)}</span>
+          <span className="text-muted"> · {formatLabel(offer.format)}</span>
         </span>
         <Price ngwee={offer.priceNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
       </span>
       {offer.notes && <span className="mt-1 block text-sm text-muted">{offer.notes}</span>}
-      <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
+      <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
         {mine ? <span className="rounded-full bg-sunken px-2 py-0.5 font-medium text-ink">Your listing</span> : <span className="font-medium text-muted">{offer.seller.storeName}</span>}
         {offer.fromAuthor ? (
           <VerifiedMark label="From the author" />
@@ -358,7 +358,7 @@ function CopyOption({
         ) : (
           offer.seller.verified && <VerifiedMark />
         )}
-        <RatingMark rating={offer.seller.rating} className="text-xs" />
+        <RatingMark rating={offer.seller.rating} className="text-sm" />
         <span className="inline-flex items-center gap-0.5">
           <MapPinIcon className="size-3.5" aria-hidden />
           {offer.seller.town}

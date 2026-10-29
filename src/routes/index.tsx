@@ -65,7 +65,7 @@ function Home() {
           </section>
         )}
 
-        <section className="mt-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
+        <section className="mt-10 flex flex-col items-start justify-between gap-5 rounded-xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
           <div>
             <h2 className="text-xl sm:text-2xl">Got the school book list?</h2>
             <p className="mt-1 text-muted">Take a photo. We find every book on it.</p>
@@ -75,7 +75,7 @@ function Home() {
           </Link>
         </section>
 
-        <section className="my-10 flex flex-col items-start justify-between gap-5 rounded-2xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
+        <section className="my-10 flex flex-col items-start justify-between gap-5 rounded-xl bg-sunken px-6 py-8 sm:flex-row sm:items-center sm:px-10">
           <div>
             <h2 className="text-xl sm:text-2xl">Books gathering dust?</h2>
             <p className="mt-1 text-muted">Sell them here. Get paid by mobile money.</p>
@@ -101,7 +101,7 @@ function Intro({ wall }: { wall: string[] }) {
       {tiles.length > 0 && <CoverWallBackdrop tiles={tiles} reveal={reveal} />}
       <div className="page rise relative py-8 sm:py-12">
         {/* Over the cover wall the words sit on frosted glass so they read; on the plain band they don't need it. */}
-        <div className={cn(tiles.length > 0 && 'frost -mx-1 w-fit max-w-2xl rounded-2xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
+        <div className={cn(tiles.length > 0 && 'frost -mx-1 w-fit max-w-2xl rounded-xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
           <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
             Books across <span className="block font-bold">Zambia &amp; Beyond</span>
           </h1>

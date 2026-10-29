@@ -68,7 +68,7 @@ function NameEntry() {
           <CoverWallBackdrop tiles={tiles} reveal={reveal} />
         </div>
       )}
-      <div className={cn('relative', tiles.length > 0 && 'frost w-fit rounded-2xl px-8 py-7')}>
+      <div className={cn('relative', tiles.length > 0 && 'frost w-fit rounded-xl px-8 py-7')}>
         <p className="text-7xl leading-none font-bold tracking-[-0.05em]">{NAME_ENTRY.word}</p>
         <p className="mt-4 max-w-xs text-2xl leading-snug text-on-deep-muted">{NAME_ENTRY.meaning}</p>
       </div>

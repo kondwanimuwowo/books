@@ -48,7 +48,7 @@ function ChartPage() {
           ))}
         </ol>
       ) : (
-        <section className="mt-8 max-w-2xl rounded-2xl bg-sunken p-6 sm:p-8" aria-labelledby="not-yet">
+        <section className="mt-8 max-w-2xl rounded-xl bg-sunken p-6 sm:p-8" aria-labelledby="not-yet">
           <h2 id="not-yet" className="text-xl sm:text-2xl">
             Not enough sales for a chart yet
           </h2>

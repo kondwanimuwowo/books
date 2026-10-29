@@ -73,10 +73,10 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
         src={book.coverUrl}
         title={book.title}
         author={book.authorNames}
-        className="lift-cover transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-lg"
+        className="lift-cover transition-transform duration-200 ease-out group-hover:-translate-y-1"
       />
       {rank !== undefined && (
-        <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums shadow-md">
+        <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums">
           {rank}
         </span>
       )}
@@ -87,11 +87,11 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
         <p className="pt-1 text-sm">
           {book.fromPriceNgwee !== null ? (
             <>
-              <span className="text-subtle">{book.offerCount > 1 ? 'From ' : ''}</span>
-              <Price ngwee={book.fromPriceNgwee} className="font-medium text-ink" />
+              <span className="text-muted">{book.offerCount > 1 ? 'From ' : ''}</span>
+              <Price ngwee={book.fromPriceNgwee} className="text-[15px] font-bold text-ink tabular-nums" />
             </>
           ) : (
-            <span className="text-subtle">No copies listed yet</span>
+            <span className="text-muted">No copies listed yet</span>
           )}
         </p>
       </div>
@@ -124,7 +124,7 @@ export function Shelf({ title, books, more, ranked = false }: { title: string; b
         <h2 className="text-xl sm:text-2xl">{title}</h2>
         {more}
       </div>
-      {/* Vertical padding keeps the cover shadows and hover lift from being clipped by the scroller. */}
+      {/* Vertical padding keeps the hover lift from being clipped by the scroller. */}
       <ScrollRow className="-mx-4 -my-3 flex snap-x scroll-px-4 gap-5 px-4 py-3 sm:-mx-6 sm:scroll-px-6 sm:px-6">
         {books.map((b, i) => (
           <div key={b.slug} className="w-[136px] shrink-0 snap-start sm:w-[156px]">

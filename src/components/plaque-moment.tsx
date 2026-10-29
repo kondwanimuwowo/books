@@ -29,7 +29,7 @@ export function PlaqueMoment({ authorId, tier, reachedAt }: { authorId: string; 
         initial={{ opacity: 0, transform: 'translateY(12px) scale(0.97)' }}
         animate={{ opacity: 1, transform: 'translateY(0px) scale(1)' }}
         transition={ARRIVE}
-        className={cn('mb-6 flex items-center gap-5 rounded-2xl p-5 sm:p-6', TONES[tier])}
+        className={cn('mb-6 flex items-center gap-5 rounded-xl p-5 sm:p-6', TONES[tier])}
       >
         <motion.span
           initial={{ transform: 'scale(0.6) rotate(-12deg)', opacity: 0 }}

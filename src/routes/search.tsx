@@ -52,7 +52,7 @@ function SearchPending() {
     <div className="relative">
       <Placeholder mode="loading" label="Searching" shapes={<PageShapes><CoverGridShapes /></PageShapes>} />
       <div className="page pointer-events-none absolute inset-x-0 top-[5.5rem] lg:top-[6.25rem]">
-        <LoadingLine kind="find" className="mx-auto w-fit max-w-full rounded-2xl bg-surface px-5 py-3 shadow-md sm:mx-0 sm:rounded-full sm:py-1.5 sm:pr-4 sm:pl-3" />
+        <LoadingLine kind="find" className="mx-auto w-fit max-w-full rounded-xl bg-surface px-5 py-3 shadow-md sm:mx-0 sm:rounded-full sm:py-1.5 sm:pr-4 sm:pl-3" />
       </div>
     </div>
   )

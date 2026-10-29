@@ -89,7 +89,7 @@ function CoverStack({ books }: { books: Order['books'] }) {
         .reverse()
         .map((b, i, all) => (
           <div key={i} className={cn('absolute bottom-0 left-1 w-11', tilt[all.length - 1 - i])}>
-            <BookCover src={b.coverUrl} title={b.title} className="shadow-sm" />
+            <BookCover src={b.coverUrl} title={b.title} />
           </div>
         ))}
     </div>

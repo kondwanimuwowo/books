@@ -31,6 +31,12 @@
 @theme {
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   /* Headings and book titles in Manrope; body and UI in Inter. */
+  /*
+   * Corners, four sizes only: covers 4px (inline), controls 10px (buttons, fields), cards and panels 12px (xl),
+   * and fully round for chips, badges, toggles and avatars.
+   */
+  --radius-control: 0.625rem;
+
   --font-display: 'Manrope', 'Manrope Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 
   --color-*: initial;
@@ -203,7 +209,7 @@
     @apply mb-1.5 block text-sm font-medium text-ink;
   }
   .input {
-    @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-[15px] text-ink transition-[border-color,box-shadow] placeholder:text-subtle focus:border-accent-ink focus:outline-none disabled:bg-sunken;
+    @apply h-11 w-full rounded-control border border-line-strong bg-surface px-3 text-[15px] text-ink transition-[border-color,box-shadow] placeholder:text-subtle focus:border-accent-ink focus:outline-none disabled:bg-sunken;
   }
   .input:focus {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-ink) 22%, transparent);
@@ -212,7 +218,7 @@
     @apply h-auto py-2.5;
   }
   .btn {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium whitespace-nowrap transition-[background-color,box-shadow,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-control px-5 text-[15px] font-medium whitespace-nowrap transition-[background-color,box-shadow,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
   }
   /* The one loud thing on a screen. */
   .btn-primary {

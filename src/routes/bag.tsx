@@ -132,7 +132,7 @@ function Parcel({ group: g, index, total }: { group: Group; index: number; total
                     )}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="inline-flex items-center rounded-full bg-sunken">
+                    <div className="inline-flex items-center rounded-control bg-sunken">
                       <button
                         type="button"
                         aria-label={`One less ${item.book.title}`}
