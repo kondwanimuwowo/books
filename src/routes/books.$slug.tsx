@@ -25,6 +25,7 @@ import { BookPageShapes, CopyShapes, Placeholder } from '#/components/placeholde
 import { RatingMark } from '#/components/reputation'
 import { BookReviews } from '#/components/book-reviews'
 import { OFFICIAL_LABEL } from '#/data/onboarding'
+import { Segmented } from '#/components/segmented'
 
 export const Route = createFileRoute('/books/$slug')({
   pendingComponent: () => <Placeholder mode="loading" label="Loading book" shapes={<BookPageShapes />} />,
@@ -299,22 +300,14 @@ function Specs({ book }: { book: Book }) {
   )
 }
 
+const CONDITION_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'new', label: 'New' },
+  { value: 'used', label: 'Used' },
+] as const
+
 function ConditionToggle({ value, onChange }: { value: Filter; onChange: (f: Filter) => void }) {
-  return (
-    <div className="inline-flex rounded-full bg-sunken p-0.5 text-xs font-medium" role="group" aria-label="Condition">
-      {(['all', 'new', 'used'] as const).map((f) => (
-        <button
-          key={f}
-          type="button"
-          onClick={() => onChange(f)}
-          aria-pressed={value === f}
-          className={cn('h-7 rounded-full px-3 capitalize transition-colors', value === f ? 'bg-surface text-ink shadow-sm' : 'text-subtle hover:text-ink')}
-        >
-          {f}
-        </button>
-      ))}
-    </div>
-  )
+  return <Segmented label="Condition" options={CONDITION_OPTIONS} value={value} onChange={onChange} />
 }
 
 function CopyOption({

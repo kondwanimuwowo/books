@@ -16,6 +16,7 @@ import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
 import { PhotoFallback } from './photo-fallback'
 import { Wordmark } from './wordmark'
+import { Segmented } from './segmented'
 
 interface HeaderUser {
   displayName: string
@@ -31,23 +32,23 @@ export function Logo({ className, tone = 'default' }: { className?: string; tone
   )
 }
 
+const CURRENCY_OPTIONS = [
+  { value: 'ZMW', label: 'ZMW' },
+  { value: 'USD', label: 'USD' },
+] as const
+
 function CurrencySwitch() {
   const { currency, rate, rateNote, setCurrency } = useCurrency()
   if (!rate) return null
   return (
-    <div className="inline-flex rounded-full bg-on-accent/10 p-0.5 text-xs font-medium" role="group" aria-label="Show prices in" title={rateNote ?? undefined}>
-      {(['ZMW', 'USD'] as const).map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => setCurrency(c)}
-          aria-pressed={currency === c}
-          className={cn('h-7 rounded-full px-2.5 transition-colors', currency === c ? 'bg-on-accent text-deep' : 'text-on-deep-muted hover:text-on-accent')}
-        >
-          {c}
-        </button>
-      ))}
-    </div>
+    <Segmented
+      tone="band"
+      label="Show prices in"
+      title={rateNote ?? undefined}
+      options={CURRENCY_OPTIONS}
+      value={currency}
+      onChange={setCurrency}
+    />
   )
 }
 

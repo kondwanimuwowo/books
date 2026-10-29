@@ -78,9 +78,12 @@ function NameEntry() {
 
 function ModeSwitch({ mode, next }: { mode: 'signin' | 'signup'; next?: string }) {
   const tab = (active: boolean) =>
-    cn('flex h-9 items-center justify-center rounded-full text-sm font-medium no-underline transition-colors', active ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink')
+    cn(
+      'flex h-8 items-center justify-center rounded-full text-[13px] font-medium no-underline transition-colors',
+      active ? 'bg-surface text-ink shadow-[0_0_0_1px_var(--color-line)]' : 'text-muted hover:text-ink',
+    )
   return (
-    <nav aria-label="Account" className="mb-8 grid grid-cols-2 rounded-full bg-sunken p-1">
+    <nav aria-label="Account" className="mb-8 grid grid-cols-2 rounded-full bg-sunken p-0.5">
       <Link to="/login" search={{ next }} replace aria-current={mode === 'signin' ? 'page' : undefined} className={tab(mode === 'signin')}>
         {AUTH_COPY.signIn}
       </Link>
