@@ -8,8 +8,8 @@
  */
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-  /* Headings and book titles: an editorial serif, so the page reads as a place for books. */
-  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
+  /* Headings and book titles: Manrope, a crisper geometric face beside the body's Plus Jakarta Sans. */
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 
   /* The smallest text is fine print only; 13px keeps it readable on a phone in daylight. */
   --text-xs: 0.8125rem;
@@ -128,10 +128,10 @@
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }
-  /* Body and UI in Plus Jakarta Sans (400 body, 500 UI, 700 emphasis); page and section headings in Newsreader. */
+  /* Body and UI in Plus Jakarta Sans (400 body, 500 UI, 700 emphasis); page and section headings in Manrope. */
   h1,
   h2 {
-    @apply font-serif font-semibold tracking-[-0.015em];
+    @apply font-display font-bold tracking-[-0.025em];
   }
   h3,
   h4 {

@@ -31,7 +31,7 @@ function TypeCover({ title, author }: { title: string; author?: string | null })
       <span aria-hidden className="absolute inset-y-0 left-[7%] w-px bg-on-deep-muted/30" />
       <span />
       <div>
-        <p className="line-clamp-5 font-serif text-[clamp(0.85rem,12cqw,1.25rem)] leading-[1.12] font-medium text-on-accent">{title}</p>
+        <p className="line-clamp-5 font-display text-[clamp(0.85rem,12cqw,1.2rem)] leading-[1.12] font-bold tracking-[-0.02em] text-on-accent">{title}</p>
         {author && <p className="mt-2 line-clamp-2 text-[clamp(0.6rem,7cqw,0.75rem)] tracking-[0.08em] text-on-deep-muted uppercase">{author}</p>}
       </div>
     </div>
@@ -81,7 +81,7 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
         </span>
       )}
       <div className="mt-3 space-y-0.5">
-        <p className="line-clamp-2 font-serif text-[17px] leading-snug font-semibold">{book.title}</p>
+        <p className="line-clamp-2 font-display text-[16px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
         {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
         {book.isZambian && <ZambianMark className="mt-1" />}
         <p className="pt-1 text-sm">
