@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { CheckBadgeIcon } from '@heroicons/react/16/solid'
 import { useEffect, useRef, useState } from 'react'
+import { ZAMBIA_FLAG } from '#/data/brand'
 import { cn } from '#/lib/utils'
 import { Price } from './providers'
 import { ScrollRow } from './scroll-row'
@@ -69,12 +70,20 @@ export interface BookCardData {
 export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) {
   return (
     <Link to="/books/$slug" params={{ slug: book.slug }} className="group relative block text-ink no-underline hover:text-ink">
-      <BookCover
-        src={book.coverUrl}
-        title={book.title}
-        author={book.authorNames}
-        className="lift-cover transition-transform duration-200 ease-out group-hover:-translate-y-1"
-      />
+      <div className="lift-cover relative transition-transform duration-200 ease-out group-hover:-translate-y-1">
+        <BookCover src={book.coverUrl} title={book.title} author={book.authorNames} />
+        {/* Zambian authors: the flag in the cover's corner, in place of a label. */}
+        {book.isZambian && (
+          <img
+            src={ZAMBIA_FLAG.src}
+            alt={ZAMBIA_FLAG.label}
+            title={ZAMBIA_FLAG.label}
+            width={48}
+            height={48}
+            className="absolute right-1.5 bottom-1.5 aspect-square w-[clamp(1.25rem,17%,1.75rem)] rounded-full ring-2 ring-white"
+          />
+        )}
+      </div>
       {rank !== undefined && (
         <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums">
           {rank}
@@ -83,7 +92,6 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
       <div className="mt-3 space-y-0.5">
         <p className="line-clamp-2 font-display text-[16px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
         {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
-        {book.isZambian && <ZambianMark className="mt-1" />}
         <p className="pt-1 text-sm">
           {book.fromPriceNgwee !== null ? (
             <>

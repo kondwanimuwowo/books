@@ -10,6 +10,7 @@ import { authorReaders } from './tiers.server'
 import { readerStandings, shopRatings } from './reputation.server'
 import { REVIEW_LIMITS } from '#/data/reputation'
 import { TIERS } from '#/data/tiers'
+import { ZAMBIAN_CATEGORY } from '#/data/categories'
 
 export interface BookCard {
   id: string
@@ -54,7 +55,7 @@ export function cardColumns(offers: ReturnType<typeof offersSubquery>) {
     slug: books.slug,
     title: books.title,
     coverUrl: books.coverUrl,
-    isZambian: books.isZambian,
+    isZambian: sql<boolean>`(${books.isZambian} or ${books.categoryId} in (select id from ${categories} where slug = ${ZAMBIAN_CATEGORY}))`,
     authorNames: authorNamesSql,
     fromPriceNgwee: offers.fromPrice,
     offerCount: sql<number>`coalesce(${offers.offerCount}, 0)::int`,

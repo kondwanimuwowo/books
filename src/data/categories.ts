@@ -1,3 +1,6 @@
+// Books on this shelf count as Zambian on their cards, even when the author isn't marked Zambian.
+export const ZAMBIAN_CATEGORY = 'zambian-fiction'
+
 export const CATEGORIES = [
   { slug: 'zambian-fiction', name: 'Zambian fiction' },
   { slug: 'fiction', name: 'Fiction' },

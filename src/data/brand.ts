@@ -26,6 +26,9 @@ export const CONTACT = {
   facebook: 'https://facebook.com/kuwalabooks',
 } as const
 
+// The Zambian flag on the covers of books by Zambian authors.
+export const ZAMBIA_FLAG = { src: '/brand/zambia-flag.webp', label: 'Zambian author' } as const
+
 // Shops without a logo get one of these, always the same one for a given shop.
 const SHOP_FALLBACKS = ['shop-1', 'shop-2'] as const
 
