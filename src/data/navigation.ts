@@ -68,6 +68,7 @@ export const FOOTER_NAV = [
   {
     title: 'Help',
     links: [
+      { label: 'How buying works', to: '/how-it-works' },
       { label: 'Your orders', to: '/account' },
       { legal: 'buyer-protection' },
       { label: 'Email support', href: `mailto:${CONTACT.support}` },

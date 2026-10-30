@@ -514,6 +514,11 @@ function TrustStrip({ rates }: { rates: DeliveryRate[] }) {
           </span>
         </li>
       ))}
+      <li className="pl-7">
+        <Link to="/how-it-works" className="text-sm font-medium">
+          How buying works
+        </Link>
+      </li>
     </ul>
   )
 }

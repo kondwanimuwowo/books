@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BagRouteImport } from './routes/bag'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SchoolListRouteImport } from './routes/school-list'
@@ -86,6 +87,11 @@ const BagRoute = BagRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminShellIndexRoute
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
@@ -446,6 +454,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/school-list': typeof SchoolListRoute
@@ -503,6 +512,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bag'
     | '/forgot-password'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
     | '/school-list'
@@ -557,6 +567,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bag'
     | '/forgot-password'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
     | '/school-list'
@@ -610,6 +621,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bag'
     | '/forgot-password'
+    | '/how-it-works'
     | '/login'
     | '/privacy'
     | '/school-list'
@@ -667,6 +679,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   BagRoute: typeof BagRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
   SchoolListRoute: typeof SchoolListRoute
@@ -725,6 +738,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1172,6 +1192,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   BagRoute: BagRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
   SchoolListRoute: SchoolListRoute,

@@ -1,8 +1,11 @@
 // Marketing pages. Every number comes from the constants the site runs on, so the pages follow a change of fee or rule.
 import { formatMoney } from '#/lib/money'
-import { DISPUTE_REPLY_HOURS, SHIP_WITHIN_DAYS } from './fulfilment'
-import { COMMISSION_RATE, OFFER_REPLY_HOURS } from './listing-options'
+import { DECISION_WORKING_DAYS, DISPUTE_REPLY_HOURS, SHIP_WITHIN_DAYS } from './fulfilment'
+import { COMMISSION_RATE, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS } from './listing-options'
+import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { instantFee } from './payouts'
+import { AUTO_RELEASE_DAYS, PICKUP_RELEASE_DAYS } from './shipping'
+import { YANGO_TOWNS } from './zambia'
 
 const percent = `${Math.round(COMMISSION_RATE * 100)}%`
 const examplePrice = 20_000
@@ -61,4 +64,64 @@ export const SELL_PAGE = {
     { q: 'What can’t I sell?', a: 'Copies that aren’t genuine, and anything else the Seller agreement rules out.' },
   ],
   closing: 'Got a book on your shelf? List it in minutes.',
+} as const
+
+const days = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`
+const networkList = (() => {
+  const names = NETWORKS.map((n) => n.name)
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names.at(-1)}` : (names[0] ?? 'mobile money')
+})()
+
+export const BUY_PAGE = {
+  path: '/how-it-works',
+  metaTitle: 'How buying works on Kuwala Books',
+  metaDescription: 'Pay by mobile money. Your money is held until your books arrive.',
+  hero: {
+    title: 'Books from across Zambia.',
+    titleBold: 'Paid for safely.',
+    line: 'New and used books from readers, authors and bookshops. Your money is held until they reach you.',
+    cta: 'Browse books',
+    secondary: 'How it works',
+  },
+  stepsHeading: 'How it works',
+  steps: [
+    { title: 'Find it', body: 'Search by title, author or ISBN, or photograph a school book list. Compare copies by condition, price and seller.' },
+    { title: 'Pay safely', body: `Pay with ${networkList}${CARD_PAYMENTS ? ' or card' : ''}, approved on your own phone. We hold the money; the seller isn’t paid yet.` },
+    { title: 'Get your books', body: `The seller sends them within ${days(SHIP_WITHIN_DAYS)}. Confirm on your order page when they arrive, and only then is the seller paid.` },
+  ],
+  protectionHeading: 'Your money is protected',
+  protection: [
+    { title: 'Not sent? Refunded.', body: `If the seller doesn’t send your books within ${days(SHIP_WITHIN_DAYS)}, you get everything back, books and delivery, without asking.` },
+    {
+      title: 'Not right? Report it.',
+      body: `Wrong book, missing pages, damaged, or worse than described: report it before you confirm. The seller has ${DISPUTE_REPLY_HOURS} hours to answer and we decide within ${days(DECISION_WORKING_DAYS)}.`,
+    },
+    { title: 'Refunds in minutes.', body: 'Mobile money refunds go back to the number that paid, usually within minutes.' },
+  ],
+  protectionLink: 'Read Buyer protection',
+  deliveryHeading: 'Delivery',
+  delivery: [
+    { title: 'Yango Delivery', body: `By motorbike to your door, within ${YANGO_TOWNS.join(', ')}.` },
+    { title: 'Platinum Courier', body: 'To you anywhere in Zambia.' },
+    { title: 'Mercury Tigmoo', body: 'Premium courier, tracked to your door.' },
+    { title: 'Bus parcel', body: 'Collect at your bus station with your order number.' },
+    { title: 'Pick up', body: 'Meet the seller in their town and collect it yourself.' },
+  ],
+  deliveryNote: 'You see the delivery price before you pay, and sellers can’t charge more than our rates.',
+  faqHeading: 'Questions',
+  faq: [
+    { q: 'Do I need an account?', a: 'Only to buy. It takes a minute, or continue with Google. Browsing doesn’t need one.' },
+    {
+      q: 'Can I pay by card?',
+      a: CARD_PAYMENTS ? `Yes, or with ${networkList}.` : `Not yet. For now it’s mobile money: ${networkList}.`,
+    },
+    { q: 'Can I make an offer?', a: `On listings open to offers, yes. The seller has ${OFFER_REPLY_HOURS} hours to reply, and if they accept you have ${OFFER_HOLD_HOURS} hours to pay.` },
+    { q: 'What if I change my mind?', a: 'There are no returns for a change of mind, so check the condition, notes and photos before you buy.' },
+    {
+      q: 'What if I forget to confirm?',
+      a: `The money goes to the seller ${days(AUTO_RELEASE_DAYS)} after they send the parcel (${days(PICKUP_RELEASE_DAYS)} for pickup), unless you’ve reported a problem.`,
+    },
+    { q: 'Can I see prices in dollars?', a: 'Yes, switch to USD at the top of the page. It’s a guide; you always pay in kwacha.' },
+  ],
+  closing: 'Find your next book.',
 } as const
