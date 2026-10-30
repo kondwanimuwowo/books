@@ -32,7 +32,8 @@ Book marketplace for Zambia (kuwalabooks.com). Anyone can sell new or used books
 
 ## Design
 One burgundy accent on semantic tokens, white pages with neutral grey boxes and hairlines, Manrope for headings and book titles, Inter for body and UI (400/500/700, metric-matched fallbacks in `styles.css`), Heroicons solid used sparingly, minimal copy, no decorative effects, ghost empty states and skeletons, light and dark mode, separate mobile and desktop layouts.
-- Corners: covers 4px, controls 10px (`rounded-control`: buttons, fields, search), cards and panels 12px, fully round only for chips, badges, toggles and avatars.
+- Header: white (theme surface) with a hairline beneath, colour logo, grey links; burgundy stays for the footer, hero bands and accents.
+- Corners: covers 4px, fields 10px (`rounded-control`: inputs, search), cards and panels 12px, fully round for buttons, chips, badges, toggles and avatars.
 - Shadows only on floating things (menus, dialogs, sticky bars, shelf arrows), never on book cards or covers in lists.
 - Zambian books carry the flag (`public/brand/zambia-flag.webp`) in the cover's corner on cards; pages keep the "Zambian author" label.
 

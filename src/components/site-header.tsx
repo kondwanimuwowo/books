@@ -288,8 +288,8 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
           <Link
             to="/bag"
             className={cn(
-              outlinedOnBand,
-              'ml-1 gap-1.5 px-3',
+              navLink,
+              'ml-1 gap-1.5 px-3 text-ink',
               // Phones with the tab bar reach the bag from there.
               tabs && 'hidden sm:inline-flex',
             )}

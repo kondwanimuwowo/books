@@ -32,8 +32,8 @@
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   /* Headings and book titles in Manrope; body and UI in Inter. */
   /*
-   * Corners, four sizes only: covers 4px (inline), controls 10px (buttons, fields), cards and panels 12px (xl),
-   * and fully round for chips, badges, toggles and avatars.
+   * Corners, four sizes only: covers 4px (inline), fields 10px (inputs, search), cards and panels 12px (xl),
+   * and fully round for buttons, chips, badges, toggles and avatars.
    */
   --radius-control: 0.625rem;
 
@@ -219,7 +219,7 @@
     @apply h-auto py-2.5;
   }
   .btn {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-control px-5 text-[15px] font-medium whitespace-nowrap transition-[background-color,box-shadow,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium whitespace-nowrap transition-[background-color,box-shadow,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
   }
   /* The one loud thing on a screen. */
   .btn-primary {
