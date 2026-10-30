@@ -25,8 +25,8 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       // The header is deep burgundy in both themes, so the phone's browser bar matches it.
-      { name: 'theme-color', content: '#431b20', media: '(prefers-color-scheme: light)' },
-      { name: 'theme-color', content: '#2c1518', media: '(prefers-color-scheme: dark)' },
+      { name: 'theme-color', content: '#ffffff', media: '(prefers-color-scheme: light)' },
+      { name: 'theme-color', content: '#201915', media: '(prefers-color-scheme: dark)' },
       { title: 'Kuwala Books: buy and sell books in Zambia' },
       { name: 'description', content: 'New and used books from Zambian authors, readers and bookshops. Pay with mobile money, delivered across Zambia.' },
     ],

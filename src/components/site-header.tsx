@@ -42,7 +42,6 @@ function CurrencySwitch() {
   if (!rate) return null
   return (
     <Segmented
-      tone="band"
       label="Show prices in"
       title={rateNote ?? undefined}
       options={CURRENCY_OPTIONS}
@@ -120,9 +119,9 @@ function SearchBox() {
       }}
     >
       {loading || navigating ? (
-        <Spinner className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" />
+        <Spinner className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-subtle" />
       ) : (
-        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-on-deep-muted" aria-hidden />
+        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-subtle" aria-hidden />
       )}
       <input
         type="search"
@@ -153,7 +152,7 @@ function SearchBox() {
         autoComplete="off"
         placeholder="A title, an author, or an ISBN"
         aria-label="Search books"
-        className="h-10 w-full rounded-control bg-on-accent/10 pr-4 pl-11 text-[15px] text-on-accent transition-colors placeholder:text-on-deep-muted focus:bg-on-accent/15 focus:shadow-[inset_0_0_0_1.5px_var(--color-on-deep-muted)] focus:outline-none md:h-11"
+        className="h-10 w-full rounded-control bg-sunken pr-4 pl-11 text-[15px] text-ink transition-colors placeholder:text-subtle focus:bg-surface focus:shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)] focus:outline-none md:h-11"
       />
       {searching && (
         <div className="card drop-in absolute inset-x-0 top-full z-40 mt-2 max-h-[min(70vh,34rem)] overflow-y-auto text-left">
@@ -233,10 +232,9 @@ function QuickResults({
   )
 }
 
-const navLink = 'btn btn-sm text-on-deep-muted hover:bg-on-accent/10 hover:text-on-accent'
+const navLink = 'btn btn-sm text-muted hover:bg-sunken hover:text-ink'
 // Outlined, not filled: header actions are always there, so they must never outshout a page's own primary action.
-const outlinedOnBand =
-  'btn btn-sm text-on-accent shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-on-accent)_30%,transparent)] hover:bg-on-accent/10 hover:text-on-accent'
+const outlinedOnBand = 'btn btn-sm text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-sunken hover:text-ink'
 
 export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: boolean }) {
   const { count, ready } = useBag()
@@ -247,7 +245,7 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
   return (
     <header ref={ref} data-hidden={hidden} onFocus={reveal} className="header-bar sticky top-0 z-30">
       <div className="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3 md:flex-nowrap md:py-4">
-        <Logo tone="inverse" />
+        <Logo />
         <div className="order-last w-full md:order-none md:flex-1">
           <SearchBox />
         </div>
@@ -301,7 +299,7 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
             {items > 0 && (
               <span
                 key={items}
-                className="rise inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-on-accent px-1.5 text-xs text-deep tabular-nums"
+                className="rise inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs text-on-accent tabular-nums"
               >
                 {items}
               </span>
@@ -326,11 +324,11 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
         id="mobile-menu"
         aria-label="Menu"
         data-open={menu.open}
-        className="menu-panel band absolute inset-x-0 top-full border-t border-on-deep-muted/15 shadow-lg sm:hidden"
+        className="menu-panel absolute inset-x-0 top-full border-t border-line bg-surface text-ink shadow-lg sm:hidden"
       >
         {!user && (
           <div className="page grid grid-cols-2 gap-3 pt-4 pb-2">
-            <Link to="/signup" className="btn btn-sm bg-on-accent text-deep hover:bg-on-accent/90 hover:text-deep" tabIndex={menu.open ? undefined : -1}>
+            <Link to="/signup" className="btn btn-primary btn-sm" tabIndex={menu.open ? undefined : -1}>
               {AUTH_COPY.createAccount}
             </Link>
             <Link to="/login" className={outlinedOnBand} tabIndex={menu.open ? undefined : -1}>
@@ -360,7 +358,7 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
           {user?.sellerSlug && (
             <li>
               <Link to="/sellers/$slug" params={{ slug: user.sellerSlug }} className={menuItem}>
-                <MY_SHOP.icon className="size-5 shrink-0 text-on-deep-muted" aria-hidden />
+                <MY_SHOP.icon className="size-5 shrink-0 text-subtle" aria-hidden />
                 {MY_SHOP.label}
               </Link>
             </li>
@@ -378,8 +376,8 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
             </li>
           )}
         </ul>
-        <div className="page flex items-center justify-between gap-4 border-t border-on-deep-muted/15 py-4">
-          <span className="text-sm text-on-deep-muted">
+        <div className="page flex items-center justify-between gap-4 border-t border-line py-4">
+          <span className="text-sm text-muted">
             Prices in
             <RateNote className="block text-xs" />
           </span>
@@ -390,13 +388,13 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
   )
 }
 
-const menuItem = 'flex items-center gap-3 py-3 text-lg font-medium text-on-accent no-underline hover:text-on-deep-muted'
+const menuItem = 'flex items-center gap-3 py-3 text-lg font-medium text-ink no-underline hover:text-accent-ink'
 
 function MenuLink({ to, icon: Icon, children }: { to: LinkProps['to']; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
     <li>
       <Link to={to} className={menuItem}>
-        <Icon className="size-5 shrink-0 text-on-deep-muted" aria-hidden />
+        <Icon className="size-5 shrink-0 text-subtle" aria-hidden />
         {children}
       </Link>
     </li>

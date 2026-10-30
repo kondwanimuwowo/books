@@ -315,17 +315,17 @@
     @apply bg-deep text-on-accent;
   }
   /* The site header: deep burgundy in both themes, frosted so content reads as it slides under. */
+  /* The site header: white (the theme's surface) with a hairline beneath; the burgundy is kept for the logo and accents. */
   .header-bar {
-    @apply text-on-accent;
-    background-color: var(--color-deep);
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-accent) 8%, transparent);
+    @apply text-ink;
+    background-color: var(--color-surface);
+    box-shadow: 0 1px 0 var(--color-line);
     transition: transform 280ms var(--ease-drawer);
   }
   .header-bar[data-hidden='true'] {
     transform: translateY(-100%);
   }
   /* Burgundy focus rings vanish on burgundy. */
-  .header-bar :focus-visible,
   .band :focus-visible {
     outline-color: var(--color-on-accent);
   }
