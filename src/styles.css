@@ -330,17 +330,33 @@
     outline-color: var(--color-on-accent);
   }
   /* Horizontal shelves fade at whichever edge has more to see (ScrollRow sets the data attributes). */
+  /* A soft hint, not a wall: the edge with more to see dims to 35% rather than vanishing. */
   .scroll-row {
-    --fade-start: 28px;
-    --fade-end: 44px;
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
-    mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+    --fade-start: 20px;
+    --fade-end: 32px;
+    -webkit-mask-image: linear-gradient(to right, rgb(0 0 0 / 0.35), #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.35));
+    mask-image: linear-gradient(to right, rgb(0 0 0 / 0.35), #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.35));
   }
   .scroll-row[data-at-start='true'] {
     --fade-start: 0px;
   }
   .scroll-row[data-at-end='true'] {
     --fade-end: 0px;
+  }
+  /* Shelf arrows, mouse only: they fade out at the row's ends and give a little when pressed. */
+  .scroll-arrow {
+    display: none;
+    transition:
+      opacity 200ms ease,
+      scale 160ms var(--ease-out);
+  }
+  .scroll-arrow:active {
+    scale: 0.95;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .scroll-arrow {
+      display: grid;
+    }
   }
   /* The mobile menu drops from under the header, unhurried; it leaves a little quicker than it came. */
   .menu-panel {

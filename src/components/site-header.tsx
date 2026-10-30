@@ -153,7 +153,7 @@ function SearchBox() {
         autoComplete="off"
         placeholder="A title, an author, or an ISBN"
         aria-label="Search books"
-        className="h-11 w-full rounded-control bg-on-accent/10 pr-4 pl-11 text-[15px] text-on-accent transition-colors placeholder:text-on-deep-muted focus:bg-on-accent/15 focus:shadow-[inset_0_0_0_1.5px_var(--color-on-deep-muted)] focus:outline-none md:h-12"
+        className="h-10 w-full rounded-control bg-on-accent/10 pr-4 pl-11 text-[15px] text-on-accent transition-colors placeholder:text-on-deep-muted focus:bg-on-accent/15 focus:shadow-[inset_0_0_0_1.5px_var(--color-on-deep-muted)] focus:outline-none md:h-11"
       />
       {searching && (
         <div className="card drop-in absolute inset-x-0 top-full z-40 mt-2 max-h-[min(70vh,34rem)] overflow-y-auto text-left">

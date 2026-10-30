@@ -80,7 +80,7 @@ export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) 
             title={ZAMBIA_FLAG.label}
             width={48}
             height={48}
-            className="absolute right-1.5 bottom-1.5 aspect-square w-[clamp(1.25rem,17%,1.75rem)] rounded-full ring-2 ring-white"
+            className="absolute right-1.5 bottom-1.5 aspect-square w-[clamp(1rem,13%,1.375rem)] rounded-full"
           />
         )}
       </div>
@@ -133,7 +133,7 @@ export function Shelf({ title, books, more, ranked = false }: { title: string; b
         {more}
       </div>
       {/* Vertical padding keeps the hover lift from being clipped by the scroller. */}
-      <ScrollRow className="-mx-4 -my-3 flex snap-x scroll-px-4 gap-5 px-4 py-3 sm:-mx-6 sm:scroll-px-6 sm:px-6">
+      <ScrollRow arrows className="-mx-4 -my-3 flex snap-x scroll-px-4 gap-5 px-4 py-3 sm:-mx-6 sm:scroll-px-6 sm:px-6">
         {books.map((b, i) => (
           <div key={b.slug} className="w-[136px] shrink-0 snap-start sm:w-[156px]">
             <BookCard book={b} rank={ranked ? i + 1 : undefined} />
