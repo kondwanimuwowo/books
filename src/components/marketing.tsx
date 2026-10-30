@@ -1,14 +1,30 @@
+import { Link, useLoaderData } from '@tanstack/react-router'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CoverWallBackdrop, useCoverReveal } from './cover-wall'
 import { cn } from '#/lib/utils'
 import type { Illustration } from '#/data/marketing'
+import { MY_SHOP } from '#/data/navigation'
 
 // The pieces every marketing page is built from, so they read as one family.
 
 /** Light button for the burgundy bands. */
 export const ON_BAND_BUTTON = 'btn bg-on-accent text-deep hover:bg-on-accent/90 hover:text-deep'
+
+/** The pages' one action for would-be sellers: people who already sell list a book; everyone else starts selling. */
+export function StartSellingButton({ label, className }: { label: string; className?: string }) {
+  const { user } = useLoaderData({ from: '__root__' })
+  return user?.sellerSlug ? (
+    <Link to="/sell" className={cn(ON_BAND_BUTTON, className)}>
+      {MY_SHOP.list}
+    </Link>
+  ) : (
+    <Link to="/start-selling" className={cn(ON_BAND_BUTTON, className)}>
+      {label}
+    </Link>
+  )
+}
 
 /** The opening band: the cover wall with its trailing spot, and the words on frosted glass. */
 export function MarketingHero({ wall, title, titleBold, line, action, more }: { wall: string[]; title: string; titleBold: string; line: string; action: ReactNode; more: string }) {

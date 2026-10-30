@@ -6,6 +6,8 @@ import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { instantFee } from './payouts'
 import { AUTO_RELEASE_DAYS, PICKUP_RELEASE_DAYS } from './shipping'
 import { YANGO_TOWNS } from './zambia'
+import { TIERS } from './tiers'
+import { CONTACT } from './brand'
 
 const percent = `${Math.round(COMMISSION_RATE * 100)}%`
 const examplePrice = 20_000
@@ -49,8 +51,8 @@ export const SELL_PAGE = {
     { title: 'Zambian books first.', body: 'Zambian authors get their own shelf and the Zambia Top 20.' },
   ],
   doors: [
-    { title: 'Wrote the book?', body: 'Get verified as its author and sell copies direct.' },
-    { title: 'Run a bookshop?', body: 'Open a shop with your logo and list your whole stock.' },
+    { title: 'Wrote the book?', body: 'Get verified as its author and sell copies direct.', to: '/for-authors', link: 'For authors' },
+    { title: 'Run a bookshop?', body: 'Open a shop with your logo and list your whole stock.', to: '/start-selling', link: 'Start selling' },
   ],
   faqHeading: 'Questions',
   faq: [
@@ -145,3 +147,54 @@ export const ILLUSTRATIONS = {
 } as const
 
 export type Illustration = (typeof ILLUSTRATIONS)[keyof typeof ILLUSTRATIONS]
+
+const readers = (n: number) => `${n.toLocaleString('en')} readers`
+
+export const AUTHOR_PAGE = {
+  path: '/for-authors',
+  metaTitle: 'For authors: sell your books direct on Kuwala Books',
+  metaDescription: 'Sell your own books, get verified, and earn plaques as readers find you. Zambian authors first.',
+  hero: {
+    title: 'Your book deserves readers.',
+    titleBold: 'Meet them here.',
+    line: 'Sell your books direct, get verified, and earn plaques as readers find you.',
+    cta: 'Start as an author',
+    secondary: 'How it works',
+  },
+  stepsHeading: 'How it works',
+  steps: [
+    { title: 'Open your author page', body: 'Choose Author when you start selling, then add your photo and a few lines about you and your writing.' },
+    { title: 'Get verified', body: 'Send your NRC or passport and a photo of you holding your book. We usually reply within two working days, and you can sell while we check.' },
+    { title: 'Sell direct', body: `Once you’re verified, your copies show as “From the author” on your books’ pages. Buyers pay first; you send within ${days(SHIP_WITHIN_DAYS)}.` },
+  ],
+  getHeading: 'What verified authors get',
+  get: [
+    { title: 'A verified mark.', body: 'On your author page and beside your books, so readers know it’s really you.' },
+    { title: '“From the author” on your copies.', body: 'Readers can buy straight from the person who wrote it.' },
+    { title: 'Your books, described your way.', body: 'Edit your books’ details and descriptions on Kuwala.' },
+    { title: 'A place in the Zambia Top 20.', body: 'Zambian authors only, ranked every week by how many different readers bought their books.' },
+  ],
+  launch: {
+    heading: 'Launch your book with us',
+    line: 'Kuwala Books organises book launches for authors: we help plan the event, bring readers into the room and run the day, so you can focus on your book.',
+    points: [
+      { title: 'Planning', body: 'Choosing the date and the venue, and shaping the programme with you.' },
+      { title: 'Readers in the room', body: 'Invitations, reminders and getting the word out to readers who’ll want your book.' },
+      { title: 'On the day', body: 'Running the event, so you can talk to your readers and sign their books.' },
+    ],
+    email: { label: 'Talk to us about a launch', href: `mailto:${CONTACT.email}?subject=${encodeURIComponent('Book launch')}` },
+    whatsapp: { label: 'WhatsApp us', href: `https://wa.me/${CONTACT.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello Kuwala Books, I’d like to talk about a book launch.')}` },
+  },
+  plaquesHeading: 'Plaques as readers find you',
+  plaquesLine: 'They count different readers who received one of your books through Kuwala, and once earned they stay on your page.',
+  plaques: TIERS.map((t) => ({ title: t.label, body: `${readers(t.readers)}${t.books > 1 ? `, across ${t.books} or more books` : ''}` })),
+  faqHeading: 'Questions',
+  faq: [
+    { q: 'Do I have to be Zambian?', a: 'No, any author can sell. Zambian authors also count for the Zambia Top 20, and come first across Kuwala.' },
+    { q: 'I self-published. Can I still sell?', a: 'Yes. Self-published and small-press books are welcome, with or without an ISBN.' },
+    { q: 'There’s already a page with my name on it.', a: 'We prepare pages for Zambian authors from what’s already public. Open yours and choose Claim this page to add your photo and story and get verified.' },
+    { q: 'What happens to my documents?', a: 'Only our team sees them, and they’re deleted as soon as we’ve decided.' },
+    { q: 'What does it cost?', a: `Listing is free. We take ${percent} of the book price when it sells, and the whole delivery fee is yours.` },
+  ],
+  closing: 'Your readers are looking for you.',
+} as const

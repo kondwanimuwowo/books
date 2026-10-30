@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BagRouteImport } from './routes/bag'
+import { Route as ForAuthorsRouteImport } from './routes/for-authors'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as LoginRouteImport } from './routes/login'
@@ -82,6 +83,11 @@ const AdminRoute = AdminRouteImport.update({
 const BagRoute = BagRouteImport.update({
   id: '/bag',
   path: '/bag',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForAuthorsRoute = ForAuthorsRouteImport.update({
+  id: '/for-authors',
+  path: '/for-authors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -343,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
+  '/for-authors': typeof ForAuthorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminShellIndexRoute
   '/bag': typeof BagRoute
+  '/for-authors': typeof ForAuthorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/bag': typeof BagRoute
+  '/for-authors': typeof ForAuthorsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/bag'
+    | '/for-authors'
     | '/forgot-password'
     | '/how-it-works'
     | '/login'
@@ -566,6 +576,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/bag'
+    | '/for-authors'
     | '/forgot-password'
     | '/how-it-works'
     | '/login'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/admin'
     | '/bag'
+    | '/for-authors'
     | '/forgot-password'
     | '/how-it-works'
     | '/login'
@@ -678,6 +690,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   BagRoute: typeof BagRoute
+  ForAuthorsRoute: typeof ForAuthorsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
@@ -731,6 +744,13 @@ declare module '@tanstack/react-router' {
       path: '/bag'
       fullPath: '/bag'
       preLoaderRoute: typeof BagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/for-authors': {
+      id: '/for-authors'
+      path: '/for-authors'
+      fullPath: '/for-authors'
+      preLoaderRoute: typeof ForAuthorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1191,6 +1211,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   BagRoute: BagRoute,
+  ForAuthorsRoute: ForAuthorsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,

@@ -1,11 +1,9 @@
-import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { ChevronRightIcon } from '@heroicons/react/16/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
-import { ClosingBand, Faq, Feature, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
+import { ClosingBand, Faq, Feature, MarketingHero, Points, StartSellingButton, Steps } from '#/components/marketing'
 import { ILLUSTRATIONS, SELL_PAGE as PAGE } from '#/data/marketing'
-import { MY_SHOP } from '#/data/navigation'
 import { ogMeta } from '#/lib/og'
-import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/sell-on-kuwala')({
   loader: () => getCoverWall(),
@@ -15,19 +13,7 @@ export const Route = createFileRoute('/sell-on-kuwala')({
   component: SellOnKuwala,
 })
 
-/** The one action on the page: sellers list a book, everyone else starts selling (sign-in comes first if needed). */
-function Cta({ className }: { className?: string }) {
-  const { user } = useLoaderData({ from: '__root__' })
-  return user?.sellerSlug ? (
-    <Link to="/sell" className={cn(ON_BAND_BUTTON, className)}>
-      {MY_SHOP.list}
-    </Link>
-  ) : (
-    <Link to="/start-selling" className={cn(ON_BAND_BUTTON, className)}>
-      {PAGE.hero.cta}
-    </Link>
-  )
-}
+const Cta = ({ className }: { className?: string }) => <StartSellingButton label={PAGE.hero.cta} className={className} />
 
 function SellOnKuwala() {
   const wall = Route.useLoaderData()
@@ -77,11 +63,11 @@ function SellOnKuwala() {
 
         <section className="grid gap-4 border-t border-line py-16 sm:grid-cols-2 sm:py-20" aria-label="Authors and bookshops">
           {PAGE.doors.map((d) => (
-            <Link key={d.title} to="/start-selling" className="card lift group block p-6 no-underline sm:p-8">
+            <Link key={d.title} to={d.to} className="card lift group block p-6 no-underline sm:p-8">
               <h2 className="text-xl text-ink">{d.title}</h2>
               <p className="mt-2 text-muted">{d.body}</p>
               <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-accent-ink">
-                {PAGE.hero.cta}
+                {d.link}
                 <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </span>
             </Link>

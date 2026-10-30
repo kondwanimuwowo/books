@@ -63,7 +63,7 @@ export const FOOTER_NAV = [
   },
   {
     title: 'Sell',
-    links: [{ label: 'Sell on Kuwala', to: '/sell-on-kuwala' }, { legal: 'seller-agreement' }],
+    links: [{ label: 'Sell on Kuwala', to: '/sell-on-kuwala' }, { label: 'For authors', to: '/for-authors' }, { legal: 'seller-agreement' }],
   },
   {
     title: 'Help',
