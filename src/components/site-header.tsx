@@ -469,6 +469,10 @@ export function SiteFooter() {
               <PhoneIcon aria-hidden className="size-4 shrink-0" />
               {CONTACT.phone}
             </a>
+            <a href={CONTACT.facebook} target="_blank" rel="noreferrer" className={cn('flex items-center gap-2.5 py-1', footerLink)}>
+              <FacebookIcon className="size-4 shrink-0" />
+              {FOOTER_COPY.facebook}
+            </a>
           </address>
         </div>
 
@@ -507,10 +511,12 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-on-accent/10">
-        <div className="page flex items-center justify-between gap-5 py-6 text-xs text-on-deep-muted">
-          <div className="flex flex-col gap-2 sm:gap-1">
-            <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
-              <li className="order-last w-full sm:order-first sm:w-auto">&copy; {new Date().getFullYear()} Kuwala Books</li>
+        <div className="page flex flex-col gap-3 py-6 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
+          <div className="order-last flex flex-col gap-1 sm:order-first">
+            <span>&copy; {new Date().getFullYear()} Kuwala Books</span>
+            <RateNote usdOnly />
+          </div>
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
               {FOOTER_LEGAL.map((page) => (
                 <li key={page}>
                   <Link to="/legal/$page" params={{ page }} className={footerLink}>
@@ -523,12 +529,7 @@ export function SiteFooter() {
                   {COOKIE_COPY.settings}
                 </button>
               </li>
-            </ul>
-            <RateNote usdOnly />
-          </div>
-          <a href={CONTACT.facebook} aria-label={FOOTER_COPY.facebook} target="_blank" rel="noreferrer" className={cn('-mr-2 shrink-0 p-2', footerLink)}>
-            <FacebookIcon className="size-5" />
-          </a>
+          </ul>
         </div>
       </div>
     </footer>

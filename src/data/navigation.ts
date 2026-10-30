@@ -81,7 +81,7 @@ export const FOOTER_LEGAL = ['terms', 'privacy'] as const
 
 export const FOOTER_COPY = {
   line: 'Connecting readers with authors, publishers and booksellers in Zambia and beyond.',
-  facebook: 'Kuwala Books on Facebook',
+  facebook: 'Facebook',
 }
 
 export function accountNav(isSeller: boolean, isAuthor: boolean) {
