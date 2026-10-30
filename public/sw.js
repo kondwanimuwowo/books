@@ -1,9 +1,10 @@
 // Saves data on repeat visits: hashed app files and covers come from the phone, not the network.
 // Pages and server calls always go to the network, so prices, stock and sign-in are never stale.
-const STATIC = 'static-v3'
+const STATIC = 'static-v4'
 const COVERS = 'covers-v1'
 const MAX_COVERS = 300
-const OFFLINE = '/offline.html'
+// The clean URL: Cloudflare redirects /offline.html here, and a redirected response can't stand in for a page.
+const OFFLINE = '/offline'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -38,6 +39,13 @@ async function cacheFirst(request, name, limit) {
   return response
 }
 
+// A fresh copy of the saved page, so the browser never sees it as a redirect.
+async function offlinePage() {
+  const saved = await caches.match(OFFLINE)
+  if (!saved) return Response.error()
+  return new Response(await saved.blob(), { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
@@ -46,7 +54,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     if (url.pathname.startsWith('/assets/')) return event.respondWith(cacheFirst(request, STATIC))
     if (url.pathname.startsWith('/covers/')) return event.respondWith(cacheFirst(request, COVERS, MAX_COVERS))
-    if (request.mode === 'navigate') return event.respondWith(fetch(request).catch(() => caches.match(OFFLINE)))
+    if (request.mode === 'navigate') return event.respondWith(fetch(request).catch(offlinePage))
     return
   }
   // Font files are versioned by URL and never change.
