@@ -202,6 +202,10 @@
   .page {
     @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8;
   }
+  /* Marketing pages read like a magazine spread: much wider margins. Shop and listing pages keep .page. */
+  .page-marketing {
+    @apply mx-auto w-full max-w-[90rem] px-6 sm:px-12 lg:px-24 xl:px-32;
+  }
   /* Small uppercase labels; wide tracking keeps them legible at this size. */
   .eyebrow {
     @apply text-[11px] font-medium tracking-[0.14em] text-subtle uppercase;

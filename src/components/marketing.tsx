@@ -15,7 +15,7 @@ export function MarketingHero({ wall, title, titleBold, line, action, more }: { 
   return (
     <section className="band relative overflow-hidden" onPointerMove={wall.length ? onPointerMove : undefined} onPointerLeave={wall.length ? onPointerLeave : undefined}>
       {wall.length > 0 && <CoverWallBackdrop tiles={wall} reveal={reveal} />}
-      <div className="page rise relative py-14 sm:py-20">
+      <div className="page-marketing rise relative py-14 sm:py-20">
         <div className={cn(wall.length > 0 && 'frost w-fit max-w-2xl rounded-xl px-6 py-7 sm:px-9 sm:py-9')}>
           <h1 className="max-w-2xl text-[2.25rem] leading-[1.06] font-normal sm:text-6xl">
             {title} <span className="block font-bold">{titleBold}</span>
@@ -41,7 +41,7 @@ export function Steps({ heading, steps }: { heading: string; steps: readonly { t
       <h2 id="how-heading" className="text-2xl sm:text-3xl">
         {heading}
       </h2>
-      <ol className={cn('mt-10 grid gap-10 md:gap-8', steps.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3')}>
+      <ol className={cn('mt-10 grid gap-10 md:gap-12', steps.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3')}>
         {steps.map((step, i) => (
           <li key={step.title}>
             <span className="grid size-10 place-items-center rounded-full bg-accent-soft text-lg font-bold text-accent-soft-ink" aria-hidden>
@@ -100,7 +100,7 @@ export function Faq({ heading, items }: { heading: string; items: readonly { q: 
 export function ClosingBand({ title, action }: { title: string; action: ReactNode }) {
   return (
     <section className="band">
-      <div className="page flex flex-col items-start justify-between gap-6 py-14 sm:flex-row sm:items-center">
+      <div className="page-marketing flex flex-col items-start justify-between gap-6 py-14 sm:flex-row sm:items-center">
         <h2 className="max-w-xl text-2xl sm:text-3xl">{title}</h2>
         {action}
       </div>
@@ -120,7 +120,7 @@ export function Picture({ image, className }: { image: Illustration; className?:
 /** Words beside a picture; `flip` puts the picture first on wide screens, so a page can alternate. Phones stack, words first. */
 export function Feature({ image, flip = false, children }: { image: Illustration; flip?: boolean; children: ReactNode }) {
   return (
-    <section className="grid items-center gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-16">
+    <section className="grid items-center gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-24">
       <div className={cn(flip && 'lg:order-last')}>{children}</div>
       <Picture image={image} />
     </section>

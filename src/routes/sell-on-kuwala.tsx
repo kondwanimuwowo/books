@@ -51,7 +51,7 @@ function SellOnKuwala() {
     <>
       <MarketingHero wall={wall} title={PAGE.hero.title} titleBold={PAGE.hero.titleBold} line={PAGE.hero.line} action={<Cta />} more={PAGE.hero.secondary} />
 
-      <div className="page">
+      <div className="page-marketing">
         <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} />
 
         <Feature image={ILLUSTRATIONS.packing}>
