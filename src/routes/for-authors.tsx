@@ -39,9 +39,9 @@ function ForAuthors() {
               {PAGE.launch.heading}
             </h2>
             <p className="mt-3 max-w-2xl leading-relaxed text-muted">{PAGE.launch.line}</p>
-            <ul className="mt-8 grid gap-6 sm:grid-cols-3">
+            <ul className="mt-8 grid gap-4 sm:grid-cols-3">
               {PAGE.launch.points.map((p) => (
-                <li key={p.title}>
+                <li key={p.title} className="rounded-xl bg-surface p-5 ring-1 ring-line">
                   <p className="font-bold">{p.title}</p>
                   <p className="mt-1 leading-relaxed text-muted">{p.body}</p>
                 </li>

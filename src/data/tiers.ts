@@ -10,12 +10,19 @@ export interface TierInfo {
   line: string
 }
 
-// Milestones, named for what Zambia is known for. Thresholds suit the local market, where 1,000 copies is a bestseller.
-export const TIERS: TierInfo[] = [
-  { tier: 'copper', label: 'Copper', readers: 25, books: 1, line: 'Read by 25 people on Kuwala' },
-  { tier: 'emerald', label: 'Emerald', readers: 250, books: 1, line: 'Read by 250 people on Kuwala' },
-  { tier: 'gold', label: 'Gold', readers: 1000, books: 2, line: 'Read by 1,000 people on Kuwala' },
-]
+// Milestones for Zambian verified authors, named for what Zambia is known for. Rare on purpose: in Zambia
+// 1,000 copies is a bestseller, so Gold sits beyond it.
+const tier = (key: Tier, label: string, readers: number, books: number): TierInfo => ({
+  tier: key,
+  label,
+  readers,
+  books,
+  line: `Read by ${readers.toLocaleString('en')} people on Kuwala`,
+})
+export const TIERS: TierInfo[] = [tier('copper', 'Copper', 100, 1), tier('emerald', 'Emerald', 500, 1), tier('gold', 'Gold', 1500, 2)]
+
+/** Only copies a reader paid at least this much for count towards plaques, so cheap listings can't farm readers. */
+export const PLAQUE_MIN_PRICE_NGWEE = 10_000
 
 /** Once an author has this many reviews, their average must reach MIN_AVERAGE for the next milestone. */
 export const REVIEW_GATE = { reviews: 10, average: 4 } as const

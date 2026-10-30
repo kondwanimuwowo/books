@@ -6,7 +6,7 @@ import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { instantFee } from './payouts'
 import { AUTO_RELEASE_DAYS, PICKUP_RELEASE_DAYS } from './shipping'
 import { YANGO_TOWNS } from './zambia'
-import { TIERS } from './tiers'
+import { PLAQUE_MIN_PRICE_NGWEE, TIERS } from './tiers'
 import { CONTACT } from './brand'
 
 const percent = `${Math.round(COMMISSION_RATE * 100)}%`
@@ -187,11 +187,11 @@ export const AUTHOR_PAGE = {
     whatsapp: { label: 'WhatsApp us', href: `https://wa.me/${CONTACT.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello Kuwala Books, I’d like to talk about a book launch.')}` },
   },
   plaquesHeading: 'Plaques as readers find you',
-  plaquesLine: 'For verified authors. Plaques count the different readers who received one of your books through Kuwala, from any shop, and once earned they stay on your page.',
+  plaquesLine: `For Zambian verified authors. Plaques count the different readers who received one of your books through Kuwala, from any shop, for ${formatMoney(PLAQUE_MIN_PRICE_NGWEE)} or more. Once earned, they stay on your page.`,
   plaques: TIERS.map((t) => ({ tier: t.tier, body: `${readers(t.readers)}${t.books > 1 ? `, across ${t.books} or more books` : ''}` })),
   faqHeading: 'Questions',
   faq: [
-    { q: 'Do I have to be Zambian?', a: 'No, any author can sell. Zambian authors also count for the Zambia Top 20, and come first across Kuwala.' },
+    { q: 'Do I have to be Zambian?', a: 'No, any author can sell. Plaques and the Zambia Top 20 are for Zambian authors, who also come first across Kuwala.' },
     { q: 'I self-published. Can I still sell?', a: 'Yes. Self-published and small-press books are welcome, with or without an ISBN.' },
     { q: 'There’s already a page with my name on it.', a: 'We prepare pages for Zambian authors from what’s already public. Open yours and choose Claim this page to add your photo and story and get verified.' },
     { q: 'What happens to my documents?', a: 'Only our team sees them, and they’re deleted as soon as we’ve decided.' },

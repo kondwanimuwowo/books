@@ -1,14 +1,15 @@
 import { sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { PLAQUE_COPY, REVIEW_GATE, TIERS, tierInfo } from '#/data/tiers'
+import { PLAQUE_COPY, PLAQUE_MIN_PRICE_NGWEE, REVIEW_GATE, TIERS, tierInfo } from '#/data/tiers'
 import type { Tier } from '#/data/tiers'
 import { escapeHtml } from './email.server'
 import { notify } from './notify.server'
 
 /**
- * Distinct readers per verified author: buyers with a delivered copy of one of their books, from any shop.
- * Refunded and disputed orders never reach 'delivered'; the author buying their own book doesn't count.
+ * Distinct readers per Zambian verified author: buyers with a delivered copy of one of their books, from any shop,
+ * that they paid at least PLAQUE_MIN_PRICE_NGWEE for. Refunded and disputed orders never reach 'delivered'; the
+ * author buying their own book doesn't count.
  */
 function readersQuery(only?: SQL) {
   return sql`
@@ -17,9 +18,9 @@ function readersQuery(only?: SQL) {
     join seller_orders so on so.id = oi.seller_order_id and so.status = 'delivered'
     join orders o on o.id = so.order_id
     join book_authors ba on ba.book_id = oi.book_id
-    join authors a on a.id = ba.author_id and a.verified_seller_id is not null
+    join authors a on a.id = ba.author_id and a.verified_seller_id is not null and a.is_zambian
     join sellers s on s.id = a.verified_seller_id
-    where o.buyer_id <> s.profile_id ${only ? sql`and ${only}` : sql``}
+    where o.buyer_id <> s.profile_id and oi.unit_price_ngwee >= ${PLAQUE_MIN_PRICE_NGWEE} ${only ? sql`and ${only}` : sql``}
     group by ba.author_id`
 }
 
