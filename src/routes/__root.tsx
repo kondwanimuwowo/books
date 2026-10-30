@@ -1,4 +1,4 @@
-import { HeadContent, Link, Outlet, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
+import { HeadContent, Link, Outlet, Scripts, createRootRoute, useMatches, useRouter } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { getSiteContext } from '#/functions/catalog.functions'
@@ -164,6 +164,12 @@ export function NotFound() {
 }
 
 function RootError({ error, reset }: ErrorComponentProps) {
+  const router = useRouter()
+  // reset() alone only clears the error screen; the page's data must be fetched again or the same error comes back.
+  const retry = () => {
+    void router.invalidate()
+    reset()
+  }
   const stale = isStaleCode(error)
   const [reloading, setReloading] = useState(stale)
   useEffect(() => {
@@ -180,7 +186,7 @@ function RootError({ error, reset }: ErrorComponentProps) {
       <p className="mx-auto mt-2 max-w-md text-muted">{connection ? CONNECTION_COPY.body : 'It’s on our side, not your connection. Try again in a moment.'}</p>
       {/* Raw errors can contain SQL; only developers see them. */}
       {import.meta.env.DEV && <p className="mx-auto mt-4 max-w-lg text-left font-mono text-xs break-words text-subtle">{errorMessage(error)}</p>}
-      <button type="button" onClick={reset} className="btn btn-primary mt-8">
+      <button type="button" onClick={retry} className="btn btn-primary mt-8">
         Load it again
       </button>
     </div>
