@@ -1,4 +1,5 @@
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
+import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CoverWallBackdrop, useCoverReveal } from './cover-wall'
 import { cn } from '#/lib/utils'
@@ -76,31 +77,50 @@ export function Points({ heading, points, children }: { heading: string; points:
 
 /** Questions that open in place. */
 export function Faq({ heading, items }: { heading: string; items: readonly { q: string; a: ReactNode }[] }) {
+  // One answer open at a time: opening another closes this one.
+  const [open, setOpen] = useState<number | null>(null)
+  const id = useId()
   return (
     <section className="border-t border-line py-16 sm:py-20" aria-labelledby="faq-heading">
-      <h2 id="faq-heading" className="text-2xl sm:text-3xl">
+      <h2 id="faq-heading" className="text-center text-2xl sm:text-3xl">
         {heading}
       </h2>
-      <div className="mt-8 max-w-3xl divide-y divide-line border-y border-line">
-        {items.map((f) => (
-          <details key={f.q} className="group py-1">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium [&::-webkit-details-marker]:hidden">
-              {f.q}
-              <ChevronDownIcon className="size-5 shrink-0 text-subtle transition-transform group-open:rotate-180" aria-hidden />
-            </summary>
-            <p className="pb-5 leading-relaxed text-muted">{f.a}</p>
-          </details>
-        ))}
+      <div className="mx-auto mt-8 max-w-3xl divide-y divide-line border-y border-line">
+        {items.map((f, i) => {
+          const isOpen = open === i
+          return (
+            <div key={f.q} data-open={isOpen}>
+              <h3>
+                <button
+                  type="button"
+                  id={`${id}-q${i}`}
+                  aria-expanded={isOpen}
+                  aria-controls={`${id}-a${i}`}
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 py-5 text-left font-medium"
+                >
+                  {f.q}
+                  <ChevronDownIcon className="faq-chevron size-5 shrink-0 text-subtle" aria-hidden />
+                </button>
+              </h3>
+              <div id={`${id}-a${i}`} role="region" aria-labelledby={`${id}-q${i}`} className="faq-panel" inert={!isOpen}>
+                <div>
+                  <p className="faq-answer pb-5 leading-relaxed text-muted">{f.a}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </section>
   )
 }
 
-/** The last word: one line and the page's main button, on burgundy. */
+/** The last word: one line and the page's main button, on a burgundy card within the page's margins. */
 export function ClosingBand({ title, action }: { title: string; action: ReactNode }) {
   return (
-    <section className="band">
-      <div className="page-marketing flex flex-col items-start justify-between gap-6 py-14 sm:flex-row sm:items-center">
+    <section className="page-marketing pb-4">
+      <div className="band flex flex-col items-start justify-between gap-6 rounded-xl px-6 py-10 sm:flex-row sm:items-center sm:px-12 sm:py-12">
         <h2 className="max-w-xl text-2xl sm:text-3xl">{title}</h2>
         {action}
       </div>

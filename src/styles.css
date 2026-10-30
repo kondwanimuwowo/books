@@ -250,6 +250,53 @@
     background: linear-gradient(90deg, rgb(0 0 0 / 0.16), rgb(255 255 255 / 0.1) 1.2%, transparent 3.5%);
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
   }
+  /*
+   * Questions open by growing a grid row from 0fr to 1fr (works in every browser), the answer fading in and drifting
+   * down just behind it. Opening is an entrance (ease-out, 260ms); closing gets out of the way faster (180ms).
+   */
+  .faq-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 180ms var(--ease-out);
+  }
+  .faq-panel > div {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .faq-answer {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      opacity 120ms ease,
+      transform 180ms var(--ease-out);
+  }
+  .faq-chevron {
+    transition: transform 180ms var(--ease-out);
+  }
+  [data-open='true'] > .faq-panel {
+    grid-template-rows: 1fr;
+    transition-duration: 260ms;
+  }
+  [data-open='true'] .faq-answer {
+    opacity: 1;
+    transform: none;
+    transition-duration: 220ms, 260ms;
+    transition-delay: 40ms;
+  }
+  [data-open='true'] .faq-chevron {
+    transform: rotate(180deg);
+    transition-duration: 260ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .faq-panel,
+    [data-open='true'] > .faq-panel {
+      transition: none;
+    }
+    .faq-answer,
+    [data-open='true'] .faq-answer {
+      transform: none;
+    }
+  }
   /* Segmented toggles: the thumb slides on screen (ease-in-out), labels fade with it, a press gives a little. */
   .segmented-thumb {
     transition: transform 200ms var(--ease-in-out);
