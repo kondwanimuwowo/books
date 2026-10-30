@@ -31,7 +31,10 @@ Book marketplace for Zambia (kuwalabooks.com). Anyone can sell new or used books
 - The legal pages (`src/data/legal.ts`) describe how the site actually behaves and say only "Kuwala Books". Any change to fees, delivery, payouts, refunds, disputes, offers, reviews or how personal data is handled must update that text and `LEGAL_UPDATED` in the same change. Numbers come from the constants the code uses; never type a number there by hand. Bump `TERMS_VERSION` only for material changes (it makes every signed-in user accept again). New cookies or trackers go in `src/data/cookies.ts` and load only behind `hasConsent()`.
 
 ## Design
-One burgundy accent on semantic tokens, Plus Jakarta Sans 400/500/700, Heroicons solid used sparingly, minimal copy, no decorative effects, ghost empty states and skeletons, light and dark mode, separate mobile and desktop layouts.
+One burgundy accent on semantic tokens, white pages with neutral grey boxes and hairlines, Manrope for headings and book titles, Inter for body and UI (400/500/700, metric-matched fallbacks in `styles.css`), Heroicons solid used sparingly, minimal copy, no decorative effects, ghost empty states and skeletons, light and dark mode, separate mobile and desktop layouts.
+- Corners: covers 4px, controls 10px (`rounded-control`: buttons, fields, search), cards and panels 12px, fully round only for chips, badges, toggles and avatars.
+- Shadows only on floating things (menus, dialogs, sticky bars, shelf arrows), never on book cards or covers in lists.
+- Zambian books carry the flag (`public/brand/zambia-flag.webp`) in the cover's corner on cards; pages keep the "Zambian author" label.
 
 ## Marketplace rules
 - **Offers (eBay-style):** per-listing "open to offers" with an optional hidden floor. 24h per reply; silence declines. One counter each: buyer offers, seller accepts/declines/counters, buyer accepts/declines/counters, seller gives the final answer. An accept holds the copy and the buyer has 24h to pay. Listings stay up while offers are open.
