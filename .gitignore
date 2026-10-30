@@ -21,5 +21,6 @@ design/
 
 # Illustration originals; the site uses the WebP copies in public/illustrations.
 public/illustrations/*.png
+public/illustrations/*.jpg
 public/illustrations-2/
 public/zambian.webp

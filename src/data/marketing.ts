@@ -134,7 +134,7 @@ export const ILLUSTRATIONS = {
   grandmotherStory: { src: '/illustrations/grandmother-story.webp', width: 1200, height: 800, alt: 'A grandmother reads aloud to three children on a shaded veranda.' },
   jacarandaDelivery: { src: '/illustrations/jacaranda-delivery.webp', width: 1200, height: 800, alt: 'A motorbike rider hands a parcel over a gate under a flowering jacaranda tree.' },
   packing: { src: '/illustrations/packing.webp', width: 1000, height: 1000, alt: 'A seller wraps books in brown paper at his desk, a mine headframe through the window.' },
-  moneyHeld: { src: '/illustrations/money-held.webp', width: 1000, height: 1000, alt: 'An open hand holds a book and a phone under a shield, with delivered parcels around them.' },
+  moneyHeld: { src: '/illustrations/money-held.webp', width: 1000, height: 719, alt: 'An open hand holds a book and a phone under a shield, with delivered parcels around them.' },
   zambiaMap: {
     src: '/illustrations/zambia-map.webp',
     width: 1200,
