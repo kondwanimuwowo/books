@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { ChevronRightIcon } from '@heroicons/react/16/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
 import { ClosingBand, Faq, Feature, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
 import { BUY_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
@@ -32,8 +33,9 @@ function HowItWorks() {
 
         <Feature image={ILLUSTRATIONS.moneyHeld}>
           <Points heading={PAGE.protectionHeading} points={PAGE.protection}>
-            <Link to="/legal/$page" params={{ page: 'buyer-protection' }} className="mt-6 inline-block font-medium">
+            <Link to="/legal/$page" params={{ page: 'buyer-protection' }} className="group mt-6 inline-flex items-center gap-1 font-medium">
               {PAGE.protectionLink}
+              <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
           </Points>
         </Feature>
