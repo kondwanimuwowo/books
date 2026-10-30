@@ -102,7 +102,7 @@ function OrderPage() {
               <span className="font-medium">Total</span>
               <Price ngwee={order.totalNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
             </div>
-            {!pending && <p className="pt-1 text-xs text-subtle">Held until you confirm delivery.</p>}
+            {!pending && <p className="pt-1 text-xs text-muted">Held until you confirm delivery.</p>}
           </div>
         </aside>
       </div>
@@ -175,7 +175,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
           {total > 1 && <span className="eyebrow mr-2">{`Parcel ${index + 1} of ${total}`}</span>}
           <span className="font-medium">{part.seller.storeName}</span>
         </p>
-        <span className="text-xs text-subtle">{shippingLabel(part.shippingMethod)}</span>
+        <span className="text-xs text-muted">{shippingLabel(part.shippingMethod)}</span>
       </header>
 
       {!pending && part.seller.town && <ParcelRoute from={part.seller.town} to={destination} status={part.status} />}
@@ -213,7 +213,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
                 <PhoneIcon className="size-3.5" aria-hidden />
                 {part.seller.phone}
               </a>
-              <p className="mt-1 text-xs text-subtle">{SAFETY.buyerContact}</p>
+              <p className="mt-1 text-xs text-muted">{SAFETY.buyerContact}</p>
             </div>
           )}
           {part.status === 'delivered' && (
@@ -237,7 +237,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
                 ),
             )}
           {halted && <p className={halted.tone}>{halted.text}</p>}
-          {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-subtle">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}
+          {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-muted">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}
           {(confirm.error || report.error) && <Alert>{confirm.error ?? report.error}</Alert>}
 
           {canConfirm && !reporting && (

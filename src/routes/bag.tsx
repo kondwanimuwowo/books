@@ -80,7 +80,7 @@ function BagPage() {
         <div className="page flex items-center justify-between gap-4 py-3">
           <div>
             <Price ngwee={subtotal} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
-            <p className="text-xs text-subtle">Plus delivery</p>
+            <p className="text-xs text-muted">Plus delivery</p>
           </div>
           <Link to="/checkout" className="btn btn-primary">
             Checkout

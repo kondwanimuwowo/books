@@ -174,7 +174,7 @@ function Answer({ offer, side }: { offer: Made | Received; side: Side }) {
             void act.run('counter')
           }}
         >
-          <label className="text-xs text-subtle">
+          <label className="text-xs text-muted">
             {side === 'buyer' ? 'Your final offer (K)' : 'Your counter (K)'}
             <input
               className="input mt-1 h-9 w-28 tabular-nums"
@@ -195,7 +195,7 @@ function Answer({ offer, side }: { offer: Made | Received; side: Side }) {
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCountering(false)}>
             Cancel
           </button>
-          <p className="w-full text-xs text-subtle">
+          <p className="w-full text-xs text-muted">
             Between <Price ngwee={offer.amountNgwee} /> and <Price ngwee={ceiling} />.{' '}
             {side === 'buyer' ? 'The seller can only accept or decline it.' : 'The buyer can counter once more.'}
           </p>

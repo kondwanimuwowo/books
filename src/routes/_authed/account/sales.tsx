@@ -141,7 +141,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
             <a href={`tel:${sale.order.shipPhone}`} className="mt-1 block font-medium tabular-nums">
               {sale.order.shipPhone}
             </a>
-            <span className="mt-2 block text-xs text-subtle">{SAFETY.sellerContact}</span>
+            <span className="mt-2 block text-xs text-muted">{SAFETY.sellerContact}</span>
           </address>
           <div className="flex flex-col gap-2">
             {shipBy && (
@@ -210,7 +210,7 @@ function Balance({ balance }: { balance: BalanceData }) {
           </button>
         )}
       </div>
-      {canInstant && !paid && <p className="text-xs text-subtle">{PAYOUT_COPY.instantNote(formatMoney(balance.instantFeeNgwee), formatMoney(net))}</p>}
+      {canInstant && !paid && <p className="text-xs text-muted">{PAYOUT_COPY.instantNote(formatMoney(balance.instantFeeNgwee), formatMoney(net))}</p>}
       {!balance.hasDestination && (
         <Alert tone="info">
           {PAYOUT_COPY.noDestination}{' '}

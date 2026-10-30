@@ -140,7 +140,7 @@ export function PaymentPanel({
             <h2 className="mt-5 text-2xl">{PAY_COPY.waitingTitle}</h2>
             <p className="mt-1 text-muted">{PAY_COPY.waitingBody(formatMoney(totalNgwee), phone)}</p>
             <LoadingLine kind="pay" stacked className="mt-8" />
-            <p className="mt-8 text-xs text-subtle">{PAY_COPY.waitingNote}</p>
+            <p className="mt-8 text-xs text-muted">{PAY_COPY.waitingNote}</p>
           </div>
         ) : (
           <div className="card p-6 text-center" role="status" aria-live="polite">
@@ -238,7 +238,7 @@ export function PaymentPanel({
                           <NetworkMark network={n.key} size="lg" />
                           {picked && <CheckCircleIcon className="rise absolute -top-2 -right-2 size-5 rounded-full bg-surface text-accent" aria-hidden />}
                         </span>
-                        <span className={cn('text-xs', picked ? 'font-medium text-ink' : 'text-subtle')}>{n.name}</span>
+                        <span className={cn('text-xs', picked ? 'font-medium text-ink' : 'text-muted')}>{n.name}</span>
                       </button>
                     )
                   })}
@@ -250,7 +250,7 @@ export function PaymentPanel({
                 {busy ? 'Sending the prompt…' : `Pay ${amount}`}
               </button>
 
-              <p className="-mt-2 text-center text-xs text-subtle">{PAY_COPY.how}</p>
+              <p className="-mt-2 text-center text-xs text-muted">{PAY_COPY.how}</p>
             </>
           ) : (
             <>

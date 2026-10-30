@@ -228,7 +228,7 @@ function BookPage() {
           <div className="page flex items-center justify-between gap-4 py-3">
             <div className="min-w-0">
               <Price ngwee={selected.priceNgwee} className="text-lg font-bold tracking-[-0.02em]" />
-              <p className="truncate text-xs text-subtle">
+              <p className="truncate text-xs text-muted">
                 {conditionLabel(selected.condition)} · {selected.seller.storeName}
               </p>
             </div>
@@ -441,7 +441,7 @@ function MakeOffer({ copy, signedIn, next }: { copy: Offer; signedIn: boolean; n
       <label className="block">
         <span className="field-label">Note to the seller (optional)</span>
         <textarea className="input" rows={2} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)} />
-        <span className="mt-1 block text-xs text-subtle">{SAFETY.offer}</span>
+        <span className="mt-1 block text-xs text-muted">{SAFETY.offer}</span>
       </label>
       <div className="flex gap-2">
         <button type="submit" className="btn btn-secondary flex-1" disabled={send.pending}>

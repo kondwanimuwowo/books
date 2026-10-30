@@ -116,11 +116,11 @@ function ListingItem({ listing }: { listing: Listing }) {
 
         {mode === 'edit' && (
           <div className="rise mt-3 flex flex-wrap items-end gap-2">
-            <label className="text-xs text-subtle">
+            <label className="text-xs text-muted">
               Price (K)
               <input className="input mt-1 h-9 w-24" type="number" min={5} step="0.5" value={price} onChange={(e) => setPrice(e.target.value)} />
             </label>
-            <label className="text-xs text-subtle">
+            <label className="text-xs text-muted">
               Copies
               <input className="input mt-1 h-9 w-20" type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
             </label>

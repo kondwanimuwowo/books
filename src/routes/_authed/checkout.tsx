@@ -205,7 +205,7 @@ function Checkout() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <Price ngwee={subtotal + shipping} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
-              <p className="text-xs text-subtle">{destination ? 'Including delivery' : 'Plus delivery'}</p>
+              <p className="text-xs text-muted">{destination ? 'Including delivery' : 'Plus delivery'}</p>
             </div>
             <div className="w-48">{submit}</div>
           </div>
@@ -247,7 +247,7 @@ function SummaryItems({ groups }: { groups: BagQuote['groups'] }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="line-clamp-1 text-sm font-bold tracking-[-0.01em]">{item.book.title}</p>
-            <p className="text-xs text-subtle">
+            <p className="text-xs text-muted">
               {item.quantity > 1 ? `${item.quantity} × ` : ''}
               <Price ngwee={item.offerNgwee ?? item.priceNgwee} className="tabular-nums" />
             </p>
