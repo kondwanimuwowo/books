@@ -11,6 +11,8 @@ import { Price, useBag } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { LIST_PHOTO_EDGE, MAX_LIST_PHOTOS, SCHOOL_LIST_COPY as COPY } from '#/data/school-list'
 import { cn } from '#/lib/utils'
+import { Picture } from '#/components/marketing'
+import { ILLUSTRATIONS } from '#/data/marketing'
 
 export const Route = createFileRoute('/school-list')({
   head: () => ({
@@ -25,8 +27,14 @@ function SchoolList() {
   const [result, setResult] = useState<Result | null>(null)
   return (
     <div className="page max-w-3xl py-10 lg:py-14">
-      <h1 className="text-4xl sm:text-5xl">{COPY.title}</h1>
-      <p className="mt-2 max-w-prose text-muted">{COPY.intro}</p>
+      {/* The tool comes first on phones; wider screens get the picture beside the title. */}
+      <div className="flex items-center gap-8">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-4xl sm:text-5xl">{COPY.title}</h1>
+          <p className="mt-2 max-w-prose text-muted">{COPY.intro}</p>
+        </div>
+        <Picture image={ILLUSTRATIONS.schoolList} className="hidden w-56 shrink-0 md:block" />
+      </div>
       <div className="mt-8">{result ? <Matches result={result} onReset={() => setResult(null)} /> : <ListInput onRead={setResult} />}</div>
     </div>
   )

@@ -125,3 +125,23 @@ export const BUY_PAGE = {
   ],
   closing: 'Find your next book.',
 } as const
+
+// Illustrations for the marketing pages, as WebP in public/illustrations (originals stay out of git).
+export const ILLUSTRATIONS = {
+  bookMarket: { src: '/illustrations/book-market.webp', width: 1200, height: 800, alt: 'A woman reads the back of a book at a second-hand book stall in a Lusaka market while the stallholder smiles.' },
+  schoolList: { src: '/illustrations/school-list.webp', width: 1200, height: 849, alt: 'A mother photographs a school book list at the kitchen table while her children check their books.' },
+  busParcel: { src: '/illustrations/bus-parcel.webp', width: 1200, height: 800, alt: 'A woman shows her phone at a bus station parcel counter and is handed her parcel.' },
+  grandmotherStory: { src: '/illustrations/grandmother-story.webp', width: 1200, height: 800, alt: 'A grandmother reads aloud to three children on a shaded veranda.' },
+  jacarandaDelivery: { src: '/illustrations/jacaranda-delivery.webp', width: 1200, height: 800, alt: 'A motorbike rider hands a parcel over a gate under a flowering jacaranda tree.' },
+  packing: { src: '/illustrations/packing.webp', width: 1000, height: 1000, alt: 'A seller wraps books in brown paper at his desk, a mine headframe through the window.' },
+  moneyHeld: { src: '/illustrations/money-held.webp', width: 1000, height: 1000, alt: 'An open hand holds a book and a phone under a shield, with delivered parcels around them.' },
+  zambiaMap: {
+    src: '/illustrations/zambia-map.webp',
+    width: 1200,
+    height: 805,
+    alt: 'A map of Zambia with parcels and books travelling between Livingstone, Lusaka, the Copperbelt and beyond.',
+  },
+  bookSigning: { src: '/illustrations/book-signing.webp', width: 1200, height: 800, alt: 'An author signs a book for a reader at a launch while others queue with copies.' },
+} as const
+
+export type Illustration = (typeof ILLUSTRATIONS)[keyof typeof ILLUSTRATIONS]

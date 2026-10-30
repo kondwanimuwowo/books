@@ -18,3 +18,8 @@ todos.json
 
 # Original brand and photo files; optimised copies live in public/brand and public/fallback.
 design/
+
+# Illustration originals; the site uses the WebP copies in public/illustrations.
+public/illustrations/*.png
+public/illustrations-2/
+public/zambian.webp

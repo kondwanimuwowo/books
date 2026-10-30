@@ -1,8 +1,8 @@
 import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { ChevronRightIcon } from '@heroicons/react/16/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
-import { ClosingBand, Faq, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
-import { SELL_PAGE as PAGE } from '#/data/marketing'
+import { ClosingBand, Faq, Feature, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
+import { ILLUSTRATIONS, SELL_PAGE as PAGE } from '#/data/marketing'
 import { MY_SHOP } from '#/data/navigation'
 import { ogMeta } from '#/lib/og'
 import { cn } from '#/lib/utils'
@@ -54,7 +54,7 @@ function SellOnKuwala() {
       <div className="page">
         <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} />
 
-        <section className="grid gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-16" aria-labelledby="costs-heading">
+        <Feature image={ILLUSTRATIONS.packing}>
           <div>
             <h2 id="costs-heading" className="text-2xl sm:text-3xl">
               {PAGE.costsHeading}
@@ -69,8 +69,11 @@ function SellOnKuwala() {
             </dl>
             <p className="mt-6 rounded-xl bg-sunken px-5 py-4 font-medium">{PAGE.example}</p>
           </div>
+        </Feature>
+
+        <Feature image={ILLUSTRATIONS.bookMarket} flip>
           <Points heading={PAGE.whyHeading} points={PAGE.why} />
-        </section>
+        </Feature>
 
         <section className="grid gap-4 border-t border-line py-16 sm:grid-cols-2 sm:py-20" aria-label="Authors and bookshops">
           {PAGE.doors.map((d) => (

@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { getCoverWall } from '#/functions/catalog.functions'
-import { ClosingBand, Faq, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
-import { BUY_PAGE as PAGE } from '#/data/marketing'
+import { ClosingBand, Faq, Feature, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
+import { BUY_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
 import { ogMeta } from '#/lib/og'
 import { cn } from '#/lib/utils'
 
@@ -30,12 +30,15 @@ function HowItWorks() {
       <div className="page">
         <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} />
 
-        <section className="grid gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-16">
+        <Feature image={ILLUSTRATIONS.moneyHeld}>
           <Points heading={PAGE.protectionHeading} points={PAGE.protection}>
             <Link to="/legal/$page" params={{ page: 'buyer-protection' }} className="mt-6 inline-block font-medium">
               {PAGE.protectionLink}
             </Link>
           </Points>
+        </Feature>
+
+        <Feature image={ILLUSTRATIONS.zambiaMap} flip>
           <div>
             <h2 className="text-2xl sm:text-3xl">{PAGE.deliveryHeading}</h2>
             <dl className="mt-8 divide-y divide-line">
@@ -48,7 +51,7 @@ function HowItWorks() {
             </dl>
             <p className="mt-6 rounded-xl bg-sunken px-5 py-4 font-medium">{PAGE.deliveryNote}</p>
           </div>
-        </section>
+        </Feature>
 
         <Faq heading={PAGE.faqHeading} items={PAGE.faq} />
       </div>

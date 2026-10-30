@@ -2,6 +2,7 @@ import { ChevronDownIcon } from '@heroicons/react/16/solid'
 import type { ReactNode } from 'react'
 import { CoverWallBackdrop, useCoverReveal } from './cover-wall'
 import { cn } from '#/lib/utils'
+import type { Illustration } from '#/data/marketing'
 
 // The pieces every marketing page is built from, so they read as one family.
 
@@ -103,6 +104,25 @@ export function ClosingBand({ title, action }: { title: string; action: ReactNod
         <h2 className="max-w-xl text-2xl sm:text-3xl">{title}</h2>
         {action}
       </div>
+    </section>
+  )
+}
+
+/** An illustration in the card frame: 12px corners and a hairline, no shadow. Loads as it scrolls into view. */
+export function Picture({ image, className }: { image: Illustration; className?: string }) {
+  return (
+    <figure className={cn('overflow-hidden rounded-xl bg-sunken ring-1 ring-line', className)}>
+      <img src={image.src} alt={image.alt} width={image.width} height={image.height} loading="lazy" decoding="async" className="block h-auto w-full" />
+    </figure>
+  )
+}
+
+/** Words beside a picture; `flip` puts the picture first on wide screens, so a page can alternate. Phones stack, words first. */
+export function Feature({ image, flip = false, children }: { image: Illustration; flip?: boolean; children: ReactNode }) {
+  return (
+    <section className="grid items-center gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-16">
+      <div className={cn(flip && 'lg:order-last')}>{children}</div>
+      <Picture image={image} />
     </section>
   )
 }
