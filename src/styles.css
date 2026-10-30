@@ -80,6 +80,10 @@
   --color-emerald-soft: #def0e6;
   --color-gold: #846410;
   --color-gold-soft: #f6eccb;
+  /* Plaques are dark metal plates with white lettering in both themes, so these aren't redefined for dark mode. */
+  --color-plaque-copper: #7a4220;
+  --color-plaque-emerald: #155239;
+  --color-plaque-gold: #6b500b;
 
   /* Elevation only: a hairline that separates a surface, and lift for things you can press. */
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2a1e17 10%, transparent);
@@ -295,6 +299,41 @@
     .faq-answer,
     [data-open='true'] .faq-answer {
       transform: none;
+    }
+  }
+  /*
+   * Plaques catch the light: a soft diagonal band sweeps across (about 1.5s), then rests (about 3.5s). Only the band's
+   * transform moves. --shine-delay staggers plaques shown together. None at all for reduced motion.
+   */
+  .plaque-shine {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .plaque-shine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.28) 50%, transparent 62%);
+    transform: translateX(-130%);
+    animation: plaque-shine 5s var(--ease-in-out) infinite;
+    animation-delay: var(--shine-delay, 0ms);
+  }
+  @keyframes plaque-shine {
+    0%,
+    70% {
+      transform: translateX(-130%);
+    }
+    100% {
+      transform: translateX(130%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plaque-shine::after {
+      animation: none;
+      display: none;
     }
   }
   /* Segmented toggles: the thumb slides on screen (ease-in-out), labels fade with it, a press gives a little. */

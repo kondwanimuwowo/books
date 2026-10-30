@@ -3,6 +3,7 @@ import { getCoverWall } from '#/functions/catalog.functions'
 import { ClosingBand, Faq, Feature, MarketingHero, Points, StartSellingButton, Steps } from '#/components/marketing'
 import { AUTHOR_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
 import { ogMeta } from '#/lib/og'
+import { PlaqueExample } from '#/components/plaque'
 
 export const Route = createFileRoute('/for-authors')({
   loader: () => getCoverWall(),
@@ -46,7 +47,8 @@ function ForAuthors() {
                 </li>
               ))}
             </ul>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <p className="mt-8 text-sm font-medium">{PAGE.launch.note}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
               <a href={PAGE.launch.email.href} className="btn btn-primary">
                 {PAGE.launch.email.label}
               </a>
@@ -63,10 +65,9 @@ function ForAuthors() {
           </h2>
           <p className="mt-3 max-w-2xl leading-relaxed text-muted">{PAGE.plaquesLine}</p>
           <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-            {PAGE.plaques.map((p) => (
-              <li key={p.title} className="card p-6">
-                <p className="text-xl font-bold">{p.title}</p>
-                <p className="mt-1 text-muted">{p.body}</p>
+            {PAGE.plaques.map((p, i) => (
+              <li key={p.tier}>
+                <PlaqueExample tier={p.tier} line={p.body} delay={i * 600} />
               </li>
             ))}
           </ul>

@@ -176,7 +176,8 @@ export const AUTHOR_PAGE = {
   ],
   launch: {
     heading: 'Launch your book with us',
-    line: 'Kuwala Books organises book launches for authors: we help plan the event, bring readers into the room and run the day, so you can focus on your book.',
+    line: 'Kuwala Books organises book launches for authors, in Lusaka and on the Copperbelt for now. We help plan the event, bring readers into the room and run the day, so you can focus on your book.',
+    note: 'Launches come as paid packages. Tell us about your book and we’ll talk you through them.',
     points: [
       { title: 'Planning', body: 'Choosing the date and the venue, and shaping the programme with you.' },
       { title: 'Readers in the room', body: 'Invitations, reminders and getting the word out to readers who’ll want your book.' },
@@ -186,8 +187,8 @@ export const AUTHOR_PAGE = {
     whatsapp: { label: 'WhatsApp us', href: `https://wa.me/${CONTACT.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello Kuwala Books, I’d like to talk about a book launch.')}` },
   },
   plaquesHeading: 'Plaques as readers find you',
-  plaquesLine: 'They count different readers who received one of your books through Kuwala, and once earned they stay on your page.',
-  plaques: TIERS.map((t) => ({ title: t.label, body: `${readers(t.readers)}${t.books > 1 ? `, across ${t.books} or more books` : ''}` })),
+  plaquesLine: 'For verified authors. Plaques count the different readers who received one of your books through Kuwala, from any shop, and once earned they stay on your page.',
+  plaques: TIERS.map((t) => ({ tier: t.tier, body: `${readers(t.readers)}${t.books > 1 ? `, across ${t.books} or more books` : ''}` })),
   faqHeading: 'Questions',
   faq: [
     { q: 'Do I have to be Zambian?', a: 'No, any author can sell. Zambian authors also count for the Zambia Top 20, and come first across Kuwala.' },
