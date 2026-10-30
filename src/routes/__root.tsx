@@ -8,6 +8,9 @@ import { SiteFooter, SiteHeader } from '#/components/site-header'
 import { TabBar } from '#/components/tab-bar'
 import { TermsGate } from '#/components/terms-consent'
 import { CookieNotice } from '#/components/cookie-notice'
+import { OfflineBar } from '#/components/offline-bar'
+import { isConnectionError } from '#/lib/connection'
+import { CONNECTION_COPY } from '#/data/connection'
 import { BARE_ROUTES } from '#/data/brand'
 import { NO_FOOTER_ROUTES, NO_TAB_ROUTES } from '#/data/navigation'
 import appCss from '../styles.css?url'
@@ -79,11 +82,13 @@ function RootLayout() {
       <BagProvider>
         {bare ? (
           <main>
+            <OfflineBar />
             <Outlet />
           </main>
         ) : (
           <div className="flex min-h-dvh flex-col" data-tabbar={tabs}>
             <SiteHeader user={user} tabs={tabs} />
+            <OfflineBar />
             <main className="flex-1">
               <Outlet />
             </main>
@@ -166,12 +171,13 @@ function RootError({ error, reset }: ErrorComponentProps) {
   }, [stale])
   if (reloading) return <Reloading />
 
-  // Only blame the connection when the browser says it's actually offline.
+  // Blame the connection only when it was the connection: offline, unreachable, or a read that gave up waiting.
   const offline = typeof navigator !== 'undefined' && !navigator.onLine
+  const connection = isConnectionError(error)
   return (
     <div className="page rise py-24 text-center">
-      <h1 className="text-2xl sm:text-3xl">{offline ? 'You’re offline' : 'This page didn’t load'}</h1>
-      <p className="mx-auto mt-2 max-w-md text-muted">{offline ? 'Connect and try again.' : 'It’s on our side, not your connection. Try again in a moment.'}</p>
+      <h1 className="text-2xl sm:text-3xl">{offline ? CONNECTION_COPY.offlineTitle : connection ? CONNECTION_COPY.title : 'This page didn’t load'}</h1>
+      <p className="mx-auto mt-2 max-w-md text-muted">{connection ? CONNECTION_COPY.body : 'It’s on our side, not your connection. Try again in a moment.'}</p>
       {/* Raw errors can contain SQL; only developers see them. */}
       {import.meta.env.DEV && <p className="mx-auto mt-4 max-w-lg text-left font-mono text-xs break-words text-subtle">{errorMessage(error)}</p>}
       <button type="button" onClick={reset} className="btn btn-primary mt-8">

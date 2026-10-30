@@ -13,9 +13,23 @@ const hideInternalErrors = createMiddleware({ type: 'function' }).server(async (
   }
 })
 
+// Page data that takes this long isn't coming; better to say the connection is slow than to spin forever.
+// Reads only: an action like a payment is never abandoned halfway.
+const SLOW_READ_MS = 20_000
+const giveUpOnSlowReads = createMiddleware({ type: 'function' }).client(({ method, fetch: given, next }) => {
+  if (method !== 'GET' || typeof AbortSignal.any !== 'function') return next()
+  const send = given ?? fetch
+  return next({
+    fetch: (input, init) => {
+      const timeout = AbortSignal.timeout(SLOW_READ_MS)
+      return send(input, { ...init, signal: init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout })
+    },
+  })
+})
+
 // Keep this file free of app imports: sharing modules with server functions here
 // triggers Vite's cold-start SSR cycle and leaves their middleware undefined.
 export const startInstance = createStart(() => ({
   requestMiddleware: [createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === 'serverFn' })],
-  functionMiddleware: [hideInternalErrors],
+  functionMiddleware: [giveUpOnSlowReads, hideInternalErrors],
 }))

@@ -1,6 +1,8 @@
 import { createContext, useContext, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '#/lib/utils'
+import { isConnectionError } from '#/lib/connection'
+import { CONNECTION_COPY } from '#/data/connection'
 
 const FieldLabel = createContext<string | undefined>(undefined)
 
@@ -34,6 +36,7 @@ export function Alert({ tone = 'danger', children }: { tone?: 'danger' | 'succes
 }
 
 export function errorMessage(error: unknown) {
+  if (isConnectionError(error)) return CONNECTION_COPY.action
   if (error instanceof Error) {
     // Zod validator errors arrive as a JSON array of issues.
     try {
