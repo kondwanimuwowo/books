@@ -7,20 +7,23 @@ import { escapeHtml } from './email.server'
 import { notify } from './notify.server'
 
 /**
- * Distinct readers per Zambian verified author: buyers with a delivered copy of one of their books, from any shop,
- * that they paid at least PLAQUE_MIN_PRICE_NGWEE for. Refunded and disputed orders never reach 'delivered'; the
- * author buying their own book doesn't count.
+ * Distinct readers per verified author: buyers with a delivered copy of one of their books, from any shop.
+ * Refunded and disputed orders never reach 'delivered'; the author buying their own book doesn't count.
+ * `forPlaques` narrows it to what earns a plaque: Zambian authors, copies paid PLAQUE_MIN_PRICE_NGWEE or more.
+ * The count shown on author pages is the open one, so it stays simply true.
  */
-function readersQuery(only?: SQL) {
+function readersQuery(only?: SQL, forPlaques = false) {
   return sql`
     select ba.author_id, count(distinct o.buyer_id)::int as readers
     from order_items oi
     join seller_orders so on so.id = oi.seller_order_id and so.status = 'delivered'
     join orders o on o.id = so.order_id
     join book_authors ba on ba.book_id = oi.book_id
-    join authors a on a.id = ba.author_id and a.verified_seller_id is not null and a.is_zambian
+    join authors a on a.id = ba.author_id and a.verified_seller_id is not null
     join sellers s on s.id = a.verified_seller_id
-    where o.buyer_id <> s.profile_id and oi.unit_price_ngwee >= ${PLAQUE_MIN_PRICE_NGWEE} ${only ? sql`and ${only}` : sql``}
+    where o.buyer_id <> s.profile_id
+      ${forPlaques ? sql`and a.is_zambian and oi.unit_price_ngwee >= ${PLAQUE_MIN_PRICE_NGWEE}` : sql``}
+      ${only ? sql`and ${only}` : sql``}
     group by ba.author_id`
 }
 
@@ -34,7 +37,7 @@ export async function awardPlaques(db: Db) {
   let awarded = 0
   for (const { tier, readers, books } of TIERS) {
     const rows = await db.execute<{ author_id: string; readers: number }>(sql`
-      with readers as (${readersQuery()}),
+      with readers as (${readersQuery(undefined, true)}),
       shelf as (select author_id, count(*)::int as books from book_authors group by author_id),
       reviewed as (
         select ba.author_id, count(*)::int as reviews, avg(v.score) as average
