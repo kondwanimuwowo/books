@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
-import { CheckIcon, MapPinIcon, ShoppingBagIcon } from '@heroicons/react/16/solid'
+import { CheckIcon, MapPinIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/16/solid'
 import { DevicePhoneMobileIcon, ShieldCheckIcon, TruckIcon } from '@heroicons/react/20/solid'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -57,7 +57,7 @@ function BookPage() {
   const { user } = useLoaderData({ from: '__root__' })
   // The page is cached publicly, so who may edit is worked out here rather than on the server.
   const isAuthor = !!user?.sellerSlug && book.authors.some((a) => a.shopSlug === user.sellerSlug)
-  const { add, lines } = useBag()
+  const { add, remove, lines } = useBag()
   useRecordView({
     slug: book.slug,
     title: book.title,
@@ -91,7 +91,7 @@ function BookPage() {
         Edit your listing
       </Link>
     ) : (
-      <AddButton inBag={inBag} onAdd={() => add(selected.id)} />
+      <AddButton inBag={inBag} title={book.title} onAdd={() => add(selected.id)} onRemove={() => remove(selected.id)} />
     ))
 
   return (
@@ -244,12 +244,23 @@ function BookPage() {
   )
 }
 
-function AddButton({ inBag, onAdd }: { inBag: boolean; onAdd: () => void }) {
+function AddButton({ inBag, title, onAdd, onRemove }: { inBag: boolean; title: string; onAdd: () => void; onRemove: () => void }) {
   if (inBag) {
     return (
-      <Link to="/bag" className="btn btn-secondary w-full">
-        <CheckIcon className="size-4 text-success" aria-hidden /> In your bag
-      </Link>
+      <div className="flex w-full gap-2">
+        <Link to="/bag" className="btn btn-secondary flex-1">
+          <CheckIcon className="size-4 text-success" aria-hidden /> In your bag
+        </Link>
+        <button
+          type="button"
+          aria-label={`Remove ${title} from your bag`}
+          title="Remove from bag"
+          className="btn btn-secondary w-11 shrink-0 px-0 text-subtle hover:text-danger"
+          onClick={onRemove}
+        >
+          <TrashIcon className="size-4" aria-hidden />
+        </button>
+      </div>
     )
   }
   return (

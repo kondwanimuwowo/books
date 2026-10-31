@@ -69,6 +69,8 @@
   --color-success: #155239;
   --color-success-soft: #def0e6;
   --color-green: #155239;
+  /* For text on fixed-colour fills like --color-green, white in both themes. */
+  --color-white: #ffffff;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-warning: #74510f;
