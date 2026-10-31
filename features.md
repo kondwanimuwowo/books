@@ -95,4 +95,3 @@ Diaspora "buy for someone at home", price-drop alerts, WhatsApp notifications, a
 ## Decisions pending
 - Whether higher milestones earn a lower commission (would change the fixed 10%).
 - Test data to remove: the smile-banda shop.
-- The new-order email to sellers (src/server/orders.server.ts) says "ship within 3 days", but the rule (`SHIP_WITHIN_DAYS`), the reminders and the legal pages say 5. Owner to review the wording.
