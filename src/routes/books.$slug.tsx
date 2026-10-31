@@ -13,6 +13,7 @@ import { OFFER_REPLY_HOURS, PHOTOS_COPY, REPORT_COPY, REPORT_REASONS, conditionL
 import type { ReportReason } from '#/data/listing-options'
 import { reportListing } from '#/functions/reports.functions'
 import { languageName } from '#/data/zambia'
+import { ageLabel, levelLabel, subjectLabel } from '#/data/school'
 import { cheapestDelivery, etaLabel } from '#/data/shipping'
 import type { DeliveryRate } from '#/data/shipping'
 import { BUY_TRUST, SAFETY } from '#/data/safety'
@@ -301,6 +302,10 @@ function Specs({ book }: { book: Book }) {
     ['Published', book.publishedYear],
     ['Pages', book.pageCount],
     ['Language', languageName(book.language)],
+    ['Ages', book.ageBands.map(ageLabel).join(', ')],
+    ['Grade or form', book.levels.map(levelLabel).join(', ')],
+    ['Subject', book.subject && subjectLabel(book.subject)],
+    ['Curriculum', book.curriculum && `${book.curriculum} curriculum`],
   ].filter(([, v]) => v) as [string, ReactNode][]
   if (!specs.length) return null
   return (

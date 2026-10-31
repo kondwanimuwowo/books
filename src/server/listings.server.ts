@@ -4,7 +4,8 @@ import { books, categories, listings, sellers } from '#/db/schema'
 import { PHOTOS_COPY } from '#/data/listing-options'
 import { toIsbn13 } from '#/lib/isbn'
 import { toNgwee } from '#/lib/money'
-import type { CreateListingInput, UpdateListingInput } from '#/schemas/sell'
+import type { CreateListingInput, SchoolDetailsInput, UpdateListingInput } from '#/schemas/sell'
+import { curriculumFor } from '#/data/school'
 import { lookupIsbn, searchExternal } from './book-sources.server'
 import { findCatalogueMatches, findOrCreateBook } from './catalog.server'
 import { ownedCoverUrl } from './covers.server'
@@ -15,6 +16,38 @@ type Seller = typeof sellers.$inferSelect
 export async function bookDescription(db: Db, bookId: string) {
   const [row] = await db.select({ description: books.description }).from(books).where(eq(books.id, bookId)).limit(1)
   return row?.description ?? null
+}
+
+/** The section and children's or school details a book has, so the sell form shows them instead of asking again. */
+export async function bookSchoolDetails(db: Db, bookId: string) {
+  const [row] = await db
+    .select({ categorySlug: categories.slug, ageBands: books.ageBands, levels: books.levels, subject: books.subject, curriculum: books.curriculum })
+    .from(books)
+    .leftJoin(categories, eq(categories.id, books.categoryId))
+    .where(eq(books.id, bookId))
+    .limit(1)
+  return row ?? null
+}
+
+/** Like descriptions: a seller fills what a book is missing, and never overwrites what another seller set. */
+async function fillMissingSchoolDetails(db: Db, bookId: string, categoryId: string | null, school: SchoolDetailsInput | undefined) {
+  const implied = school ? curriculumFor(school.levels) : null
+  const curriculum = school?.curriculum ?? (implied === '2023' || implied === '2013' ? implied : null)
+  // Postgres array literals: the values come from fixed lists, so they never hold commas or quotes.
+  const pgArray = (values: readonly string[]) => `{${values.join(',')}}`
+  await db
+    .update(books)
+    .set({
+      categoryId: sql`coalesce(${books.categoryId}, ${categoryId})`,
+      ...(school && {
+        ageBands: sql`case when cardinality(${books.ageBands}) = 0 then ${pgArray(school.ageBands)}::text[] else ${books.ageBands} end`,
+        levels: sql`case when cardinality(${books.levels}) = 0 then ${pgArray(school.levels)}::text[] else ${books.levels} end`,
+        subject: sql`coalesce(${books.subject}, ${school.subject})`,
+        // The curriculum goes with the grades: only set alongside them.
+        curriculum: sql`case when cardinality(${books.levels}) = 0 then ${curriculum} else ${books.curriculum} end`,
+      }),
+    })
+    .where(eq(books.id, bookId))
 }
 
 /** Sellers may add a description only where a book has none; changing one stays with its verified author. */
@@ -55,12 +88,12 @@ export async function createSellerListing(db: Db, seller: Seller, input: CreateL
   const copyPhotos = await Promise.all(input.photoKeys.map((key) => ownedCoverUrl(key, seller.profileId)))
   if (copyPhotos.some((url) => !url)) throw new AppError('A photo didn’t upload. Add it again.')
 
+  const [category] = input.categorySlug ? await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, input.categorySlug)).limit(1) : []
   if (input.book.kind === 'existing') {
     const [book] = await db.select({ id: books.id, slug: books.slug }).from(books).where(eq(books.id, input.book.bookId)).limit(1)
     if (!book) throw new AppError('Book not found', 'not_found')
     ;({ id: bookId, slug } = book)
   } else {
-    const [category] = input.categorySlug ? await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, input.categorySlug)).limit(1) : []
     const isbn13 = input.book.candidate.isbn13 ? toIsbn13(input.book.candidate.isbn13) : null
     if (input.book.candidate.isbn13 && !isbn13) throw new AppError('That ISBN doesn’t look right')
     // Open Library search results can carry the work's title; save the picked edition's own details.
@@ -84,6 +117,8 @@ export async function createSellerListing(db: Db, seller: Seller, input: CreateL
     ;({ id: bookId, slug } = book)
   }
 
+  // An ISBN already on Kuwala comes back as that book, so this runs for new and existing books alike.
+  await fillMissingSchoolDetails(db, bookId, category?.id ?? null, input.school)
   await fillMissingDescription(db, bookId, input.description)
   await fillMissingSummary(db, bookId, input.summary)
   // Fills a missing cover only; replacing an existing one is for the book's verified author.

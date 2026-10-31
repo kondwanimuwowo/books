@@ -415,6 +415,12 @@ export const books = pgTable(
     }),
     // Denormalised from authors.is_zambian so shelves and ranking stay cheap.
     isZambian: boolean('is_zambian').notNull().default(false),
+    // Children and school (values in src/data/school.ts): who it's for, which grades or forms, and for
+    // textbooks the subject and curriculum ('2013' or '2023'). Sellers fill them once; later listings reuse them.
+    ageBands: text('age_bands').array().notNull().default(sql`'{}'::text[]`),
+    levels: text('levels').array().notNull().default(sql`'{}'::text[]`),
+    subject: text('subject'),
+    curriculum: text('curriculum'),
     source: bookSource('source').notNull(),
     // Title, subtitle, author names and ISBNs, maintained by the app on write.
     searchText: text('search_text').notNull().default(''),
@@ -433,6 +439,8 @@ export const books = pgTable(
     index('books_category_idx').on(t.categoryId),
     index('books_publisher_idx').on(t.publisherId),
     index('books_search_idx').using('gin', t.searchVector),
+    index('books_age_bands_idx').using('gin', t.ageBands),
+    index('books_levels_idx').using('gin', t.levels),
   ],
 ).enableRLS()
 

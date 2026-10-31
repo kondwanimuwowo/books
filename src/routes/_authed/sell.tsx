@@ -3,7 +3,7 @@ import { ArrowLeftIcon, CameraIcon, MagnifyingGlassIcon, SparklesIcon } from '@h
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getCategories } from '#/functions/catalog.functions'
-import { browseCatalogue, createListing, findBookForSale, getCatalogueDescription, getMySeller, getPriceGuide, suggestTitles } from '#/functions/sell.functions'
+import { browseCatalogue, createListing, findBookForSale, getBookSchoolDetails, getCatalogueDescription, getMySeller, getPriceGuide, suggestTitles } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
 import { CoverUpload } from '#/components/cover-upload'
 import { SuggestInput, loadAuthors, loadPublishers } from '#/components/suggest-input'
@@ -28,6 +28,10 @@ import type { ListingPhoto } from '#/components/listing-photos'
 import { instantFee } from '#/data/payouts'
 import type { Condition, Format } from '#/data/listing-options'
 import { LANGUAGES } from '#/data/zambia'
+import { CHILDREN_SECTIONS, DEFAULT_TYPE, LISTING_TABS, LISTING_TYPE_COPY, listingType, tabOf } from '#/data/listing-types'
+import type { ListingTab, ListingType } from '#/data/listing-types'
+import { SchoolFields, SchoolSummary, emptySchool, schoolData, schoolProblem } from '#/components/school-fields'
+import type { SchoolValue } from '#/components/school-fields'
 import { formatMoney } from '#/lib/money'
 import { cn } from '#/lib/utils'
 
@@ -73,6 +77,11 @@ function SellPage() {
   const { seller } = Route.useLoaderData()
   const [selection, setSelection] = useState<Selection | null>(null)
   const [published, setPublished] = useState<Published | null>(null)
+  // Kept through "List another", so a bookshop entering a stack of Grade 4 books picks the type once.
+  const [typeId, setTypeId] = useState(DEFAULT_TYPE)
+  const [tabId, setTabId] = useState<ListingTab['id']>(tabOf(DEFAULT_TYPE).id)
+  const type = listingType(typeId)
+  const tab = LISTING_TABS.find((t) => t.id === tabId) ?? LISTING_TABS[0]
 
   if (published) {
     return (
@@ -95,6 +104,7 @@ function SellPage() {
           <DetailsStep
             key={selection.kind === 'existing' ? selection.id : selection.kind}
             selection={selection}
+            type={type}
             onBack={() => setSelection(null)}
             onSwitch={setSelection}
             onPublished={(listing) => {
@@ -103,7 +113,24 @@ function SellPage() {
             }}
           />
         ) : (
-          <FindStep onSelect={setSelection} />
+          <>
+            <TypePicker
+              tabId={tabId}
+              typeId={typeId}
+              onTab={(id) => {
+                setTabId(id)
+                const first = LISTING_TABS.find((t) => t.id === id)?.types.find((t) => !t.soon)
+                if (first) setTypeId(first.id)
+              }}
+              onType={setTypeId}
+            />
+            {/* A tab with nothing to list yet (Campus) shows what's coming instead of the search. */}
+            {tab.types.some((t) => !t.soon) && (
+              <div className="mt-10">
+                <FindStep onSelect={setSelection} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -139,6 +166,54 @@ function Listed({ listing, onAnother }: { listing: Published; onAnother: () => v
         </div>
       </div>
     </div>
+  )
+}
+
+/** Tabs for who the book is for, then the kind of book. Types that aren't ready yet show greyed out. */
+function TypePicker({ tabId, typeId, onTab, onType }: { tabId: ListingTab['id']; typeId: string; onTab: (id: ListingTab['id']) => void; onType: (id: string) => void }) {
+  const tab = LISTING_TABS.find((t) => t.id === tabId) ?? LISTING_TABS[0]
+  return (
+    <section aria-labelledby="type-heading" className="rise">
+      <h2 id="type-heading" className="text-xl">
+        {LISTING_TYPE_COPY.heading}
+      </h2>
+      <div role="tablist" aria-label={LISTING_TYPE_COPY.heading} className="mt-4 flex gap-1 overflow-x-auto border-b border-line">
+        {LISTING_TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={t.id === tabId}
+            aria-controls="type-panel"
+            onClick={() => onTab(t.id)}
+            className={cn(
+              '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
+              t.id === tabId ? 'border-accent-ink text-ink' : 'border-transparent text-muted hover:text-ink',
+              t.soon && t.id !== tabId && 'text-subtle',
+            )}
+          >
+            {t.label}
+            {t.soon && <span className="rounded-full bg-sunken px-2 py-0.5 text-xs font-normal text-subtle">{LISTING_TYPE_COPY.soon}</span>}
+          </button>
+        ))}
+      </div>
+      <div id="type-panel" role="tabpanel" aria-labelledby={`tab-${tab.id}`} className="mt-4">
+        {tab.soon && <p className="mb-4 text-sm text-muted">{LISTING_TYPE_COPY.campusLine}</p>}
+        <div role="radiogroup" aria-label={tab.label} className="grid gap-2 sm:grid-cols-2">
+          {tab.types.map((t) => (
+            <label key={t.id} className={cn(optionCard(t.id === typeId && !t.soon), t.soon && 'pointer-events-none opacity-55')} aria-disabled={t.soon || undefined}>
+              <input type="radio" className="sr-only" name="listing-type" disabled={t.soon} checked={t.id === typeId && !t.soon} onChange={() => onType(t.id)} />
+              <span className="flex items-center justify-between gap-2 font-medium">
+                {t.label}
+                {t.soon && <span className="text-xs font-normal text-subtle">{LISTING_TYPE_COPY.soon}</span>}
+              </span>
+              <span className="block text-sm text-subtle">{t.note}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -359,11 +434,13 @@ const emptyManual = { title: '', subtitle: '', authors: '', isbn: '', publisher:
 
 function DetailsStep({
   selection,
+  type,
   onBack,
   onSwitch,
   onPublished,
 }: {
   selection: Selection
+  type: ListingType
   onBack: () => void
   onSwitch: (s: Selection) => void
   onPublished: (listing: Published) => void
@@ -371,7 +448,10 @@ function DetailsStep({
   const { categories } = Route.useLoaderData()
   const photos = selection.photos
   const [manual, setManual] = useState(selection.kind === 'manual' && selection.prefill ? { ...emptyManual, ...selection.prefill } : emptyManual)
-  const [categorySlug, setCategorySlug] = useState('')
+  // Children & school types decide the section; a plain Book leaves it to the seller.
+  const [categorySlug, setCategorySlug] = useState(type.section ?? '')
+  const [school, setSchool] = useState<SchoolValue>(emptySchool)
+  const [existingSchool, setExistingSchool] = useState<Awaited<ReturnType<typeof getBookSchoolDetails>> | null | undefined>(selection.kind === 'existing' ? undefined : null)
   const [zambianAuthor, setZambianAuthor] = useState(false)
   const [format, setFormat] = useState<Format>('paperback')
   const [condition, setCondition] = useState<Condition>(photos?.condition ?? 'new')
@@ -402,10 +482,15 @@ function DetailsStep({
     if (selection.kind !== 'existing') return
     void getPriceGuide({ data: { bookId: selection.id } }).then(setGuide)
     if (selection.hasDescription) void getCatalogueDescription({ data: { bookId: selection.id } }).then(({ description }) => setCatalogueDescription(description))
+    void getBookSchoolDetails({ data: { bookId: selection.id } })
+      .then(setExistingSchool)
+      .catch(() => setExistingSchool(null))
   }, [selection])
 
   const submit = useAction(async () => {
     if (used && !copyPhotos.length) throw new Error(PHOTOS_COPY.required)
+    const schoolError = askSchool ? schoolProblem(type.fields, school) : null
+    if (schoolError) throw new Error(schoolError)
     const book =
       selection.kind === 'existing'
         ? { kind: 'existing' as const, bookId: selection.id }
@@ -438,6 +523,7 @@ function DetailsStep({
       data: {
         book,
         categorySlug: categorySlug || undefined,
+        school: askSchool ? schoolData(type.fields, school) : undefined,
         zambianAuthor,
         format,
         condition,
@@ -463,6 +549,10 @@ function DetailsStep({
 
   const priceNgwee = Math.round(Number(price) * 100) || 0
   const isNewToCatalogue = selection.kind !== 'existing'
+  // A book already on Kuwala keeps the details another seller gave it; only missing ones are asked for.
+  const hasSchool = !!existingSchool && (type.fields === 'age' ? existingSchool.ageBands.length > 0 : existingSchool.levels.length > 0)
+  const askSchool = !!type.fields && existingSchool !== undefined && !hasSchool
+  const sections = categories.filter((c) => !CHILDREN_SECTIONS.includes(c.slug))
   const setM = (key: keyof typeof manual) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setManual({ ...manual, [key]: e.target.value })
   const setValue = (key: keyof typeof manual) => (value: string) => setManual((m) => ({ ...m, [key]: value }))
   const heading =
@@ -506,9 +596,12 @@ function DetailsStep({
       }}
     >
       <div className="min-w-0 space-y-10">
-        <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-accent-ink">
-          <ArrowLeftIcon className="size-3.5" aria-hidden /> Another book
-        </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-accent-ink">
+            <ArrowLeftIcon className="size-3.5" aria-hidden /> Another book
+          </button>
+          <span className="rounded-full bg-sunken px-3 py-1 text-xs font-medium text-muted">{type.label}</span>
+        </div>
 
         {/* Phones and tablets: the book stays in view while the form scrolls. Desktop has it in the sidebar. */}
         <div className="glass-bar sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-2.5 sm:-mx-6 sm:px-6 lg:hidden">
@@ -597,15 +690,25 @@ function DetailsStep({
           </section>
         )}
 
-        {isNewToCatalogue && (
-          <section className="grid gap-4 sm:grid-cols-2">
-            <Field label="Section">
-              <Select value={categorySlug} options={categories.map((c) => ({ value: c.slug, label: c.name }))} onChange={setCategorySlug} />
-            </Field>
-            <label className={cn(optionCard(zambianAuthor), 'flex items-center gap-3 self-end text-sm', zambianAuthor && 'bg-zambia-soft shadow-[inset_0_0_0_1.5px_var(--color-zambia)]')}>
-              <input type="checkbox" className="size-4 accent-zambia" checked={zambianAuthor} onChange={(e) => setZambianAuthor(e.target.checked)} />
-              <span className={cn('font-medium', zambianAuthor && 'text-zambia')}>Zambian author</span>
-            </label>
+        {(isNewToCatalogue || type.fields) && (
+          <section className="space-y-5">
+            {isNewToCatalogue && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Section">
+                  {type.section ? (
+                    <p className="flex h-11 items-center text-[15px]">{categories.find((c) => c.slug === type.section)?.name ?? type.label}</p>
+                  ) : (
+                    <Select value={categorySlug} options={sections.map((c) => ({ value: c.slug, label: c.name }))} onChange={setCategorySlug} />
+                  )}
+                </Field>
+                <label className={cn(optionCard(zambianAuthor), 'flex items-center gap-3 self-end text-sm', zambianAuthor && 'bg-zambia-soft shadow-[inset_0_0_0_1.5px_var(--color-zambia)]')}>
+                  <input type="checkbox" className="size-4 accent-zambia" checked={zambianAuthor} onChange={(e) => setZambianAuthor(e.target.checked)} />
+                  <span className={cn('font-medium', zambianAuthor && 'text-zambia')}>Zambian author</span>
+                </label>
+              </div>
+            )}
+            {type.fields && hasSchool && existingSchool && <SchoolSummary details={existingSchool} />}
+            {type.fields && askSchool && <SchoolFields fields={type.fields} value={school} onChange={setSchool} />}
           </section>
         )}
 

@@ -8,6 +8,8 @@ export const CATEGORIES = [
   { slug: 'textbooks', name: 'School textbooks' },
   { slug: 'university', name: 'University and professional' },
   { slug: 'children', name: 'Children' },
+  { slug: 'early-readers', name: 'Early readers' },
+  { slug: 'activity-colouring', name: 'Activity and colouring' },
   { slug: 'christian', name: 'Christian and faith' },
   { slug: 'business', name: 'Business and money' },
   { slug: 'self-help', name: 'Self-help' },

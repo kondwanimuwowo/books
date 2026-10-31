@@ -9,6 +9,7 @@ import { LANGUAGES } from '#/data/zambia'
 import { requireSellerMiddleware } from '#/server/auth'
 import { refreshSearchText, upsertPublisher } from '#/server/catalog.server'
 import { ownedCoverUrl } from '#/server/covers.server'
+import { schoolDetailsSchema } from '#/schemas/sell'
 import { AppError } from '#/server/errors.server'
 
 const LANGUAGE_CODES = LANGUAGES.map((l) => l.code) as [string, ...string[]]
@@ -54,6 +55,10 @@ export const getMyAuthorship = createServerFn({ method: 'GET' })
           pageCount: books.pageCount,
           language: books.language,
           categorySlug: categories.slug,
+          ageBands: books.ageBands,
+          levels: books.levels,
+          subject: books.subject,
+          curriculum: books.curriculum,
         })
         .from(books)
         .leftJoin(categories, eq(categories.id, books.categoryId))
@@ -135,6 +140,8 @@ export const saveAuthoredBook = createServerFn({ method: 'POST' })
       pageCount: z.number().int().min(1).max(10000).nullable(),
       language: z.enum(LANGUAGE_CODES),
       categorySlug: z.string().max(80).nullable(),
+      // A verified author may replace what sellers filled in.
+      school: schoolDetailsSchema.optional(),
       coverKey: z.string().max(64).optional(),
     }),
   )
@@ -154,6 +161,12 @@ export const saveAuthoredBook = createServerFn({ method: 'POST' })
         pageCount: data.pageCount,
         language: data.language,
         categoryId: category?.id ?? null,
+        ...(data.school && {
+          ageBands: data.school.ageBands,
+          levels: data.school.levels,
+          subject: data.school.subject,
+          curriculum: data.school.curriculum,
+        }),
         ...(coverUrl && { coverUrl }),
       })
       .where(and(eq(books.id, data.bookId), authoredBy(db, context.seller.id)))

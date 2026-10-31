@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { MAX_LISTING_PHOTOS } from '#/data/listing-options'
+import { AGE_BAND_VALUES, LEVEL_VALUES, SUBJECT_VALUES, curriculumFor } from '#/data/school'
 import { SHIPPING_METHODS } from '#/data/shipping'
 import { PROVINCES } from '#/data/zambia'
 import { normalizeLocalPhone } from '#/lib/phone'
@@ -61,6 +62,17 @@ const candidateSchema = z.object({
   language: z.string().max(8),
 })
 
+// Children's and school details for the book. New books take them; books already on Kuwala only where theirs are empty.
+export const schoolDetailsSchema = z
+  .object({
+    ageBands: z.array(z.enum(AGE_BAND_VALUES)).max(5).default([]),
+    levels: z.array(z.enum(LEVEL_VALUES)).max(25).default([]),
+    subject: z.enum(SUBJECT_VALUES).nullable().default(null),
+    curriculum: z.enum(['2023', '2013']).nullable().default(null),
+  })
+  .refine((d) => curriculumFor(d.levels) !== 'mixed', { message: 'Pick grades from one curriculum: Forms are the new one, Grades 7 to 12 the old.' })
+export type SchoolDetailsInput = z.infer<typeof schoolDetailsSchema>
+
 export const createListingSchema = z.object({
   book: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('existing'), bookId: z.string().uuid() }),
@@ -68,6 +80,7 @@ export const createListingSchema = z.object({
     z.object({ kind: z.literal('manual'), candidate: candidateSchema }),
   ]),
   categorySlug: z.string().max(80).optional(),
+  school: schoolDetailsSchema.optional(),
   zambianAuthor: z.boolean(),
   format: z.enum(['paperback', 'hardcover']),
   condition: z.enum(['new', 'like_new', 'very_good', 'good', 'acceptable']),

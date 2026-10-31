@@ -11,6 +11,9 @@ import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 import { LANGUAGES } from '#/data/zambia'
 import { AUTHOR_LINKS } from '#/data/tiers'
 import { Plaque } from '#/components/plaque'
+import { SchoolFields, schoolData, schoolProblem } from '#/components/school-fields'
+import type { SchoolValue } from '#/components/school-fields'
+import { schoolFieldsFor } from '#/data/listing-types'
 import { PlaqueMoment } from '#/components/plaque-moment'
 
 export const Route = createFileRoute('/_authed/account/author')({
@@ -182,11 +185,20 @@ function BookEditor({ book, categories, onDone }: { book: Book; categories: Data
     language: book.language,
     categorySlug: book.categorySlug ?? '',
   })
+  const [school, setSchool] = useState<SchoolValue>({
+    ageBands: book.ageBands as SchoolValue['ageBands'],
+    levels: book.levels,
+    subject: book.subject ?? '',
+    curriculum: book.curriculum === '2023' || book.curriculum === '2013' ? book.curriculum : book.levels.length ? 'both' : '',
+  })
+  const schoolFields = schoolFieldsFor(form.categorySlug)
   const [cover, setCover] = useState<{ key: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm({ ...form, [k]: e.target.value })
   const save = useAction(async () => {
+    const schoolError = schoolProblem(schoolFields, school)
+    if (schoolError) throw new Error(schoolError)
     await saveAuthoredBook({
       data: {
         bookId: book.id,
@@ -198,6 +210,7 @@ function BookEditor({ book, categories, onDone }: { book: Book; categories: Data
         pageCount: toNumber(form.pageCount),
         language: form.language,
         categorySlug: form.categorySlug || null,
+        school: schoolData(schoolFields, school),
         coverKey: cover?.key,
       },
     })
@@ -245,6 +258,11 @@ function BookEditor({ book, categories, onDone }: { book: Book; categories: Data
             onChange={(categorySlug) => setForm((f) => ({ ...f, categorySlug }))}
           />
         </Field>
+        {schoolFields && (
+          <div className="sm:col-span-2">
+            <SchoolFields fields={schoolFields} value={school} onChange={setSchool} />
+          </div>
+        )}
         {save.error && (
           <div className="sm:col-span-2">
             <Alert>{save.error}</Alert>
