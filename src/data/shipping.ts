@@ -51,7 +51,7 @@ interface Place {
 const METHODS: Record<ActiveShippingMethod, { label: string; describe: (from: Place, band: DeliveryBand) => string }> = {
   yango: { label: 'Yango Delivery', describe: (from) => `By motorbike, to your door in ${from.town}` },
   platinum: { label: 'Platinum Courier', describe: () => 'To you anywhere in Zambia. Drop-off queues can add a day.' },
-  mercury: { label: 'Mercury Tigmoo', describe: () => 'Premium courier, tracked to your door' },
+  mercury: { label: 'Mercury', describe: () => 'Tracked to your door, anywhere in Zambia' },
   bus_parcel: { label: 'Bus parcel', describe: () => 'Collect at your bus station with your order number' },
   collect: {
     label: 'Pick up from seller',
@@ -94,7 +94,7 @@ export function shippingOptions(
 const SHIPPING_LABELS: Record<ShippingMethod, string> = {
   yango: 'Yango Delivery',
   platinum: 'Platinum Courier',
-  mercury: 'Mercury Tigmoo',
+  mercury: 'Mercury',
   bus_parcel: 'Bus parcel',
   collect: 'Pick up from seller',
   courier: 'Courier',

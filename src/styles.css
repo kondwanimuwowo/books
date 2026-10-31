@@ -65,8 +65,10 @@
   --color-deep: #431b20;
   --color-on-deep-muted: #edcfd2;
 
-  --color-success: #46634a;
-  --color-success-soft: #e6eee7;
+  /* Green is the plaque emerald: success states, and WhatsApp in --color-green (the same in both themes). */
+  --color-success: #155239;
+  --color-success-soft: #def0e6;
+  --color-green: #155239;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-warning: #74510f;
@@ -128,8 +130,8 @@
     --color-deep: #2c1518;
     --color-on-deep-muted: #e8c9cd;
 
-    --color-success: #a6cbaa;
-    --color-success-soft: #1f2c22;
+    --color-success: #86cfa9;
+    --color-success-soft: #173026;
     --color-danger: #f4a39a;
     --color-danger-soft: #3b1815;
     --color-warning: #ebc67f;

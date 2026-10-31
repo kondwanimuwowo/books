@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { CheckBadgeIcon, PencilSquareIcon, ShoppingBagIcon } from '@heroicons/react/24/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
 import { ClosingBand, Faq, Feature, MarketingHero, Points, StartSellingButton, Steps } from '#/components/marketing'
 import { AUTHOR_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
@@ -12,6 +13,9 @@ export const Route = createFileRoute('/for-authors')({
   }),
   component: ForAuthors,
 })
+
+// Open your author page, get verified, sell direct.
+const STEP_ICONS = [PencilSquareIcon, CheckBadgeIcon, ShoppingBagIcon]
 
 function ForAuthors() {
   const wall = Route.useLoaderData()
@@ -27,7 +31,7 @@ function ForAuthors() {
       />
 
       <div className="page-marketing">
-        <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} />
+        <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} icons={STEP_ICONS} />
 
         <Feature image={ILLUSTRATIONS.bookSigning}>
           <Points heading={PAGE.getHeading} points={PAGE.get} />

@@ -33,7 +33,7 @@ export const Route = createRootRoute({
     links: [
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Manrope:wght@500..800&family=Inter:opsz,wght@14..32,400..700&display=swap' },
+      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Manrope:wght@300..800&family=Inter:opsz,wght@14..32,400..700&display=swap' },
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', href: '/brand/mark-48.png', sizes: '48x48', type: 'image/png' },
       { rel: 'icon', href: '/brand/mark-32.png', sizes: '32x32', type: 'image/png' },

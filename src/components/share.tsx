@@ -4,7 +4,7 @@ import { cn } from '#/lib/utils'
 /** Opens WhatsApp with the text and link ready to send; on desktop, WhatsApp Web. */
 export function ShareOnWhatsApp({ text, path, className }: { text: string; path: string; className?: string }) {
   return (
-    <a href={whatsAppLink(text, path)} target="_blank" rel="noopener noreferrer" className={cn('btn btn-secondary btn-sm gap-1.5', className)}>
+    <a href={whatsAppLink(text, path)} target="_blank" rel="noopener noreferrer" className={cn('btn btn-sm gap-1.5 bg-green text-white hover:bg-green/90 hover:text-white', className)}>
       <WhatsAppMark />
       {SHARE_COPY.label}
     </a>

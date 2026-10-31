@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ChevronRightIcon } from '@heroicons/react/16/solid'
+import { DevicePhoneMobileIcon, MagnifyingGlassIcon, TruckIcon } from '@heroicons/react/24/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
 import { ClosingBand, Faq, Feature, MarketingHero, ON_BAND_BUTTON, Points, Steps } from '#/components/marketing'
 import { BUY_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
@@ -22,6 +23,9 @@ function Browse({ className }: { className?: string }) {
   )
 }
 
+// Find it, pay safely, get your books.
+const STEP_ICONS = [MagnifyingGlassIcon, DevicePhoneMobileIcon, TruckIcon]
+
 function HowItWorks() {
   const wall = Route.useLoaderData()
   return (
@@ -29,7 +33,7 @@ function HowItWorks() {
       <MarketingHero wall={wall} title={PAGE.hero.title} titleBold={PAGE.hero.titleBold} line={PAGE.hero.line} action={<Browse />} more={PAGE.hero.secondary} />
 
       <div className="page-marketing">
-        <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} />
+        <Steps heading={PAGE.stepsHeading} steps={PAGE.steps} icons={STEP_ICONS} />
 
         <Feature image={ILLUSTRATIONS.moneyHeld}>
           <Points heading={PAGE.protectionHeading} points={PAGE.protection}>

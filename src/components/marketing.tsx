@@ -1,7 +1,7 @@
 import { Link, useLoaderData } from '@tanstack/react-router'
 import { ChevronDownIcon } from '@heroicons/react/16/solid'
 import { useId, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { CoverWallBackdrop, useCoverReveal } from './cover-wall'
 import { cn } from '#/lib/utils'
 import type { Illustration } from '#/data/marketing'
@@ -33,12 +33,12 @@ export function MarketingHero({ wall, title, titleBold, line, action, more }: { 
     <section className="band relative overflow-hidden" onPointerMove={wall.length ? onPointerMove : undefined} onPointerLeave={wall.length ? onPointerLeave : undefined}>
       {wall.length > 0 && <CoverWallBackdrop tiles={wall} reveal={reveal} />}
       <div className="page-marketing rise relative py-14 sm:py-20">
-        <div className={cn(wall.length > 0 && 'frost w-fit max-w-2xl rounded-xl px-6 py-7 sm:px-9 sm:py-9')}>
-          <h1 className="max-w-2xl text-[2.25rem] leading-[1.06] font-normal sm:text-6xl">
+        <div className={cn('text-center sm:text-left', wall.length > 0 && 'frost mx-auto w-fit max-w-2xl rounded-xl px-6 py-7 sm:mx-0 sm:px-9 sm:py-9')}>
+          <h1 className="max-w-2xl text-[2.25rem] leading-[1.06] font-light sm:text-6xl">
             {title} <span className="block font-bold">{titleBold}</span>
           </h1>
-          <p className="mt-4 max-w-lg text-lg text-on-deep-muted">{line}</p>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <p className="mx-auto mt-4 max-w-lg text-lg text-on-deep-muted sm:mx-0">{line}</p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3 sm:justify-start">
             {action}
             <a href="#how" className="btn frost-pill text-on-accent no-underline hover:text-on-accent">
               {more}
@@ -51,8 +51,10 @@ export function MarketingHero({ wall, title, titleBold, line, action, more }: { 
   )
 }
 
-/** Numbered steps; the first section after the hero, which "How it works" jumps to. */
-export function Steps({ heading, steps }: { heading: string; steps: readonly { title: string; body: string }[] }) {
+type Icon = ComponentType<{ className?: string }>
+
+/** Numbered steps, or with an icon each when the page gives them; the first section after the hero, which "How it works" jumps to. */
+export function Steps({ heading, steps, icons }: { heading: string; steps: readonly { title: string; body: string }[]; icons?: readonly Icon[] }) {
   return (
     <section id="how" className="scroll-mt-24 py-16 sm:py-20" aria-labelledby="how-heading">
       <h2 id="how-heading" className="text-2xl sm:text-3xl">
@@ -60,16 +62,22 @@ export function Steps({ heading, steps }: { heading: string; steps: readonly { t
       </h2>
       <ol className={cn('mt-10 grid gap-10 md:gap-12', steps.length === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3')}>
         {steps.map((step, i) => (
-          <li key={step.title}>
-            <span className="grid size-10 place-items-center rounded-full bg-accent-soft text-lg font-bold text-accent-soft-ink" aria-hidden>
-              {i + 1}
-            </span>
+          <li key={step.title} className="text-center md:text-left">
+            <StepMark index={i} icon={icons?.[i]} />
             <h3 className="mt-4 text-xl">{step.title}</h3>
-            <p className="mt-2 max-w-sm leading-relaxed text-muted">{step.body}</p>
+            <p className="mx-auto mt-2 max-w-sm leading-relaxed text-muted md:mx-0">{step.body}</p>
           </li>
         ))}
       </ol>
     </section>
+  )
+}
+
+function StepMark({ index, icon: StepIcon }: { index: number; icon?: Icon }) {
+  return (
+    <span className="mx-auto grid size-10 place-items-center rounded-full bg-accent-soft text-lg font-bold text-accent-soft-ink md:mx-0" aria-hidden>
+      {StepIcon ? <StepIcon className="size-5" /> : index + 1}
+    </span>
   )
 }
 
@@ -136,7 +144,7 @@ export function Faq({ heading, items }: { heading: string; items: readonly { q: 
 export function ClosingBand({ title, action }: { title: string; action: ReactNode }) {
   return (
     <section className="page-marketing pb-4">
-      <div className="band flex flex-col items-start justify-between gap-6 rounded-xl px-6 py-10 sm:flex-row sm:items-center sm:px-12 sm:py-12">
+      <div className="band flex flex-col items-center justify-between gap-6 rounded-xl px-6 py-10 text-center sm:flex-row sm:px-12 sm:py-12 sm:text-left">
         <h2 className="max-w-xl text-2xl sm:text-3xl">{title}</h2>
         {action}
       </div>

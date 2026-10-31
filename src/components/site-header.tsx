@@ -2,13 +2,14 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import type { LinkProps } from '@tanstack/react-router'
 import { Bars3Icon, EnvelopeIcon, MagnifyingGlassIcon, PhoneIcon, ShoppingBagIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useEffect, useRef, useState } from 'react'
-import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, MY_SHOP, TABS } from '#/data/navigation'
+import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_NAV, MENU_LINKS, MY_SHOP, SIGN_OUT_ICON, TABS } from '#/data/navigation'
 import { CONTACT } from '#/data/brand'
 import { LEGAL_PAGES } from '#/data/legal'
 import { COOKIE_COPY } from '#/data/cookies'
 import { AUTH_COPY } from '#/data/auth'
 import { openCookieSettings } from '#/lib/consent'
 import { quickSearch } from '#/functions/catalog.functions'
+import { signOut } from '#/functions/auth.functions'
 import { BookCover } from './book'
 import { LoadingLine, Spinner } from './loading-line'
 import { useHideOnScroll } from './use-hide-on-scroll'
@@ -343,17 +344,17 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               <MenuLink to="/search" icon={TABS[1].icon}>
                 Browse
               </MenuLink>
-              {!user?.sellerSlug && (
-                <MenuLink to="/sell-on-kuwala" icon={TABS[2].icon}>
-                  Sell
-                </MenuLink>
-              )}
               {user && (
                 <MenuLink to="/account" icon={TABS[4].icon}>
                   Your account
                 </MenuLink>
               )}
             </>
+          )}
+          {!user?.sellerSlug && (
+            <MenuLink to="/sell-on-kuwala" icon={TABS[2].icon}>
+              Sell
+            </MenuLink>
           )}
           {user?.sellerSlug && (
             <li>
@@ -373,6 +374,23 @@ export function SiteHeader({ user, tabs }: { user: HeaderUser | null; tabs: bool
               <a href={user.adminUrl} className={menuItem} tabIndex={menu.open ? undefined : -1}>
                 Admin
               </a>
+            </li>
+          )}
+          {user && (
+            <li>
+              <button
+                type="button"
+                className={cn(menuItem, 'w-full cursor-pointer')}
+                tabIndex={menu.open ? undefined : -1}
+                onClick={async () => {
+                  await signOut()
+                  // A fresh load, so nothing from the signed-in session survives.
+                  window.location.assign('/')
+                }}
+              >
+                <SIGN_OUT_ICON className="size-5 shrink-0 text-subtle" aria-hidden />
+                Sign out
+              </button>
             </li>
           )}
         </ul>
@@ -511,12 +529,12 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-on-accent/10">
-        <div className="page flex flex-col gap-3 py-6 text-xs text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="page flex flex-col items-center gap-3 py-6 text-center text-xs text-on-deep-muted sm:flex-row sm:justify-between sm:text-left">
           <div className="order-last flex flex-col gap-1 sm:order-first">
             <span>&copy; {new Date().getFullYear()} Kuwala Books</span>
             <RateNote usdOnly />
           </div>
-          <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:justify-start">
               {FOOTER_LEGAL.map((page) => (
                 <li key={page}>
                   <Link to="/legal/$page" params={{ page }} className={footerLink}>

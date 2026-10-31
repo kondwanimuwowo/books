@@ -99,15 +99,15 @@ function Intro({ wall }: { wall: string[] }) {
   return (
     <section className="band relative overflow-hidden" onPointerMove={tiles.length ? onPointerMove : undefined} onPointerLeave={tiles.length ? onPointerLeave : undefined}>
       {tiles.length > 0 && <CoverWallBackdrop tiles={tiles} reveal={reveal} />}
-      <div className="page rise relative py-8 sm:py-12">
+      <div className="page rise relative py-8 text-center sm:py-12 sm:text-left">
         {/* Over the cover wall the words sit on frosted glass so they read; on the plain band they don't need it. */}
-        <div className={cn(tiles.length > 0 && 'frost -mx-1 w-fit max-w-2xl rounded-xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
-          <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-normal sm:text-5xl">
+        <div className={cn(tiles.length > 0 && 'frost mx-auto w-fit max-w-2xl rounded-xl px-5 py-5 sm:mx-0 sm:px-7 sm:py-6')}>
+          <h1 className="max-w-2xl text-[2rem] leading-[1.08] font-light sm:text-5xl">
             Books across <span className="block font-bold">Zambia &amp; Beyond</span>
           </h1>
-          <p className="mt-3 max-w-xl text-on-deep-muted">New and used, from local authors, readers and bookshops.</p>
+          <p className="mx-auto mt-3 max-w-xl text-on-deep-muted sm:mx-0">New and used, from local authors, readers and bookshops.</p>
         </div>
-        <ul className="mt-5 flex flex-wrap gap-2" aria-label="Quick searches">
+        <ul className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-start" aria-label="Quick searches">
           {QUICK_SEARCHES.map((s) => (
             <li key={s.label}>
               <Link to="/search" search={s.search} className="pill frost-pill h-8 text-on-accent no-underline hover:text-on-accent">
