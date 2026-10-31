@@ -162,9 +162,10 @@ export function Picture({ image, className }: { image: Illustration; className?:
 }
 
 /** Words beside a picture; `flip` puts the picture first on wide screens, so a page can alternate. Phones stack, words first. */
-export function Feature({ image, flip = false, children }: { image: Illustration; flip?: boolean; children: ReactNode }) {
+export function Feature({ image, flip = false, id, children }: { image: Illustration; flip?: boolean; id?: string; children: ReactNode }) {
+  // With an id it's the first section, which the hero's second button jumps to: no rule above it.
   return (
-    <section className="grid items-center gap-10 border-t border-line py-16 sm:py-20 lg:grid-cols-2 lg:gap-24">
+    <section id={id} className={cn('grid scroll-mt-24 items-center gap-10 py-16 sm:py-20 lg:grid-cols-2 lg:gap-24', !id && 'border-t border-line')}>
       <div className={cn(flip && 'lg:order-last')}>{children}</div>
       <Picture image={image} />
     </section>

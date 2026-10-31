@@ -5,7 +5,7 @@ import { COMMISSION_RATE, OFFER_HOLD_HOURS, OFFER_REPLY_HOURS } from './listing-
 import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { instantFee } from './payouts'
 import { AUTO_RELEASE_DAYS, PICKUP_RELEASE_DAYS } from './shipping'
-import { YANGO_TOWNS } from './zambia'
+import { LANGUAGES, YANGO_TOWNS } from './zambia'
 import { PLAQUE_MIN_PRICE_NGWEE, TIERS } from './tiers'
 import { CONTACT } from './brand'
 
@@ -198,4 +198,46 @@ export const AUTHOR_PAGE = {
     { q: 'What does it cost?', a: `Listing is free. We take ${percent} of the book price when it sells, and the whole delivery fee is yours.` },
   ],
   closing: 'Your readers are looking for you.',
+} as const
+
+// The Zambian languages the catalogue sorts books by: every language except the three foreign ones.
+const zambianLanguages = LANGUAGES.filter((l) => !['en', 'fr', 'pt'].includes(l.code)).map((l) => l.name)
+
+export const ABOUT_PAGE = {
+  path: '/about',
+  metaTitle: 'About Kuwala Books',
+  metaDescription: 'A marketplace where anyone in Zambia can buy and sell books, and Zambian writers come first.',
+  hero: {
+    title: 'Books for every corner',
+    titleBold: 'of Zambia',
+    line: 'A place where anyone can sell books, and Zambian writers come first.',
+    cta: 'Browse books',
+    secondary: 'Our story',
+  },
+  storyHeading: 'Why Kuwala',
+  story: [
+    'Zambia is full of stories: told on verandas, written by local authors, printed in small runs and sold by hand.',
+    'Too many of those books never travel far from where they were printed, and good used books sit on shelves while someone else goes looking for them.',
+    'Kuwala Books puts them in one place, so a reader in Mongu can find a book written in Kitwe and have it sent to them.',
+  ],
+  whatHeading: 'What we do',
+  what: [
+    { title: 'Anyone can sell.', body: 'Readers clearing a shelf, authors with their own copies, and bookshops with their whole stock.' },
+    { title: 'Zambian writers first.', body: 'Their books carry the flag, verified authors sell direct, and the Zambia Top 20 counts only them.' },
+    { title: 'Paid for safely.', body: 'The money is held until the books arrive, and only then is the seller paid.' },
+    { title: 'Delivered across Zambia.', body: 'By Yango, Platinum, Mercury or bus parcel, or picked up from the seller.' },
+    { title: 'In Zambian languages too.', body: `Books in ${zambianLanguages.slice(0, -1).join(', ')} and ${zambianLanguages.at(-1)}, as well as English.` },
+  ],
+  doors: [
+    { title: 'Looking for a book?', body: 'How paying, delivery and refunds work.', to: '/how-it-works', link: 'How buying works' },
+    { title: 'Got books to sell?', body: `Free to list, ${percent} only when it sells.`, to: '/sell-on-kuwala', link: 'Sell on Kuwala' },
+    { title: 'Wrote one?', body: 'Get verified and sell your copies direct.', to: '/for-authors', link: 'For authors' },
+  ],
+  contactHeading: 'Talk to us',
+  contactLine: 'Questions, ideas, or a Zambian book we should know about.',
+  contact: {
+    email: { label: CONTACT.email, href: `mailto:${CONTACT.email}` },
+    whatsapp: { label: 'WhatsApp us', href: `https://wa.me/${CONTACT.phone.replace(/\D/g, '')}` },
+  },
+  closing: 'Find your next book.',
 } as const

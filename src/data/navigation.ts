@@ -69,6 +69,7 @@ export const FOOTER_NAV = [
   {
     title: 'Help',
     links: [
+      { label: 'About Kuwala', to: '/about' },
       { label: 'How buying works', to: '/how-it-works' },
       { label: 'Your orders', to: '/account' },
       { legal: 'buyer-protection' },
