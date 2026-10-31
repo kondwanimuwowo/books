@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { PauseIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/16/solid'
+import { ArrowPathIcon, PauseIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/16/solid'
 import { useState } from 'react'
 import { getMyListings, updateListing } from '#/functions/sell.functions'
 import { BookCover } from '#/components/book'
@@ -54,7 +54,7 @@ function Listings() {
 /** Phones: a compact row. Desktop: the cover on a shelf with a price sticker. Paused books fade out. */
 function ListingItem({ listing }: { listing: Listing }) {
   const router = useRouter()
-  const [mode, setMode] = useState<'view' | 'edit' | 'confirm-remove'>('view')
+  const [mode, setMode] = useState<'view' | 'edit' | 'restock' | 'confirm-remove'>('view')
   const [price, setPrice] = useState(String(listing.priceNgwee / 100))
   const [quantity, setQuantity] = useState(String(listing.quantity))
   const [offerSettings, setOfferSettings] = useState<OfferSettingsValue>({
@@ -145,6 +145,22 @@ function ListingItem({ listing }: { listing: Listing }) {
           </div>
         )}
 
+        {/* Sold out: the same listing comes back with more copies, keeping its page and history. */}
+        {mode === 'restock' && (
+          <div className="rise mt-3 flex flex-wrap items-end gap-2">
+            <label className="text-xs text-muted">
+              Copies
+              <input className="input mt-1 h-9 w-20" type="number" min={1} autoFocus value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            </label>
+            <button type="button" className="btn btn-primary btn-sm" disabled={save.pending || !(Number(quantity) > 0)} onClick={() => void save.run('active')}>
+              {save.pending ? 'Saving…' : 'Put back on sale'}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('view')}>
+              Cancel
+            </button>
+          </div>
+        )}
+
         {mode === 'confirm-remove' && (
           <div className="rise mt-3 flex flex-wrap items-center gap-2 text-sm">
             <span>Take it down?</span>
@@ -159,10 +175,24 @@ function ListingItem({ listing }: { listing: Listing }) {
 
         {mode === 'view' && listing.status !== 'removed' && (
           <div className="mt-2 flex items-center gap-1">
-            <button type="button" className="btn btn-secondary btn-sm gap-1.5" onClick={() => setMode('edit')}>
-              <PencilIcon className="size-3.5" aria-hidden />
-              Edit
-            </button>
+            {listing.status === 'sold_out' ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm gap-1.5"
+                onClick={() => {
+                  setQuantity('1')
+                  setMode('restock')
+                }}
+              >
+                <ArrowPathIcon className="size-3.5" aria-hidden />
+                Restock
+              </button>
+            ) : (
+              <button type="button" className="btn btn-secondary btn-sm gap-1.5" onClick={() => setMode('edit')}>
+                <PencilIcon className="size-3.5" aria-hidden />
+                Edit
+              </button>
+            )}
             {listing.status === 'active' && (
               <button type="button" className="btn btn-ghost btn-sm gap-1.5" disabled={save.pending} onClick={() => void save.run('paused')}>
                 <PauseIcon className="size-3.5" aria-hidden />

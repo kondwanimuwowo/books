@@ -3,16 +3,15 @@ import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getMySales, markShipped, respondToDispute } from '#/functions/orders.functions'
 import { getMyBalance, payMeNow } from '#/functions/sell.functions'
-import { INSTANT_MIN_NGWEE, PAYOUT_COPY, WEEKLY_MIN_NGWEE } from '#/data/payouts'
+import { INSTANT_MIN_NGWEE, PAYOUT_COPY, SALE_MONEY_COPY, WEEKLY_MIN_NGWEE } from '#/data/payouts'
 import { formatMoney } from '#/lib/money'
 import { DocumentUpload } from '#/components/document-upload'
 import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED, SHIP_FORM, SHIP_FORM_DEFAULT, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { Alert, useAction } from '#/components/form'
 import { Price } from '#/components/providers'
-import { conditionLabel } from '#/data/listing-options'
+import { COMMISSION_RATE, conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
 import { SAFETY } from '#/data/safety'
-import { PAYOUT_STATUS } from '#/data/statuses'
 import { cn, formatDate } from '#/lib/utils'
 import { EmptyMessage, Placeholder, RowShapes } from '#/components/placeholder'
 import { RateParcel, ReaderStanding } from '#/components/reputation'
@@ -40,6 +39,29 @@ const STATUS: Partial<Record<Sale['status'], { label: string; tone: string }>> =
 // On its way: still in escrow, or being transferred. The balance (released) has its own card.
 const COMING: Sale['payoutStatus'][] = ['held', 'processing']
 
+const DAY_MS = 86_400_000
+const longDay = (date: Date | string) => new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
+/** Where this sale's money is and when it moves next. `payday` is null while the balance is under the weekly minimum. */
+function moneyLine(sale: Sale, payday: string | null) {
+  switch (sale.payoutStatus) {
+    case 'held':
+      if (sale.status === 'disputed') return SALE_MONEY_COPY.heldDisputed
+      if (sale.status === 'shipped' && sale.autoReleaseAt) return SALE_MONEY_COPY.heldShipped(longDay(sale.autoReleaseAt))
+      return SALE_MONEY_COPY.heldToShip
+    case 'released':
+      return payday ? SALE_MONEY_COPY.released(payday) : SALE_MONEY_COPY.releasedSmall(formatMoney(WEEKLY_MIN_NGWEE))
+    case 'processing':
+      return SALE_MONEY_COPY.processing
+    case 'paid':
+      return sale.paidOutAt ? SALE_MONEY_COPY.paid(formatDate(sale.paidOutAt)) : null
+    case 'failed':
+      return SALE_MONEY_COPY.failed
+    default:
+      return null
+  }
+}
+
 function Sales() {
   const { sales, balance } = Route.useLoaderData()
   if (!sales.length) {
@@ -62,6 +84,7 @@ function Sales() {
   // Parcels to ship lead; only the first gets the loud button.
   const ordered = [...sales].sort((a, b) => Number(b.status === 'to_ship') - Number(a.status === 'to_ship'))
   const firstToShip = ordered.find((s) => s.status === 'to_ship')?.id
+  const payday = balance.readyNgwee >= WEEKLY_MIN_NGWEE ? longDay(balance.nextPayoutDay) : null
 
   return (
     <div className="space-y-6">
@@ -78,24 +101,25 @@ function Sales() {
         )}
       </section>
 
-      {balance.readyNgwee > 0 && <Balance balance={balance} />}
+      <Balance balance={balance} />
 
       <div className="space-y-4">
         {ordered.map((sale) => (
-          <SaleCard key={sale.id} sale={sale} primary={sale.id === firstToShip} />
+          <SaleCard key={sale.id} sale={sale} primary={sale.id === firstToShip} payday={payday} />
         ))}
       </div>
     </div>
   )
 }
 
-function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
+function SaleCard({ sale, primary, payday }: { sale: Sale; primary: boolean; payday: string | null }) {
   const router = useRouter()
   const [note, setNote] = useState('')
   const [proof, setProof] = useState<string | null>(null)
   const needsProof = PROOF_REQUIRED.includes(sale.shippingMethod)
   const form = SHIP_FORM[sale.shippingMethod] ?? SHIP_FORM_DEFAULT
-  const shipBy = sale.order.paidAt ? new Date(new Date(sale.order.paidAt).getTime() + SHIP_WITHIN_DAYS * 86_400_000) : null
+  const shipBy = sale.order.paidAt ? new Date(new Date(sale.order.paidAt).getTime() + SHIP_WITHIN_DAYS * DAY_MS) : null
+  const money = moneyLine(sale, payday)
   const ship = useAction(async () => {
     await markShipped({ data: { sellerOrderId: sale.id, trackingNote: note, proofKey: proof ?? undefined } })
     await router.invalidate()
@@ -123,10 +147,25 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
         {status && <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', status.tone)}>{status.label}</span>}
       </div>
 
-      <p className="mt-3 flex flex-wrap items-baseline gap-x-3 text-sm">
-        <Price ngwee={sale.payoutNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
-        <span className="text-subtle">{PAYOUT_STATUS[sale.payoutStatus].label}</span>
-      </p>
+      <div className="mt-3 text-sm">
+        <p className="flex flex-wrap items-baseline gap-x-3">
+          <Price ngwee={sale.payoutNgwee} className="text-lg font-bold tracking-[-0.02em] tabular-nums" />
+          {money && (
+            <span className="text-muted" suppressHydrationWarning>
+              {money}
+            </span>
+          )}
+        </p>
+        {/* Kwacha whatever the display currency: it's what lands on their phone. */}
+        <p className="mt-0.5 text-xs text-subtle">
+          {PAYOUT_COPY.breakdown(
+            formatMoney(sale.subtotalNgwee),
+            formatMoney(sale.commissionNgwee),
+            `${Math.round(COMMISSION_RATE * 100)}%`,
+            sale.shippingNgwee > 0 ? formatMoney(sale.shippingNgwee) : '',
+          )}
+        </p>
+      </div>
 
       {sale.status === 'to_ship' && (
         <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
@@ -146,7 +185,7 @@ function SaleCard({ sale, primary }: { sale: Sale; primary: boolean }) {
           <div className="flex flex-col gap-2">
             {shipBy && (
               <p className="text-sm font-medium text-warning" suppressHydrationWarning>
-                {FULFILMENT_COPY.shipBy(shipBy.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))}
+                {FULFILMENT_COPY.timeLeft(Math.floor((shipBy.getTime() - Date.now()) / DAY_MS))} · {FULFILMENT_COPY.shipBy(longDay(shipBy))}
               </p>
             )}
             <label htmlFor={noteId} className="field-label mb-0">
@@ -200,7 +239,11 @@ function Balance({ balance }: { balance: BalanceData }) {
           <p className="eyebrow">{PAYOUT_COPY.balance}</p>
           <Price ngwee={balance.readyNgwee} className="mt-1 block text-3xl font-bold tracking-[-0.03em] tabular-nums" />
           <p className="mt-1 text-sm text-subtle" suppressHydrationWarning>
-            {balance.readyNgwee >= WEEKLY_MIN_NGWEE ? PAYOUT_COPY.weekly(day) : PAYOUT_COPY.belowMinimum(formatMoney(WEEKLY_MIN_NGWEE), day)}
+            {balance.readyNgwee === 0
+              ? PAYOUT_COPY.empty(formatMoney(WEEKLY_MIN_NGWEE))
+              : balance.readyNgwee >= WEEKLY_MIN_NGWEE
+                ? PAYOUT_COPY.weekly(day)
+                : PAYOUT_COPY.belowMinimum(formatMoney(WEEKLY_MIN_NGWEE), day)}
           </p>
         </div>
         {canInstant && !paid && (

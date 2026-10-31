@@ -10,6 +10,8 @@ import { Price } from '#/components/providers'
 import { conditionLabel } from '#/data/listing-options'
 import { shippingLabel } from '#/data/shipping'
 import { SAFETY } from '#/data/safety'
+import { FULFILMENT_COPY, REFUND_COPY, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
+import { formatMoney } from '#/lib/money'
 import { cn, formatDate } from '#/lib/utils'
 import { PageShapes, ParcelShapes, Placeholder } from '#/components/placeholder'
 import { RateParcel, ReviewBook } from '#/components/reputation'
@@ -82,7 +84,7 @@ function OrderPage() {
 
           <div className="mt-6 space-y-5">
             {parts.map((part, i) => (
-              <ParcelCard key={part.id} part={part} index={i} total={parts.length} pending={pending} destination={order.shipTown} primary={part.id === firstConfirmable} />
+              <ParcelCard key={part.id} part={part} index={i} total={parts.length} pending={pending} paidAt={order.paidAt} destination={order.shipTown} primary={part.id === firstConfirmable} />
             ))}
           </div>
         </div>
@@ -118,8 +120,10 @@ function stopIndex(status: Part['status']) {
   return 0
 }
 
-/** The parcel's journey from the seller's town to the buyer's, the way books actually travel here. */
-function ParcelRoute({ from, to, status }: { from: string; to: string; status: Part['status'] }) {
+const shortDay = (date: Date | string) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+
+/** The parcel's journey from the seller's town to the buyer's, the way books actually travel here, dated as it goes. */
+function ParcelRoute({ from, to, status, dates }: { from: string; to: string; status: Part['status']; dates: readonly (Date | string | null)[] }) {
   const reached = stopIndex(status)
   const halted = status === 'disputed' || status === 'refunded' || status === 'cancelled'
   return (
@@ -139,6 +143,11 @@ function ParcelRoute({ from, to, status }: { from: string; to: string; status: P
           <li key={stop} className="relative flex flex-col items-center first:items-start last:items-end">
             <span className={cn('size-3 rounded-full ring-4 ring-surface', i <= reached ? (halted && i === reached ? 'bg-danger' : 'bg-accent') : 'bg-line-strong')} />
             <span className={cn('mt-1.5 text-[11px]', i <= reached ? 'text-ink' : 'text-subtle')}>{stop}</span>
+            {i <= reached && dates[i] && (
+              <span className="text-[11px] text-subtle tabular-nums" suppressHydrationWarning>
+                {shortDay(dates[i])}
+              </span>
+            )}
           </li>
         ))}
       </ol>
@@ -152,7 +161,23 @@ const HALTED_LABEL: Partial<Record<Part['status'], { text: string; tone: string 
   cancelled: { text: 'Cancelled.', tone: 'text-subtle' },
 }
 
-function ParcelCard({ part, index, total, pending, destination, primary }: { part: Part; index: number; total: number; pending: boolean; destination: string; primary: boolean }) {
+function ParcelCard({
+  part,
+  index,
+  total,
+  pending,
+  paidAt,
+  destination,
+  primary,
+}: {
+  part: Part
+  index: number
+  total: number
+  pending: boolean
+  paidAt: Date | string | null
+  destination: string
+  primary: boolean
+}) {
   const router = useRouter()
   const [reporting, setReporting] = useState(false)
   const [note, setNote] = useState('')
@@ -167,6 +192,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
   })
   const canConfirm = CONFIRMABLE.includes(part.status)
   const halted = HALTED_LABEL[part.status]
+  const sendsBy = part.status === 'to_ship' && paidAt ? new Date(new Date(paidAt).getTime() + SHIP_WITHIN_DAYS * 86_400_000) : null
 
   return (
     <section className="card overflow-hidden" aria-label={`Parcel from ${part.seller.storeName}`}>
@@ -178,7 +204,7 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
         <span className="text-xs text-muted">{shippingLabel(part.shippingMethod)}</span>
       </header>
 
-      {!pending && part.seller.town && <ParcelRoute from={part.seller.town} to={destination} status={part.status} />}
+      {!pending && part.seller.town && <ParcelRoute from={part.seller.town} to={destination} status={part.status} dates={[paidAt, part.shippedAt, part.deliveredAt]} />}
 
       <ul className="divide-y divide-line">
         {part.items.map((item) => (
@@ -236,7 +262,13 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
                   </div>
                 ),
             )}
+          {sendsBy && (
+            <p className="text-muted" suppressHydrationWarning>
+              {FULFILMENT_COPY.sendsBy(part.seller.storeName, sendsBy.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))}
+            </p>
+          )}
           {halted && <p className={halted.tone}>{halted.text}</p>}
+          {part.status === 'refunded' && part.refund && <RefundNote refund={part.refund} />}
           {part.status === 'shipped' && part.autoReleaseAt && <p className="text-xs text-muted">Confirms itself on {formatDate(part.autoReleaseAt)}.</p>}
           {(confirm.error || report.error) && <Alert>{confirm.error ?? report.error}</Alert>}
 
@@ -271,5 +303,23 @@ function ParcelCard({ part, index, total, pending, destination, primary }: { par
         </div>
       )}
     </section>
+  )
+}
+
+/** Where a refunded parcel's money went, and when. */
+function RefundNote({ refund }: { refund: NonNullable<Part['refund']> }) {
+  const amount = formatMoney(refund.amountNgwee)
+  const to = REFUND_COPY.number(refund.phone)
+  const line =
+    refund.status === 'paid' || refund.status === 'done_manually'
+      ? REFUND_COPY.paid(amount, to, formatDate(refund.updatedAt))
+      : refund.status === 'processing'
+        ? REFUND_COPY.processing(amount, to)
+        : REFUND_COPY.manual(amount)
+  return (
+    <div className="rounded-lg bg-sunken p-3">
+      <p className="font-medium">{line}</p>
+      <p className="mt-0.5 text-xs text-muted">{REFUND_COPY.reason[refund.reason]}</p>
+    </div>
   )
 }

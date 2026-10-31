@@ -27,6 +27,9 @@ export const FULFILMENT_COPY = {
   proofHint: 'The courier’s receipt or waybill. Only Kuwala sees it, if there’s ever a problem.',
   proofRequired: 'Add a photo of the courier’s receipt',
   shipBy: (day: string) => `Ship by ${day}, or the order is refunded to the buyer.`,
+  timeLeft: (days: number) => (days <= 0 ? 'Last day' : days === 1 ? '1 day left' : `${days} days left`),
+  // The buyer's side of the same deadline.
+  sendsBy: (store: string, day: string) => `${store} sends by ${day}. If they don’t, you’re refunded in full automatically.`,
   reminderSubject: (number: string, daysLeft: number) =>
     daysLeft <= 1 ? `Last day: ship order ${number} today` : `Ship order ${number}: ${daysLeft} days left`,
   reminderLines: (day: string, daysLeft: number) => [
@@ -68,4 +71,14 @@ export const DISPUTE_COPY = {
   proofLabel: 'Photo of your proof',
   proofHint: 'Receipt, tracking screen or chat. Only Kuwala sees it.',
   sent: `Thanks. We’ll look at both sides and decide within ${DECISION_WORKING_DAYS} working days.`,
+} as const
+
+/** What happened to the buyer's money when a parcel was refunded. */
+export const REFUND_COPY = {
+  processing: (amount: string, to: string) => `${amount} is on its way back to ${to}. It usually arrives within minutes.`,
+  paid: (amount: string, to: string, date: string) => `${amount} refunded to ${to} on ${date}.`,
+  // Automatic tries failed, or a card payment: the team sends it.
+  manual: (amount: string) => `We’re sending ${amount} back to you by hand and will email you when it’s done.`,
+  reason: { not_shipped: 'The seller didn’t send it in time.', dispute: 'After the problem you reported.' },
+  number: (lastDigits: string | null) => (lastDigits ? `the number ending ${lastDigits}` : 'your card'),
 } as const

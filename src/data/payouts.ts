@@ -45,4 +45,19 @@ export const PAYOUT_COPY = {
   instantNote: (fee: string, net: string) => `Lenco’s ${fee} transfer fee comes off. You receive ${net} now.`,
   noDestination: 'Add your mobile money number to get paid.',
   listingFees: 'Payouts are free every Friday, or instant for a small transfer fee.',
+  empty: (min: string) => `Delivered sales collect here. Paid free every Friday from 09:00 once it reaches ${min}.`,
+  breakdown: (books: string, commission: string, percent: string, delivery: string) =>
+    `${books} books − ${commission} commission (${percent})${delivery ? ` + ${delivery} delivery` : ''}`,
+} as const
+
+/** Where one sale's money is, and when it moves next. */
+export const SALE_MONEY_COPY = {
+  heldToShip: 'Held until the buyer has the books.',
+  heldShipped: (date: string) => `Held until the buyer confirms, or ${date} at the latest.`,
+  heldDisputed: 'Held while the problem is looked at.',
+  released: (day: string) => `In your balance, paid ${day}.`,
+  releasedSmall: (min: string) => `In your balance, paid once it reaches ${min}.`,
+  processing: 'On its way to your mobile money.',
+  paid: (date: string) => `Paid ${date}.`,
+  failed: 'The transfer didn’t go through. It’s back in your balance for the next payout.',
 } as const

@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
-import { books, orderItems, orders, payments, profiles, ratings, reviews, sellerOrders, sellers } from '#/db/schema'
+import { books, orderItems, orders, payments, payouts, profiles, ratings, refunds, reviews, sellerOrders, sellers } from '#/db/schema'
 import { DISPUTE_COPY, DISPUTE_REPLY_HOURS, FULFILMENT_COPY, PROOF_REQUIRED } from '#/data/fulfilment'
 import { NOTIFY_COPY } from '#/data/notifications'
 import { formatMoney } from '#/lib/money'
@@ -20,9 +20,14 @@ type Seller = typeof sellers.$inferSelect
 export async function loadBuyerOrder(db: Db, buyerId: string, number: string) {
   const order = await ownOrder(db, number, buyerId)
   const parts = await db
-    .select({ so: sellerOrders, seller: { storeName: sellers.storeName, slug: sellers.slug, phone: sellers.phone, town: sellers.town } })
+    .select({
+      so: sellerOrders,
+      seller: { storeName: sellers.storeName, slug: sellers.slug, phone: sellers.phone, town: sellers.town },
+      refund: { amountNgwee: refunds.amountNgwee, status: refunds.status, reason: refunds.reason, phone: refunds.phone, updatedAt: refunds.updatedAt },
+    })
     .from(sellerOrders)
     .leftJoin(sellers, eq(sellers.id, sellerOrders.sellerId))
+    .leftJoin(refunds, eq(refunds.sellerOrderId, sellerOrders.id))
     .where(eq(sellerOrders.orderId, order.id))
   const items = parts.length
     ? await db
@@ -66,6 +71,8 @@ export async function loadBuyerOrder(db: Db, buyerId: string, number: string) {
         .map((i) => ({ ...i.item, slug: i.book?.slug ?? null, coverUrl: i.book?.coverUrl ?? null, myReview: reviewed.find((r) => r.bookId === i.item.bookId) ?? null })),
       // The buyer's rating of this shop, if they've given one.
       myRating: given.find((g) => g.sellerOrderId === p.so.id)?.score ?? null,
+      // Only the last digits of the number it went back to, in case the page is screenshotted.
+      refund: p.refund ? { ...p.refund, phone: p.refund.phone ? p.refund.phone.slice(-3) : null } : null,
     })),
   }
 }
@@ -217,9 +224,11 @@ export async function listSales(db: Db, sellerId: string) {
         shipTown: orders.shipTown,
         shipProvince: orders.shipProvince,
       },
+      paidOutAt: payouts.updatedAt,
     })
     .from(sellerOrders)
     .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+    .leftJoin(payouts, eq(payouts.id, sellerOrders.payoutId))
     .where(and(eq(sellerOrders.sellerId, sellerId), inArray(sellerOrders.status, ['to_ship', 'shipped', 'delivered', 'disputed'])))
     .orderBy(desc(orders.createdAt))
     .limit(200)
@@ -229,8 +238,9 @@ export async function listSales(db: Db, sellerId: string) {
     ids.length ? db.select({ sellerOrderId: ratings.sellerOrderId, score: ratings.score }).from(ratings).where(and(inArray(ratings.sellerOrderId, ids), eq(ratings.rater, 'seller'))) : [],
     readerStandings(db, parts.flatMap((p) => (p.order.buyerId ? [p.order.buyerId] : []))),
   ])
-  return parts.map(({ so, order: { buyerId, ...order } }) => ({
+  return parts.map(({ so, paidOutAt, order: { buyerId, ...order } }) => ({
     ...so,
+    paidOutAt: so.payoutStatus === 'paid' ? paidOutAt : null,
     order,
     items: items.filter((i) => i.sellerOrderId === so.id),
     myRating: given.find((g) => g.sellerOrderId === so.id)?.score ?? null,
