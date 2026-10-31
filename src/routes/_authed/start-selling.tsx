@@ -12,6 +12,7 @@ import { VerificationForm } from '#/components/verification-form'
 import { Placeholder, RowShapes } from '#/components/placeholder'
 import { KIND_COPY, ONBOARDING } from '#/data/onboarding'
 import { PROVINCES } from '#/data/zambia'
+import { StepProgress } from '#/components/step-progress'
 import type { Province } from '#/data/zambia'
 
 const STEPS = ['role', 'setup', 'verify', 'done'] as const
@@ -100,17 +101,7 @@ function StartSelling() {
 
   return (
     <div className="page max-w-2xl py-10 lg:py-14">
-      <div className="mb-8 flex items-center gap-4">
-        <span className="h-1 flex-1 overflow-hidden rounded-full bg-sunken" aria-hidden>
-          <span
-            className="block h-full origin-left rounded-full bg-accent transition-transform duration-[400ms] ease-[var(--ease-in-out)]"
-            style={{ transform: `scaleX(${(index + 1) / flow.length})` }}
-          />
-        </span>
-        <span className="text-xs text-subtle tabular-nums">
-          Step {index + 1} of {flow.length}
-        </span>
-      </div>
+      <StepProgress step={index} total={flow.length} className="mb-8" />
 
       {!ready ? (
         <RowShapes count={4} cover={false} />

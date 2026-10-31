@@ -3,7 +3,6 @@ import { Select } from '#/components/select'
 import { AGE_BANDS, CURRICULA, LEVEL_GROUPS, SCHOOL_COPY as COPY, SUBJECTS, curriculumFor, schoolLine } from '#/data/school'
 import type { SchoolFields as Fields } from '#/data/listing-types'
 import type { AgeBand } from '#/data/school'
-import { cn } from '#/lib/utils'
 
 export interface SchoolValue {
   ageBands: AgeBand[]
@@ -14,12 +13,6 @@ export interface SchoolValue {
 }
 
 export const emptySchool: SchoolValue = { ageBands: [], levels: [], subject: '', curriculum: '' }
-
-const chip = (on: boolean) =>
-  cn(
-    'inline-flex h-9 cursor-pointer items-center rounded-full px-3.5 text-sm font-medium transition-shadow select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
-    on ? 'bg-accent-soft text-accent-ink shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
-  )
 
 const toggle = <T extends string>(list: T[], value: T) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
 
@@ -59,7 +52,7 @@ export function SchoolFields({ fields, value, onChange }: { fields: Fields; valu
         <p className="-mt-1 mb-2 text-sm text-subtle">{COPY.ageHint}</p>
         <div className="flex flex-wrap gap-2">
           {AGE_BANDS.map((a) => (
-            <label key={a.value} className={chip(value.ageBands.includes(a.value))}>
+            <label key={a.value} className="chip-toggle">
               <input type="checkbox" className="sr-only" checked={value.ageBands.includes(a.value)} onChange={() => set({ ageBands: toggle(value.ageBands, a.value) })} />
               {a.label}
             </label>
@@ -84,7 +77,7 @@ export function SchoolFields({ fields, value, onChange }: { fields: Fields; valu
               </p>
               <div className="flex flex-wrap gap-2">
                 {g.levels.map((l) => (
-                  <label key={l.value} className={chip(value.levels.includes(l.value))}>
+                  <label key={l.value} className="chip-toggle">
                     <input type="checkbox" className="sr-only" checked={value.levels.includes(l.value)} onChange={() => set({ levels: toggle(value.levels, l.value) })} />
                     {l.label}
                   </label>
@@ -102,7 +95,7 @@ export function SchoolFields({ fields, value, onChange }: { fields: Fields; valu
           <p className="-mt-1 mb-2 text-sm text-subtle">{COPY.curriculumHint}</p>
           <div className="flex flex-wrap gap-2">
             {[...CURRICULA.map((c) => ({ value: c.value, label: `${c.label} (${c.note.toLowerCase()})` })), { value: 'both' as const, label: COPY.bothCurricula }].map((c) => (
-              <label key={c.value} className={chip(value.curriculum === c.value)}>
+              <label key={c.value} className="chip-toggle">
                 <input type="radio" className="sr-only" name="curriculum" checked={value.curriculum === c.value} onChange={() => set({ curriculum: c.value })} />
                 {c.label}
               </label>

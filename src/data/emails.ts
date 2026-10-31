@@ -41,6 +41,8 @@ export const NEWSLETTER_COPY = {
   line: 'New Zambian books and author launches, about twice a month.',
   emailLabel: 'Email address',
   submit: 'Sign up',
+  sending: 'Sending',
+  sentShort: 'Sent',
   sent: (email: string) => `Check ${email} and tap the link to confirm.`,
   privacy: 'Unsubscribe any time.',
   confirmSubject: 'Confirm your email for Kuwala Books news',

@@ -31,6 +31,8 @@ import { LANGUAGES } from '#/data/zambia'
 import { CHILDREN_SECTIONS, DEFAULT_TYPE, LISTING_TABS, LISTING_TYPE_COPY, listingType, tabOf } from '#/data/listing-types'
 import type { ListingTab, ListingType } from '#/data/listing-types'
 import { SchoolFields, SchoolSummary, emptySchool, schoolData, schoolProblem } from '#/components/school-fields'
+import { Segmented } from '#/components/segmented'
+import { StepProgress } from '#/components/step-progress'
 import type { SchoolValue } from '#/components/school-fields'
 import { formatMoney } from '#/lib/money'
 import { cn } from '#/lib/utils'
@@ -67,9 +69,34 @@ function fromPhotos({ book, ...photos }: PhotoResult): Selection {
 
 const optionCard = (selected: boolean) =>
   cn(
-    'cursor-pointer rounded-lg p-3 transition-shadow has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
-    selected ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
+    'cursor-pointer rounded-control p-3 transition-[background-color,box-shadow] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
+    selected ? 'bg-accent-soft shadow-[inset_0_0_0_2px_var(--color-accent-ink)]' : 'bg-sunken hover:bg-sunken-strong',
   )
+
+// What are you listing, which book, about the book, your copy.
+const SELL_STEPS = LISTING_TYPE_COPY.steps.length
+
+/** The top of each step: progress, a way back, and the step's question as the page heading. */
+function StepHead({ step, back, aside }: { step: number; back?: { label: string; onClick: () => void }; aside?: ReactNode }) {
+  return (
+    <header className="mb-8">
+      <StepProgress step={step} total={SELL_STEPS} />
+      <div className="mt-6 flex min-h-5 flex-wrap items-center justify-between gap-3">
+        {back ? (
+          <button type="button" onClick={back.onClick} className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
+            <ArrowLeftIcon className="size-3.5" aria-hidden /> {back.label}
+          </button>
+        ) : (
+          <span />
+        )}
+        {aside}
+      </div>
+      <h1 className="mt-2 text-3xl sm:text-4xl">{LISTING_TYPE_COPY.steps[step]}</h1>
+    </header>
+  )
+}
+
+const typeChip = (label: string) => <span className="rounded-full bg-sunken px-3 py-1 text-xs font-medium text-muted">{label}</span>
 
 type Published = { slug: string; title: string; authorNames: string | null; coverUrl: string | null; condition: Condition; priceNgwee: number }
 
@@ -81,7 +108,8 @@ function SellPage() {
   const [typeId, setTypeId] = useState(DEFAULT_TYPE)
   const [tabId, setTabId] = useState<ListingTab['id']>(tabOf(DEFAULT_TYPE).id)
   const type = listingType(typeId)
-  const tab = LISTING_TABS.find((t) => t.id === tabId) ?? LISTING_TABS[0]
+  // The type is picked once; "List another" comes back to the search with it.
+  const [stage, setStage] = useState<'type' | 'find'>('type')
 
   if (published) {
     return (
@@ -90,6 +118,7 @@ function SellPage() {
         onAnother={() => {
           setPublished(null)
           setSelection(null)
+          setStage('find')
           window.scrollTo({ top: 0 })
         }}
       />
@@ -97,9 +126,8 @@ function SellPage() {
   }
   return (
     <div className={cn('page py-10 lg:py-14', selection ? 'max-w-5xl' : 'max-w-3xl')}>
-      <p className="eyebrow">{seller.storeName}</p>
-      <h1 className="mt-2 text-4xl sm:text-5xl">Sell a book</h1>
-      <div className="mt-8">
+      <p className="eyebrow mb-4">{seller.storeName}</p>
+      <div>
         {selection ? (
           <DetailsStep
             key={selection.kind === 'existing' ? selection.id : selection.kind}
@@ -112,24 +140,25 @@ function SellPage() {
               window.scrollTo({ top: 0 })
             }}
           />
+        ) : stage === 'type' ? (
+          <TypeStep
+            tabId={tabId}
+            typeId={typeId}
+            onTab={(id) => {
+              setTabId(id)
+              const first = LISTING_TABS.find((t) => t.id === id)?.types.find((t) => !t.soon)
+              if (first) setTypeId(first.id)
+            }}
+            onType={setTypeId}
+            onContinue={() => {
+              setStage('find')
+              window.scrollTo({ top: 0 })
+            }}
+          />
         ) : (
           <>
-            <TypePicker
-              tabId={tabId}
-              typeId={typeId}
-              onTab={(id) => {
-                setTabId(id)
-                const first = LISTING_TABS.find((t) => t.id === id)?.types.find((t) => !t.soon)
-                if (first) setTypeId(first.id)
-              }}
-              onType={setTypeId}
-            />
-            {/* A tab with nothing to list yet (Campus) shows what's coming instead of the search. */}
-            {tab.types.some((t) => !t.soon) && (
-              <div className="mt-10">
-                <FindStep onSelect={setSelection} />
-              </div>
-            )}
+            <StepHead step={1} back={{ label: LISTING_TYPE_COPY.steps[0], onClick: () => setStage('type') }} aside={typeChip(type.label)} />
+            <FindStep onSelect={setSelection} />
           </>
         )}
       </div>
@@ -169,50 +198,57 @@ function Listed({ listing, onAnother }: { listing: Published; onAnother: () => v
   )
 }
 
-/** Tabs for who the book is for, then the kind of book. Types that aren't ready yet show greyed out. */
-function TypePicker({ tabId, typeId, onTab, onType }: { tabId: ListingTab['id']; typeId: string; onTab: (id: ListingTab['id']) => void; onType: (id: string) => void }) {
+/** Step 1: who the book is for (tabs), then the kind of book. Types that aren't ready yet show greyed out. */
+function TypeStep({
+  tabId,
+  typeId,
+  onTab,
+  onType,
+  onContinue,
+}: {
+  tabId: ListingTab['id']
+  typeId: string
+  onTab: (id: ListingTab['id']) => void
+  onType: (id: string) => void
+  onContinue: () => void
+}) {
   const tab = LISTING_TABS.find((t) => t.id === tabId) ?? LISTING_TABS[0]
+  const open = tab.types.some((t) => !t.soon)
   return (
-    <section aria-labelledby="type-heading" className="rise">
-      <h2 id="type-heading" className="text-xl">
-        {LISTING_TYPE_COPY.heading}
-      </h2>
-      <div role="tablist" aria-label={LISTING_TYPE_COPY.heading} className="mt-4 flex gap-1 overflow-x-auto border-b border-line">
-        {LISTING_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={t.id === tabId}
-            aria-controls="type-panel"
-            onClick={() => onTab(t.id)}
-            className={cn(
-              '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
-              t.id === tabId ? 'border-accent-ink text-ink' : 'border-transparent text-muted hover:text-ink',
-              t.soon && t.id !== tabId && 'text-subtle',
-            )}
-          >
-            {t.label}
-            {t.soon && <span className="rounded-full bg-sunken px-2 py-0.5 text-xs font-normal text-subtle">{LISTING_TYPE_COPY.soon}</span>}
-          </button>
-        ))}
-      </div>
-      <div id="type-panel" role="tabpanel" aria-labelledby={`tab-${tab.id}`} className="mt-4">
+    <section className="rise">
+      <StepHead step={0} />
+      <Segmented
+        size="md"
+        tone="accent"
+        label={LISTING_TYPE_COPY.heading}
+        className="w-full"
+        value={tabId}
+        onChange={onTab}
+        options={LISTING_TABS.map((t) => ({ value: t.id, label: t.label, note: t.soon ? LISTING_TYPE_COPY.soon : undefined }))}
+      />
+      <div className="mt-5">
         {tab.soon && <p className="mb-4 text-sm text-muted">{LISTING_TYPE_COPY.campusLine}</p>}
-        <div role="radiogroup" aria-label={tab.label} className="grid gap-2 sm:grid-cols-2">
+        <div role="radiogroup" aria-label={tab.label} className="grid gap-2.5 sm:grid-cols-2">
           {tab.types.map((t) => (
-            <label key={t.id} className={cn(optionCard(t.id === typeId && !t.soon), t.soon && 'pointer-events-none opacity-55')} aria-disabled={t.soon || undefined}>
+            <label key={t.id} className="choice flex items-start gap-3">
               <input type="radio" className="sr-only" name="listing-type" disabled={t.soon} checked={t.id === typeId && !t.soon} onChange={() => onType(t.id)} />
-              <span className="flex items-center justify-between gap-2 font-medium">
-                {t.label}
-                {t.soon && <span className="text-xs font-normal text-subtle">{LISTING_TYPE_COPY.soon}</span>}
+              <span className="choice-dot mt-0.5" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2 font-medium">
+                  {t.label}
+                  {t.soon && <span className="text-xs font-normal text-subtle">{LISTING_TYPE_COPY.soon}</span>}
+                </span>
+                <span className="mt-0.5 block text-sm text-subtle">{t.note}</span>
               </span>
-              <span className="block text-sm text-subtle">{t.note}</span>
             </label>
           ))}
         </div>
       </div>
+      {open && (
+        <button type="button" className="btn btn-primary mt-8 w-full sm:w-auto sm:min-w-48" onClick={onContinue}>
+          {LISTING_TYPE_COPY.continue}
+        </button>
+      )}
     </section>
   )
 }
@@ -288,9 +324,8 @@ function FindStep({ onSelect }: { onSelect: (s: Selection) => void }) {
 
   return (
     <div className="rise">
-      <h2 className="text-xl">Which book?</h2>
       <div
-        className="relative mt-4"
+        className="relative"
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
         }}
@@ -451,6 +486,11 @@ function DetailsStep({
   // Children & school types decide the section; a plain Book leaves it to the seller.
   const [categorySlug, setCategorySlug] = useState(type.section ?? '')
   const [school, setSchool] = useState<SchoolValue>(emptySchool)
+  // About the book, then your copy. A book already on Kuwala with its description, cover and details skips straight
+  // to the copy: there's nothing to ask.
+  const needsBookPage = selection.kind !== 'existing' || !selection.hasDescription || !selection.coverUrl || !!type.fields || !!selection.photos
+  const [page, setPage] = useState<'book' | 'copy'>(needsBookPage ? 'book' : 'copy')
+  const [bookError, setBookError] = useState<string | null>(null)
   const [existingSchool, setExistingSchool] = useState<Awaited<ReturnType<typeof getBookSchoolDetails>> | null | undefined>(selection.kind === 'existing' ? undefined : null)
   const [zambianAuthor, setZambianAuthor] = useState(false)
   const [format, setFormat] = useState<Format>('paperback')
@@ -587,22 +627,57 @@ function DetailsStep({
     </button>
   )
 
-  return (
-    <form
-      className="grid gap-10 pb-32 lg:grid-cols-[1fr_300px] lg:pb-0"
-      onSubmit={(e) => {
-        e.preventDefault()
-        void submit.run()
-      }}
-    >
-      <div className="min-w-0 space-y-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-sm font-medium text-accent-ink">
-            <ArrowLeftIcon className="size-3.5" aria-hidden /> Another book
-          </button>
-          <span className="rounded-full bg-sunken px-3 py-1 text-xs font-medium text-muted">{type.label}</span>
-        </div>
+  const toTop = () => window.scrollTo({ top: 0 })
+  const bookPage = page === 'book'
+  const sidebarBook = (
+    <>
+      <div className="mx-auto w-40">
+        <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} className="shadow-lg" />
+      </div>
+      <div className="text-center">
+        <p className="line-clamp-2 font-bold">{heading.title}</p>
+        {heading.authorNames && <p className="line-clamp-1 text-sm text-muted">{heading.authorNames}</p>}
+        {!bookPage && (
+          <p className="text-sm text-subtle">
+            {conditionLabel(condition)}
+            {priceNgwee > 0 && ` · ${formatMoney(priceNgwee)}`}
+          </p>
+        )}
+      </div>
+    </>
+  )
 
+  return (
+    <div className="rise">
+      <StepHead
+        step={bookPage ? 2 : 3}
+        back={
+          bookPage || !needsBookPage
+            ? { label: LISTING_TYPE_COPY.anotherBook, onClick: onBack }
+            : {
+                label: LISTING_TYPE_COPY.aboutBook,
+                onClick: () => {
+                  setPage('book')
+                  toTop()
+                },
+              }
+        }
+        aside={typeChip(type.label)}
+      />
+
+      {bookPage ? (
+        <form
+          className="grid gap-10 lg:grid-cols-[1fr_300px]"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const problem = askSchool ? schoolProblem(type.fields, school) : null
+            if (problem) return setBookError(problem)
+            setBookError(null)
+            setPage('copy')
+            toTop()
+          }}
+        >
+          <div className="min-w-0 space-y-12">
         {/* Phones and tablets: the book stays in view while the form scrolls. Desktop has it in the sidebar. */}
         <div className="glass-bar sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-2.5 sm:-mx-6 sm:px-6 lg:hidden">
           <div className="w-10 shrink-0">
@@ -614,192 +689,202 @@ function DetailsStep({
           </div>
         </div>
 
-        {photos && <Alert tone="info">{PHOTO_COPY.filled}</Alert>}
+            {photos && <Alert tone="info">{PHOTO_COPY.filled}</Alert>}
 
-        {selection.kind === 'manual' && (
-          <section className="space-y-4" aria-labelledby="book-heading">
-            <h2 id="book-heading" className="text-xl">
-              The book
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Title" className="sm:col-span-2">
-                <SuggestInput
-                  required
-                  value={manual.title}
-                  onChange={setValue('title')}
-                  load={loadTitles}
-                  heading="Already on Kuwala: list it instead"
-                  onPick={(b) => onSwitch({ kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl, isbn13: b.isbn13, hasDescription: b.hasDescription })}
+            {selection.kind === 'manual' && (
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <Field label="Title" className="sm:col-span-2">
+                  <SuggestInput
+                    required
+                    value={manual.title}
+                    onChange={setValue('title')}
+                    load={loadTitles}
+                    heading="Already on Kuwala: list it instead"
+                    onPick={(b) => onSwitch({ kind: 'existing', id: b.id, title: b.title, authorNames: b.authorNames, coverUrl: b.coverUrl, isbn13: b.isbn13, hasDescription: b.hasDescription })}
+                  />
+                </Field>
+                <Field label="Author" hint="Separate several with commas" className="sm:col-span-2">
+                  <SuggestInput required commaList value={manual.authors} onChange={setValue('authors')} load={loadAuthors} />
+                </Field>
+                <TidySuggestion
+                  title={manual.title}
+                  authors={manual.authors}
+                  onApply={(tidy) => setManual((m) => ({ ...m, title: tidy.title, subtitle: m.subtitle || tidy.subtitle || '', authors: tidy.authors }))}
                 />
-              </Field>
-              <Field label="Author" hint="Separate several with commas">
-                <SuggestInput required commaList value={manual.authors} onChange={setValue('authors')} load={loadAuthors} />
-              </Field>
-              <TidySuggestion
-                title={manual.title}
-                authors={manual.authors}
-                onApply={(tidy) => setManual((m) => ({ ...m, title: tidy.title, subtitle: m.subtitle || tidy.subtitle || '', authors: tidy.authors }))}
-              />
-              <Field label="ISBN (optional)">
-                <input className="input" inputMode="numeric" value={manual.isbn} onChange={setM('isbn')} />
-              </Field>
-              <Field label="Publisher (optional)">
-                <SuggestInput value={manual.publisher} onChange={setValue('publisher')} load={loadPublishers} />
-              </Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Year">
-                  <input className="input" type="number" min={1450} max={2100} value={manual.year} onChange={setM('year')} />
+                <Field label="ISBN (optional)">
+                  <input className="input" inputMode="numeric" value={manual.isbn} onChange={setM('isbn')} />
                 </Field>
-                <Field label="Pages">
-                  <input className="input" type="number" min={1} value={manual.pages} onChange={setM('pages')} />
+                <Field label="Publisher (optional)">
+                  <SuggestInput value={manual.publisher} onChange={setValue('publisher')} load={loadPublishers} />
                 </Field>
-              </div>
-              <Field label="Language">
-                <Select value={manual.language} options={LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} onChange={(language) => setManual((m) => ({ ...m, language }))} />
-              </Field>
-            </div>
-          </section>
-        )}
-
-        <DescriptionField
-          fixed={fixedDescription}
-          fixedFrom={selection.kind === 'existing' ? 'catalogue' : 'online'}
-          lookupIsbn={selection.kind === 'existing' ? selection.isbn13 : selection.kind === 'external' && !online ? selection.candidate.isbn13 : null}
-          fromPhoto={!!photos?.description}
-          suspect={!!online && !onlineLooksRight}
-          onReplace={
-            onlineLooksRight
-              ? () => {
-                  setReplaced(true)
-                  setDescription('')
-                }
-              : undefined
-          }
-          book={describedBook}
-          value={description}
-          onChange={setDescription}
-        />
-
-        {!heading.coverUrl && (
-          <section aria-labelledby="cover-heading">
-            <h2 id="cover-heading" className="text-xl">
-              Cover
-            </h2>
-            <p className="mt-1 mb-4 text-sm text-subtle">{photos?.cover ? 'Your front cover photo. Tap to change it.' : 'No cover online. A clear photo of the front sells faster.'}</p>
-            <CoverUpload onChange={setCover} onBusy={setCoverBusy} current={photos?.cover?.url} />
-          </section>
-        )}
-
-        {(isNewToCatalogue || type.fields) && (
-          <section className="space-y-5">
-            {isNewToCatalogue && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Section">
-                  {type.section ? (
-                    <p className="flex h-11 items-center text-[15px]">{categories.find((c) => c.slug === type.section)?.name ?? type.label}</p>
-                  ) : (
-                    <Select value={categorySlug} options={sections.map((c) => ({ value: c.slug, label: c.name }))} onChange={setCategorySlug} />
-                  )}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Year">
+                    <input className="input" type="number" min={1450} max={2100} value={manual.year} onChange={setM('year')} />
+                  </Field>
+                  <Field label="Pages">
+                    <input className="input" type="number" min={1} value={manual.pages} onChange={setM('pages')} />
+                  </Field>
+                </div>
+                <Field label="Language">
+                  <Select value={manual.language} options={LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} onChange={(language) => setManual((m) => ({ ...m, language }))} />
                 </Field>
-                <label className={cn(optionCard(zambianAuthor), 'flex items-center gap-3 self-end text-sm', zambianAuthor && 'bg-zambia-soft shadow-[inset_0_0_0_1.5px_var(--color-zambia)]')}>
-                  <input type="checkbox" className="size-4 accent-zambia" checked={zambianAuthor} onChange={(e) => setZambianAuthor(e.target.checked)} />
-                  <span className={cn('font-medium', zambianAuthor && 'text-zambia')}>Zambian author</span>
-                </label>
               </div>
             )}
-            {type.fields && hasSchool && existingSchool && <SchoolSummary details={existingSchool} />}
-            {type.fields && askSchool && <SchoolFields fields={type.fields} value={school} onChange={setSchool} />}
-          </section>
-        )}
 
-        <section className="space-y-4" aria-labelledby="copy-heading">
-          <h2 id="copy-heading" className="text-xl">
-            Your copy
-          </h2>
-          <fieldset>
-            <legend className="field-label">Format</legend>
-            <div className="flex flex-wrap gap-2">
-              {FORMATS.map((f) => (
-                <label key={f.value} className={cn(optionCard(format === f.value), 'px-4 py-2 text-sm font-medium')}>
-                  <input type="radio" className="sr-only" name="format" checked={format === f.value} onChange={() => setFormat(f.value)} />
-                  {f.label}
-                </label>
-              ))}
+            {(isNewToCatalogue || type.fields) && (
+              <section className="space-y-6">
+                {isNewToCatalogue && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Section">
+                      {type.section ? (
+                        <p className="flex h-11 items-center text-[15px]">{categories.find((c) => c.slug === type.section)?.name ?? type.label}</p>
+                      ) : (
+                        <Select value={categorySlug} options={sections.map((c) => ({ value: c.slug, label: c.name }))} onChange={setCategorySlug} />
+                      )}
+                    </Field>
+                    <label className={cn(optionCard(zambianAuthor), 'flex h-11 items-center gap-3 self-end py-0 text-sm', zambianAuthor && 'bg-zambia-soft shadow-[inset_0_0_0_2px_var(--color-zambia)]')}>
+                      <input type="checkbox" className="size-4 accent-zambia" checked={zambianAuthor} onChange={(e) => setZambianAuthor(e.target.checked)} />
+                      <span className={cn('font-medium', zambianAuthor && 'text-zambia')}>Zambian author</span>
+                    </label>
+                  </div>
+                )}
+                {type.fields && hasSchool && existingSchool && <SchoolSummary details={existingSchool} />}
+                {type.fields && askSchool && <SchoolFields fields={type.fields} value={school} onChange={setSchool} />}
+              </section>
+            )}
+
+            <DescriptionField
+              fixed={fixedDescription}
+              fixedFrom={selection.kind === 'existing' ? 'catalogue' : 'online'}
+              lookupIsbn={selection.kind === 'existing' ? selection.isbn13 : selection.kind === 'external' && !online ? selection.candidate.isbn13 : null}
+              fromPhoto={!!photos?.description}
+              suspect={!!online && !onlineLooksRight}
+              onReplace={
+                onlineLooksRight
+                  ? () => {
+                      setReplaced(true)
+                      setDescription('')
+                    }
+                  : undefined
+              }
+              book={describedBook}
+              value={description}
+              onChange={setDescription}
+            />
+
+            {!heading.coverUrl && (
+              <section aria-labelledby="cover-heading">
+                <h2 id="cover-heading" className="text-xl">
+                  Cover
+                </h2>
+                <p className="mt-1 mb-4 text-sm text-subtle">{photos?.cover ? 'Your front cover photo. Tap to change it.' : 'No cover online. A clear photo of the front sells faster.'}</p>
+                <CoverUpload onChange={setCover} onBusy={setCoverBusy} current={photos?.cover?.url} />
+              </section>
+            )}
+
+            {bookError && <Alert>{bookError}</Alert>}
+            <button type="submit" className="btn btn-primary w-full sm:w-auto sm:min-w-48" disabled={coverBusy}>
+              {coverBusy ? 'Uploading photo…' : LISTING_TYPE_COPY.continue}
+            </button>
+          </div>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 space-y-5">{sidebarBook}</div>
+          </aside>
+        </form>
+      ) : (
+        <form
+          className="grid gap-10 pb-32 lg:grid-cols-[1fr_300px] lg:pb-0"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit.run()
+          }}
+        >
+          <div className="min-w-0 space-y-12">
+            {/* Phones and tablets: the book stays in view while the form scrolls. Desktop has it in the sidebar. */}
+            <div className="glass-bar sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-2.5 sm:-mx-6 sm:px-6 lg:hidden">
+              <div className="w-10 shrink-0">
+                <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-bold">{heading.title}</p>
+                {heading.authorNames && <p className="truncate text-sm text-subtle">{heading.authorNames}</p>}
+              </div>
             </div>
-          </fieldset>
-          <fieldset>
-            <legend className="field-label">Condition</legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {CONDITIONS.map((c) => (
-                <label key={c.value} className={optionCard(condition === c.value)}>
-                  <input type="radio" className="sr-only" name="condition" checked={condition === c.value} onChange={() => setCondition(c.value)} />
-                  <span className="block font-medium">{c.label}</span>
-                  <span className="block text-sm text-subtle">{c.note}</span>
-                </label>
-              ))}
+
+            <section className="space-y-6">
+              <Field label="Format" className="max-w-sm">
+                <Segmented size="md" tone="accent" label="Format" className="w-full" value={format} onChange={setFormat} options={FORMATS} />
+              </Field>
+              <fieldset>
+                <legend className="field-label">Condition</legend>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {CONDITIONS.map((c) => (
+                    <label key={c.value} className="choice flex items-start gap-3">
+                      <input type="radio" className="sr-only" name="condition" checked={condition === c.value} onChange={() => setCondition(c.value)} />
+                      <span className="choice-dot mt-0.5" aria-hidden />
+                      <span>
+                        <span className="block font-medium">{c.label}</span>
+                        <span className="mt-0.5 block text-sm text-subtle">{c.note}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </section>
+
+            <section aria-labelledby="copy-photos-heading">
+              <h2 id="copy-photos-heading" className="text-xl">
+                {PHOTOS_COPY.heading}
+              </h2>
+              <p className="mt-1 mb-4 text-sm text-subtle">{used ? PHOTOS_COPY.used : PHOTOS_COPY.new}</p>
+              <ListingPhotos value={copyPhotos} onChange={setCopyPhotos} onBusy={setPhotosBusy} />
+              <p className="mt-4 text-sm text-muted">{LISTING_RULES}</p>
+            </section>
+
+            <section className="space-y-5">
+              <h2 className="text-xl">Price</h2>
+              <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+                <Field label="Price" hint={guideHint}>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle">K</span>
+                    <input className="input pl-7 tabular-nums" type="number" inputMode="decimal" min={5} step="0.5" required value={price} onChange={(e) => setPrice(e.target.value)} />
+                  </div>
+                </Field>
+                <Field label="Copies">
+                  <input className="input tabular-nums" type="number" min={1} required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                </Field>
+              </div>
+              <OfferSettings value={offerSettings} onChange={setOfferSettings} />
+              <Field label="Note for buyers (optional)">
+                <textarea className="input" rows={2} maxLength={500} placeholder="Signed, highlighted, edition" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </Field>
+            </section>
+
+            {submit.error && <Alert>{submit.error}</Alert>}
+          </div>
+
+          {/* Desktop: the listing as buyers will see it, and what you take home. */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 space-y-5">
+              {sidebarBook}
+              <PayoutReceipt priceNgwee={priceNgwee} />
+              {publish}
             </div>
-          </fieldset>
-        </section>
+          </aside>
 
-        <section aria-labelledby="copy-photos-heading">
-          <h2 id="copy-photos-heading" className="text-xl">
-            {PHOTOS_COPY.heading}
-          </h2>
-          <p className="mt-1 mb-4 text-sm text-subtle">{used ? PHOTOS_COPY.used : PHOTOS_COPY.new}</p>
-          <ListingPhotos value={copyPhotos} onChange={setCopyPhotos} onBusy={setPhotosBusy} />
-          <p className="mt-4 text-sm text-muted">{LISTING_RULES}</p>
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-[1fr_140px]">
-          <Field label="Price" hint={guideHint}>
-            <div className="relative">
-              <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-subtle">K</span>
-              <input className="input pl-7 tabular-nums" type="number" inputMode="decimal" min={5} step="0.5" required value={price} onChange={(e) => setPrice(e.target.value)} />
+          <div className="glass-bar action-bar lg:hidden">
+            <div className="page flex items-center justify-between gap-4 py-3">
+              <div>
+                <p className="text-xs text-subtle">You get</p>
+                <p className="text-lg font-bold tracking-[-0.02em] tabular-nums">{formatMoney(priceNgwee - Math.round(priceNgwee * COMMISSION_RATE))}</p>
+              </div>
+              <div className="w-40">{publish}</div>
             </div>
-          </Field>
-          <Field label="Copies">
-            <input className="input tabular-nums" type="number" min={1} required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-          </Field>
-          <Field label="Note for buyers (optional)" className="sm:col-span-2">
-            <textarea className="input" rows={2} maxLength={500} placeholder="Signed, highlighted, edition" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </Field>
-          <div className="sm:col-span-2">
-            <OfferSettings value={offerSettings} onChange={setOfferSettings} />
           </div>
-        </section>
-
-        {submit.error && <Alert>{submit.error}</Alert>}
-      </div>
-
-      {/* Desktop: the listing as buyers will see it, and what you take home. */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-28 space-y-5">
-          <div className="mx-auto w-40">
-            <BookCover src={heading.coverUrl ?? cover?.preview ?? null} title={heading.title} author={heading.authorNames} className="shadow-lg" />
-          </div>
-          <div className="text-center">
-            <p className="line-clamp-2 font-bold">{heading.title}</p>
-            {heading.authorNames && <p className="line-clamp-1 text-sm text-muted">{heading.authorNames}</p>}
-            <p className="text-sm text-subtle">
-              {conditionLabel(condition)}
-              {priceNgwee > 0 && ` · ${formatMoney(priceNgwee)}`}
-            </p>
-          </div>
-          <PayoutReceipt priceNgwee={priceNgwee} />
-          {publish}
-        </div>
-      </aside>
-
-      <div className="glass-bar action-bar lg:hidden">
-        <div className="page flex items-center justify-between gap-4 py-3">
-          <div>
-            <p className="text-xs text-subtle">You get</p>
-            <p className="text-lg font-bold tracking-[-0.02em] tabular-nums">{formatMoney(priceNgwee - Math.round(priceNgwee * COMMISSION_RATE))}</p>
-          </div>
-          <div className="w-40">{publish}</div>
-        </div>
-      </div>
-    </form>
+        </form>
+      )}
+    </div>
   )
 }
 

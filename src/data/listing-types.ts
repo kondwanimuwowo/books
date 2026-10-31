@@ -73,6 +73,11 @@ export const CHILDREN_SECTIONS: string[] = LISTING_TABS.flatMap((t) => t.types).
 
 export const LISTING_TYPE_COPY = {
   heading: 'What are you listing?',
+  // One title per step of the sell form.
+  steps: ['What are you listing?', 'Which book?', 'About the book', 'Your copy'],
+  continue: 'Continue',
+  anotherBook: 'Another book',
+  aboutBook: 'About the book',
   soon: 'Soon',
   comingSoon: 'Coming soon',
   campusLine: 'Textbooks, study modules and past papers for colleges and universities. University books can go under Books until then.',

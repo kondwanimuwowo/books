@@ -24,8 +24,8 @@ export function RoleStep({ selected, onPick }: { selected: SellerKind | null; on
           aria-pressed={selected === kind}
           onClick={() => onPick(kind)}
           className={cn(
-            'rounded-xl p-5 text-left transition-[box-shadow,transform] duration-150 ease-out active:scale-[0.98]',
-            selected === kind ? 'bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-accent-ink)]' : 'bg-surface shadow-[inset_0_0_0_1px_var(--color-line)] hover:shadow-[inset_0_0_0_1px_var(--color-line-strong)]',
+            'rounded-xl p-5 text-left transition-[background-color,box-shadow,transform] duration-150 ease-out active:scale-[0.98]',
+            selected === kind ? 'bg-accent-soft shadow-[inset_0_0_0_2px_var(--color-accent-ink)]' : 'bg-sunken hover:bg-sunken-strong',
           )}
         >
           <span className="block text-lg font-bold">{KIND_COPY[kind].label}</span>

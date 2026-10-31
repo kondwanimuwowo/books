@@ -50,7 +50,7 @@ export function Select<V extends string>({ value, onChange, placeholder = 'Choos
     >
       <Base.Trigger aria-label={props['aria-label']} aria-labelledby={props['aria-label'] ? undefined : labelId} className={cn(TRIGGER[variant], className)}>
         <Base.Value placeholder={placeholder} className="min-w-0 truncate data-[placeholder]:text-subtle" />
-        <Base.Icon className="shrink-0 text-subtle">
+        <Base.Icon className="shrink-0 text-subtle transition-transform duration-200 ease-out [[data-popup-open]_&]:rotate-180">
           <ChevronDownIcon className="size-4" aria-hidden />
         </Base.Icon>
       </Base.Trigger>
@@ -81,7 +81,7 @@ function Item<V extends string>({ option }: { option: SelectOption<V> }) {
     <Base.Item
       value={option.value}
       label={option.label}
-      className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-[15px] text-ink outline-none select-none data-[highlighted]:bg-sunken data-[selected]:font-medium"
+      className="mx-1 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-[15px] text-ink outline-none select-none data-[highlighted]:bg-sunken data-[selected]:bg-accent-soft data-[selected]:font-medium data-[selected]:text-accent-ink"
     >
       <Base.ItemText className="min-w-0 flex-1">{option.label}</Base.ItemText>
       <Base.ItemIndicator className="shrink-0 text-accent-ink">
