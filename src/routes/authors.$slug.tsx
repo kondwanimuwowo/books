@@ -4,6 +4,7 @@ import { getAuthor } from '#/functions/catalog.functions'
 import { ogMeta } from '#/lib/og'
 import { Plaque, PlaqueMark } from '#/components/plaque'
 import { ShareOnWhatsApp } from '#/components/share'
+import { FollowButton } from '#/components/saved'
 import { SHARE_COPY } from '#/data/share'
 import { AUTHOR_LINKS, PLAQUE_COPY, topTier } from '#/data/tiers'
 import { CLAIM_COPY } from '#/data/claims'
@@ -68,6 +69,7 @@ function AuthorPage() {
             </div>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <FollowButton kind="author" slug={author.slug} name={author.name} />
             <ShareOnWhatsApp path={`/authors/${author.slug}`} text={SHARE_COPY.author({ name: author.name, books: author.books.length })} />
             {links.map((l) => (
               <a key={l.key} href={author.links[l.key]} target="_blank" rel="noopener noreferrer nofollow" className="text-sm">

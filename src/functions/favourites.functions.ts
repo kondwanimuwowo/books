@@ -1,18 +1,18 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getDb } from '#/db/client.server'
 import { requireUserMiddleware } from '#/server/auth'
-import { savedBooks, savedSlugs, setFavourite } from '#/server/favourites.server'
-import { setFavouriteSchema } from '#/schemas/favourites'
+import { savedKeys, savedPage, setSaved } from '#/server/favourites.server'
+import { setSavedSchema } from '#/schemas/favourites'
 
-export const getSavedSlugs = createServerFn({ method: 'GET' })
+export const getSavedKeys = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
-  .handler(({ context }) => savedSlugs(getDb(), context.user.id))
+  .handler(({ context }) => savedKeys(getDb(), context.user.id))
 
-export const saveBook = createServerFn({ method: 'POST' })
+export const saveOrFollow = createServerFn({ method: 'POST' })
   .middleware([requireUserMiddleware])
-  .validator(setFavouriteSchema)
-  .handler(({ data, context }) => setFavourite(getDb(), context.user.id, data))
+  .validator(setSavedSchema)
+  .handler(({ data, context }) => setSaved(getDb(), context.user.id, data))
 
-export const getSavedBooks = createServerFn({ method: 'GET' })
+export const getSaved = createServerFn({ method: 'GET' })
   .middleware([requireUserMiddleware])
-  .handler(({ context }) => savedBooks(getDb(), context.user.id))
+  .handler(({ context }) => savedPage(getDb(), context.user.id))

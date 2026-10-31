@@ -817,3 +817,29 @@ export const favourites = pgTable(
   },
   (t) => [primaryKey({ columns: [t.profileId, t.bookId] }), index('favourites_book_idx').on(t.bookId)],
 ).enableRLS()
+
+// Authors, shops and publishers a reader follows: exactly one of the three per row.
+export const follows = pgTable(
+  'follows',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').references(() => authors.id, { onDelete: 'cascade' }),
+    sellerId: uuid('seller_id').references(() => sellers.id, { onDelete: 'cascade' }),
+    publisherId: uuid('publisher_id').references(() => publishers.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // Nulls never clash in a unique index, so each pair is unique only where it's set.
+    uniqueIndex('follows_profile_author_key').on(t.profileId, t.authorId),
+    uniqueIndex('follows_profile_seller_key').on(t.profileId, t.sellerId),
+    uniqueIndex('follows_profile_publisher_key').on(t.profileId, t.publisherId),
+    // Finding the followers of one author, shop or publisher, for news of new books.
+    index('follows_author_idx').on(t.authorId),
+    index('follows_seller_idx').on(t.sellerId),
+    index('follows_publisher_idx').on(t.publisherId),
+    check('follows_one_target', sql`num_nonnulls(${t.authorId}, ${t.sellerId}, ${t.publisherId}) = 1`),
+  ],
+).enableRLS()

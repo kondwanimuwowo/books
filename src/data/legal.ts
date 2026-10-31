@@ -316,7 +316,7 @@ const privacy: LegalPage = {
             'For orders: the name, phone number, town and address for delivery, and what you bought.',
             'For sellers: shop details, photos, and the mobile money number and registered name you are paid to.',
             'For author verification: your legal name, a photo of your NRC or passport and a photo with your book, kept privately and deleted once we decide.',
-            'What you add: listings, photos of books, reviews, ratings, offers, messages and the books you save. Saved books are visible only to you.',
+            'What you add: listings, photos of books, reviews, ratings, offers, messages, the books you save and the authors, shops and publishers you follow. Only you can see what you save and follow.',
             'How the site is used, to keep it secure and working.',
           ],
         },

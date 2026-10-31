@@ -3,6 +3,7 @@ import { CalendarIcon, MapPinIcon, PlusIcon } from '@heroicons/react/16/solid'
 import { getSeller } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark } from '#/components/book'
 import { ShareOnWhatsApp } from '#/components/share'
+import { FollowButton } from '#/components/saved'
 import { SHARE_COPY } from '#/data/share'
 import { SELLER_KINDS } from '#/data/listing-options'
 import { cn, formatDate } from '#/lib/utils'
@@ -74,6 +75,7 @@ function SellerPage() {
             </Link>
           </>
         )}
+        {!mine && <FollowButton kind="seller" slug={seller.slug} name={seller.storeName} />}
         <ShareOnWhatsApp path={`/sellers/${seller.slug}`} text={SHARE_COPY.shop({ storeName: seller.storeName, inStock: seller.books.length })} />
       </div>
       <h2 className="mt-12 mb-6 text-xl">

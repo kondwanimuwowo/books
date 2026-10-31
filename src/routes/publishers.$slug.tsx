@@ -4,6 +4,7 @@ import { getPublisher } from '#/functions/catalog.functions'
 import { BookGrid, VerifiedMark, ZambianMark } from '#/components/book'
 import { CoverGridShapes, EmptyMessage, PageShapes, Placeholder } from '#/components/placeholder'
 import { PhotoFallback } from '#/components/photo-fallback'
+import { FollowButton } from '#/components/saved'
 
 export const Route = createFileRoute('/publishers/$slug')({
   pendingComponent: () => (
@@ -50,6 +51,9 @@ function PublisherPage() {
               )}
             </div>
           )}
+          <div className="mt-4">
+            <FollowButton kind="publisher" slug={publisher.slug} name={publisher.name} />
+          </div>
         </div>
       </div>
 
