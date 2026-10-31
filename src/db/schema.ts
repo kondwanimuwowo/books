@@ -802,3 +802,18 @@ export const aiRequests = pgTable(
   },
   (t) => [index('ai_requests_user_kind_idx').on(t.userId, t.kind, t.createdAt)],
 ).enableRLS()
+
+// Books a reader has saved with the heart. The book, not one copy: any seller's copy coming back or getting cheaper counts.
+export const favourites = pgTable(
+  'favourites',
+  {
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    bookId: uuid('book_id')
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.profileId, t.bookId] }), index('favourites_book_idx').on(t.bookId)],
+).enableRLS()

@@ -17,6 +17,7 @@ const REASONS: { prefix: string; reason: string }[] = [
   { prefix: '/sell', reason: 'to list your books' },
   { prefix: '/start-selling', reason: 'to start selling' },
   { prefix: '/account/offers', reason: 'to see your offers' },
+  { prefix: '/account/saved', reason: 'to see your saved books' },
   { prefix: '/account', reason: 'to see your orders' },
   { prefix: '/orders/', reason: 'to see your order' },
   { prefix: '/school-list', reason: 'to find the books on your list' },

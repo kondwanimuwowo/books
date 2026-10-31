@@ -5,6 +5,7 @@ import { ZAMBIA_FLAG } from '#/data/brand'
 import { cn } from '#/lib/utils'
 import { Price } from './providers'
 import { ScrollRow } from './scroll-row'
+import { SaveHeart } from './saved'
 
 // The shadow and spine are physical, not decoration: they make a cover read as a book you could pick up.
 export function BookCover({ src, title, author, className }: { src: string | null; title: string; author?: string | null; className?: string }) {
@@ -68,42 +69,46 @@ export interface BookCardData {
 }
 
 export function BookCard({ book, rank }: { book: BookCardData; rank?: number }) {
+  // The heart sits beside the link, not inside it: a button can't live inside a link.
   return (
-    <Link to="/books/$slug" params={{ slug: book.slug }} className="group relative block text-ink no-underline hover:text-ink">
-      <div className="lift-cover relative transition-transform duration-200 ease-out group-hover:-translate-y-1">
-        <BookCover src={book.coverUrl} title={book.title} author={book.authorNames} />
-        {/* Zambian authors: the flag in the cover's corner, in place of a label. */}
-        {book.isZambian && (
-          <img
-            src={ZAMBIA_FLAG.src}
-            alt={ZAMBIA_FLAG.label}
-            title={ZAMBIA_FLAG.label}
-            width={48}
-            height={48}
-            className="absolute right-1.5 bottom-1.5 aspect-square w-[clamp(1rem,13%,1.375rem)] rounded-full"
-          />
-        )}
-      </div>
-      {rank !== undefined && (
-        <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums">
-          {rank}
-        </span>
-      )}
-      <div className="mt-3 space-y-0.5">
-        <p className="line-clamp-2 font-display text-[16px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
-        {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
-        <p className="pt-1 text-sm">
-          {book.fromPriceNgwee !== null ? (
-            <>
-              <span className="text-muted">{book.offerCount > 1 ? 'From ' : ''}</span>
-              <Price ngwee={book.fromPriceNgwee} className="text-[15px] font-bold text-ink tabular-nums" />
-            </>
-          ) : (
-            <span className="text-muted">No copies listed yet</span>
+    <div className="group relative">
+      <Link to="/books/$slug" params={{ slug: book.slug }} className="block text-ink no-underline hover:text-ink">
+        <div className="lift-cover relative transition-transform duration-200 ease-out group-hover:-translate-y-1">
+          <BookCover src={book.coverUrl} title={book.title} author={book.authorNames} />
+          {/* Zambian authors: the flag in the cover's corner, in place of a label. */}
+          {book.isZambian && (
+            <img
+              src={ZAMBIA_FLAG.src}
+              alt={ZAMBIA_FLAG.label}
+              title={ZAMBIA_FLAG.label}
+              width={48}
+              height={48}
+              className="absolute right-1.5 bottom-1.5 aspect-square w-[clamp(1rem,13%,1.375rem)] rounded-full"
+            />
           )}
-        </p>
-      </div>
-    </Link>
+        </div>
+        {rank !== undefined && (
+          <span className="absolute -top-2 -left-2 flex size-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-on-accent tabular-nums">
+            {rank}
+          </span>
+        )}
+        <div className="mt-3 space-y-0.5">
+          <p className="line-clamp-2 font-display text-[16px] leading-snug font-bold tracking-[-0.01em]">{book.title}</p>
+          {book.authorNames && <p className="line-clamp-1 text-sm text-muted">{book.authorNames}</p>}
+          <p className="pt-1 text-sm">
+            {book.fromPriceNgwee !== null ? (
+              <>
+                <span className="text-muted">{book.offerCount > 1 ? 'From ' : ''}</span>
+                <Price ngwee={book.fromPriceNgwee} className="text-[15px] font-bold text-ink tabular-nums" />
+              </>
+            ) : (
+              <span className="text-muted">No copies listed yet</span>
+            )}
+          </p>
+        </div>
+      </Link>
+      <SaveHeart slug={book.slug} title={book.title} className="absolute top-1.5 right-1.5 size-8 duration-200 group-hover:-translate-y-1" />
+    </div>
   )
 }
 

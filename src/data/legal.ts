@@ -11,7 +11,7 @@ import { COOKIE_CATEGORIES, OPTIONAL_CATEGORIES } from './cookies'
 import { CARD_PAYMENTS, NETWORKS } from './payments'
 import { CONTACT } from './brand'
 
-export const LEGAL_UPDATED = '2026-10-28'
+export const LEGAL_UPDATED = '2026-10-31'
 /**
  * The version of the terms people tick to accept. Bump it only for a material change (new obligations, fees,
  * liability): everyone signed in is then asked to accept again. Wording and number fixes don't need it.
@@ -316,7 +316,7 @@ const privacy: LegalPage = {
             'For orders: the name, phone number, town and address for delivery, and what you bought.',
             'For sellers: shop details, photos, and the mobile money number and registered name you are paid to.',
             'For author verification: your legal name, a photo of your NRC or passport and a photo with your book, kept privately and deleted once we decide.',
-            'What you add: listings, photos of books, reviews, ratings, offers and messages.',
+            'What you add: listings, photos of books, reviews, ratings, offers, messages and the books you save. Saved books are visible only to you.',
             'How the site is used, to keep it secure and working.',
           ],
         },

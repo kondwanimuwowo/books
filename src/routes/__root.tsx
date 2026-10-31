@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getSiteContext } from '#/functions/catalog.functions'
 import { errorMessage } from '#/components/form'
 import { BagProvider, CurrencyProvider } from '#/components/providers'
+import { SavedProvider } from '#/components/saved'
 import { SiteFooter, SiteHeader } from '#/components/site-header'
 import { TabBar } from '#/components/tab-bar'
 import { TermsGate } from '#/components/terms-consent'
@@ -80,6 +81,7 @@ function RootLayout() {
     <CurrencyProvider initial={currency} rate={fx?.rate ?? null} rateDay={fx?.day ?? null}>
       <ServiceWorker />
       <BagProvider>
+        <SavedProvider signedIn={!!user}>
         {bare ? (
           <main>
             <OfflineBar />
@@ -98,6 +100,7 @@ function RootLayout() {
             <CookieNotice />
           </div>
         )}
+        </SavedProvider>
       </BagProvider>
     </CurrencyProvider>
   )

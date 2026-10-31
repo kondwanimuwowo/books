@@ -355,6 +355,33 @@
       transition: none;
     }
   }
+  /* The save heart: a press gives a little (the scale property, so it doesn't fight the card's lift), saving pops. */
+  .heart {
+    transition-property: translate, scale, color, background-color;
+    transition-timing-function: var(--ease-out);
+  }
+  .heart:active {
+    scale: 0.9;
+  }
+  .heart-pop {
+    animation: heart-pop 260ms var(--ease-out);
+  }
+  @keyframes heart-pop {
+    0% {
+      scale: 0.6;
+    }
+    60% {
+      scale: 1.12;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .heart-pop {
+      animation: none;
+    }
+  }
   /* A surface that sits on the canvas: hairline + a whisper of elevation. */
   .card {
     @apply rounded-xl bg-surface;

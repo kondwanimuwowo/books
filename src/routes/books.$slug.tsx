@@ -7,6 +7,7 @@ import { getBook } from '#/functions/catalog.functions'
 import { makeOffer } from '#/functions/offers.functions'
 import { Alert, useAction } from '#/components/form'
 import { BookCover, Shelf, VerifiedMark, ZambianMark } from '#/components/book'
+import { SaveHeart } from '#/components/saved'
 import { Price, useBag, useCurrency } from '#/components/providers'
 import { OFFER_REPLY_HOURS, PHOTOS_COPY, REPORT_COPY, REPORT_REASONS, conditionLabel, formatLabel } from '#/data/listing-options'
 import type { ReportReason } from '#/data/listing-options'
@@ -115,7 +116,10 @@ function BookPage() {
         />
 
         <div className="min-w-0">
-          <h1 className="text-3xl leading-[1.1] sm:text-4xl">{book.title}</h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-3xl leading-[1.1] sm:text-4xl">{book.title}</h1>
+            <SaveHeart slug={book.slug} title={book.title} className="size-10 shrink-0 bg-sunken hover:bg-sunken-strong" />
+          </div>
           {book.subtitle && <p className="mt-2 text-lg text-muted">{book.subtitle}</p>}
           {book.reviews.average !== null && (
             <a href="#reviews" className="mt-2 inline-flex no-underline">

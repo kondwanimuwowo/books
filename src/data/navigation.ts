@@ -5,6 +5,7 @@ import {
   BookOpenIcon,
   BuildingStorefrontIcon,
   Cog6ToothIcon,
+  HeartIcon,
   PencilSquareIcon,
   TagIcon,
 } from '@heroicons/react/16/solid'
@@ -88,6 +89,7 @@ export function accountNav(isSeller: boolean, isAuthor: boolean) {
   return [
     { to: '/account', label: 'Orders', exact: true, icon: ArchiveBoxIcon },
     { to: '/account/offers', label: 'Offers', exact: false, icon: TagIcon },
+    { to: '/account/saved', label: 'Saved', exact: false, icon: HeartIcon },
     ...(isSeller
       ? ([
           { to: '/account/sales', label: 'Sales', exact: false, icon: BanknotesIcon },
