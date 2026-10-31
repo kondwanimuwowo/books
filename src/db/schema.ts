@@ -144,6 +144,11 @@ export const profiles = pgTable('profiles', {
   // The terms version last accepted (see consents for the full record).
   termsVersion: text('terms_version'),
   termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  // When they turned on emails about saved books and follows; null is off. The token is for one-click unsubscribe.
+  alertsAt: timestamp('alerts_at', { withTimezone: true }),
+  alertsToken: text('alerts_token').unique(),
+  // The last evening's digest run that looked at them, so each member gets one email a day at most.
+  alertsSentAt: timestamp('alerts_sent_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS()
@@ -813,6 +818,8 @@ export const favourites = pgTable(
     bookId: uuid('book_id')
       .notNull()
       .references(() => books.id, { onDelete: 'cascade' }),
+    // The cheapest copy on sale when they last heard about it; null when none was. Alerts compare against it.
+    seenPriceNgwee: integer('seen_price_ngwee'),
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.profileId, t.bookId] }), index('favourites_book_idx').on(t.bookId)],
@@ -829,6 +836,8 @@ export const follows = pgTable(
     authorId: uuid('author_id').references(() => authors.id, { onDelete: 'cascade' }),
     sellerId: uuid('seller_id').references(() => sellers.id, { onDelete: 'cascade' }),
     publisherId: uuid('publisher_id').references(() => publishers.id, { onDelete: 'cascade' }),
+    // Listings after this are news to them.
+    seenAt: timestamp('seen_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: createdAt(),
   },
   (t) => [
@@ -842,4 +851,25 @@ export const follows = pgTable(
     index('follows_publisher_idx').on(t.publisherId),
     check('follows_one_target', sql`num_nonnulls(${t.authorId}, ${t.sellerId}, ${t.publisherId}) = 1`),
   ],
+).enableRLS()
+
+// Everyone on the newsletter, members or not. Ours is the record; Brevo's Readers list mirrors the confirmed ones.
+export const newsletterSubscribers = pgTable(
+  'newsletter_subscribers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull(),
+    profileId: uuid('profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+    firstName: text('first_name'),
+    // Where they signed up: footer, about, settings.
+    source: text('source').notNull(),
+    // Confirms the address and unsubscribes it; it can do nothing else, so it's stored as is.
+    token: text('token').notNull(),
+    consentedAt: timestamp('consented_at', { withTimezone: true }).notNull().defaultNow(),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('newsletter_email_key').on(sql`lower(${t.email})`), uniqueIndex('newsletter_token_key').on(t.token), index('newsletter_profile_idx').on(t.profileId)],
 ).enableRLS()

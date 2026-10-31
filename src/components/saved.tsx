@@ -5,6 +5,8 @@ import { HeartIcon } from '@heroicons/react/24/solid'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getSavedKeys, saveOrFollow } from '#/functions/favourites.functions'
+import { getEmailPrefs, saveEmailPref } from '#/functions/emails.functions'
+import { ALERTS_COPY } from '#/data/emails'
 import { SAVED_COPY } from '#/data/saved'
 import { SAVE_KINDS, savedKey } from '#/schemas/favourites'
 import type { SaveKind } from '#/schemas/favourites'
@@ -18,6 +20,8 @@ interface SavedContextValue {
 const SavedContext = createContext<SavedContextValue | null>(null)
 // A heart or Follow tapped while signed out, done once the person is back from signing in.
 const PENDING_KEY = 'kb_save_after_sign_in'
+// Set once the alerts prompt has been answered either way, so it never asks twice.
+const NUDGED_KEY = 'kb_alerts_nudged'
 
 function parseKey(key: string): [SaveKind, string] | null {
   const at = key.indexOf(':')
@@ -32,6 +36,22 @@ export function SavedProvider({ signedIn, children }: { signedIn: boolean; child
   const queues = useRef(new Map<string, Promise<unknown>>())
   const navigate = useNavigate()
   const href = useRouterState({ select: (s) => s.location.href })
+  const [nudge, setNudge] = useState<'ask' | 'done' | null>(null)
+  const nudgeChecked = useRef(false)
+
+  // After the first save or follow, offer alerts if they're off.
+  const maybeNudge = useCallback(() => {
+    if (nudgeChecked.current) return
+    nudgeChecked.current = true
+    try {
+      if (localStorage.getItem(NUDGED_KEY)) return
+    } catch {
+      return
+    }
+    getEmailPrefs()
+      .then((prefs) => !prefs.alerts && setNudge('ask'))
+      .catch(() => {})
+  }, [])
 
   const mark = useCallback((key: string, on: boolean) => {
     setSaved((prev) => {
@@ -46,11 +66,13 @@ export function SavedProvider({ signedIn, children }: { signedIn: boolean; child
     (kind: SaveKind, slug: string, on: boolean) => {
       const key = savedKey(kind, slug)
       const queued = (queues.current.get(key) ?? Promise.resolve()).then(() =>
-        saveOrFollow({ data: { kind, slug, saved: on } }).catch(() => mark(key, !on)),
+        saveOrFollow({ data: { kind, slug, saved: on } })
+          .then(() => on && maybeNudge())
+          .catch(() => mark(key, !on)),
       )
       queues.current.set(key, queued)
     },
-    [mark],
+    [mark, maybeNudge],
   )
 
   useEffect(() => {
@@ -94,7 +116,50 @@ export function SavedProvider({ signedIn, children }: { signedIn: boolean; child
     [saved, signedIn, navigate, href, mark, persist],
   )
 
-  return <SavedContext.Provider value={value}>{children}</SavedContext.Provider>
+  const answer = (on: boolean) => {
+    try {
+      localStorage.setItem(NUDGED_KEY, '1')
+    } catch {
+      // Storage blocked: it may ask again next visit.
+    }
+    if (!on) return setNudge(null)
+    setNudge('done')
+    saveEmailPref({ data: { list: 'alerts', on: true } }).catch(() => setNudge('ask'))
+  }
+
+  return (
+    <SavedContext.Provider value={value}>
+      {children}
+      {nudge && <AlertsNudge state={nudge} onAnswer={answer} onClose={() => setNudge(null)} />}
+    </SavedContext.Provider>
+  )
+}
+
+function AlertsNudge({ state, onAnswer, onClose }: { state: 'ask' | 'done'; onAnswer: (on: boolean) => void; onClose: () => void }) {
+  useEffect(() => {
+    if (state !== 'done') return
+    const timer = setTimeout(onClose, 4000)
+    return () => clearTimeout(timer)
+  }, [state, onClose])
+  return (
+    <div role="status" className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-xl border border-line bg-surface p-4 shadow-lg sm:right-6 sm:left-auto sm:mx-0">
+      {state === 'done' ? (
+        <p className="text-sm">{ALERTS_COPY.nudgeDone}</p>
+      ) : (
+        <>
+          <p className="text-sm">{ALERTS_COPY.nudge}</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onAnswer(true)}>
+              {ALERTS_COPY.nudgeOn}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAnswer(false)}>
+              {ALERTS_COPY.nudgeDismiss}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 export function useSaved() {

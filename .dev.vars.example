@@ -12,4 +12,7 @@ LENCO_WEBHOOK_HASH_KEY=
 LENCO_PAYOUT_ACCOUNT_ID=
 GOOGLE_BOOKS_API_KEY=
 RESEND_API_KEY=
+# Alerts and the newsletter (Brevo). Without the key, sends are logged and skipped.
+BREVO_API_KEY=
+BREVO_WEBHOOK_KEY=
 EMAIL_FROM=Kuwala Books <orders@kuwalabooks.com>

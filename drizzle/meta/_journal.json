@@ -211,6 +211,20 @@
       "when": 1793409090490,
       "tag": "0029_follows",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793418414975,
+      "tag": "0030_email_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793418892865,
+      "tag": "0031_alerts_sent_at",
+      "breakpoints": true
     }
   ]
 }

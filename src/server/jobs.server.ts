@@ -12,6 +12,7 @@ import { notifyLapsed } from './offers.server'
 import { snapshotChart } from './chart.server'
 import { awardPlaques } from './tiers.server'
 import { remindToRate } from './reminders.server'
+import { sendAlertDigests } from './alerts.server'
 
 // Runs from the Worker's cron trigger (see src/server.ts and wrangler.jsonc).
 const BATCH = 50
@@ -139,7 +140,7 @@ async function summariseBooks(db: Db) {
   })
 }
 
-const JOBS = { remindToShip, cancelUnshipped, settleRefunds, releaseOverdue, settleStalePayments, reconcilePayouts, weeklyPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate }
+const JOBS = { remindToShip, cancelUnshipped, settleRefunds, releaseOverdue, settleStalePayments, reconcilePayouts, weeklyPayouts, expireOffers, snapshotChart, mirrorCovers, summariseBooks, awardPlaques, remindToRate, sendAlertDigests }
 
 export async function runScheduledJobs(db: Db) {
   for (const [name, job] of Object.entries(JOBS)) {

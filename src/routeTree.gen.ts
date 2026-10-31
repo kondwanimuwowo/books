@@ -25,6 +25,7 @@ import { Route as SellOnKuwalaRouteImport } from './routes/sell-on-kuwala'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as Top20RouteImport } from './routes/top-20'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedCheckoutRouteImport } from './routes/_authed/checkout'
@@ -33,6 +34,7 @@ import { Route as AuthedStartSellingRouteImport } from './routes/_authed/start-s
 import { Route as AdminFilesKeyRouteImport } from './routes/admin-files.$key'
 import { Route as AdminShellRouteImport } from './routes/admin/_shell'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthorsIndexRouteImport } from './routes/authors.index'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
@@ -40,6 +42,7 @@ import { Route as BooksSlugRouteImport } from './routes/books.$slug'
 import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as CoversKeyRouteImport } from './routes/covers.$key'
 import { Route as LegalPageRouteImport } from './routes/legal.$page'
+import { Route as NewsletterConfirmRouteImport } from './routes/newsletter/confirm'
 import { Route as PublishersIndexRouteImport } from './routes/publishers.index'
 import { Route as PublishersSlugRouteImport } from './routes/publishers.$slug'
 import { Route as SellersSlugRouteImport } from './routes/sellers.$slug'
@@ -64,6 +67,7 @@ import { Route as AdminShellReportsRouteImport } from './routes/admin/_shell/rep
 import { Route as AdminShellReviewsRouteImport } from './routes/admin/_shell/reviews'
 import { Route as AdminShellSellersRouteImport } from './routes/admin/_shell/sellers'
 import { Route as AdminShellVerificationRouteImport } from './routes/admin/_shell/verification'
+import { Route as ApiWebhooksBrevoRouteImport } from './routes/api/webhooks/brevo'
 import { Route as ApiWebhooksLencoRouteImport } from './routes/api/webhooks/lenco'
 import { Route as AdminShellDraftsIndexRouteImport } from './routes/admin/_shell/drafts.index'
 import { Route as AdminShellDraftsIdRouteImport } from './routes/admin/_shell/drafts.$id'
@@ -147,6 +151,11 @@ const Top20Route = Top20RouteImport.update({
   path: '/top-20',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
@@ -186,6 +195,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
+  id: '/api/unsubscribe',
+  path: '/api/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -219,6 +233,11 @@ const CoversKeyRoute = CoversKeyRouteImport.update({
 const LegalPageRoute = LegalPageRouteImport.update({
   id: '/legal/$page',
   path: '/legal/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsletterConfirmRoute = NewsletterConfirmRouteImport.update({
+  id: '/newsletter/confirm',
+  path: '/newsletter/confirm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublishersIndexRoute = PublishersIndexRouteImport.update({
@@ -341,6 +360,11 @@ const AdminShellVerificationRoute = AdminShellVerificationRouteImport.update({
   path: '/verification',
   getParentRoute: () => AdminShellRoute,
 } as any)
+const ApiWebhooksBrevoRoute = ApiWebhooksBrevoRouteImport.update({
+  id: '/api/webhooks/brevo',
+  path: '/api/webhooks/brevo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksLencoRoute = ApiWebhooksLencoRouteImport.update({
   id: '/api/webhooks/lenco',
   path: '/api/webhooks/lenco',
@@ -373,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
+  '/unsubscribe': typeof UnsubscribeRoute
   '/welcome': typeof WelcomeRoute
   '/account': typeof AuthedAccountRouteWithChildren
   '/checkout': typeof AuthedCheckoutRoute
@@ -380,12 +405,14 @@ export interface FileRoutesByFullPath {
   '/start-selling': typeof AuthedStartSellingRoute
   '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/login': typeof AdminLoginRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/legal/$page': typeof LegalPageRoute
+  '/newsletter/confirm': typeof NewsletterConfirmRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors/': typeof AuthorsIndexRoute
@@ -409,6 +436,7 @@ export interface FileRoutesByFullPath {
   '/admin/reviews': typeof AdminShellReviewsRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/admin/verification': typeof AdminShellVerificationRoute
+  '/api/webhooks/brevo': typeof ApiWebhooksBrevoRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/admin/': typeof AdminShellIndexRoute
@@ -431,18 +459,21 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
+  '/unsubscribe': typeof UnsubscribeRoute
   '/welcome': typeof WelcomeRoute
   '/checkout': typeof AuthedCheckoutRoute
   '/sell': typeof AuthedSellRoute
   '/start-selling': typeof AuthedStartSellingRoute
   '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/login': typeof AdminLoginRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/legal/$page': typeof LegalPageRoute
+  '/newsletter/confirm': typeof NewsletterConfirmRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors': typeof AuthorsIndexRoute
@@ -466,6 +497,7 @@ export interface FileRoutesByTo {
   '/admin/reviews': typeof AdminShellReviewsRoute
   '/admin/sellers': typeof AdminShellSellersRoute
   '/admin/verification': typeof AdminShellVerificationRoute
+  '/api/webhooks/brevo': typeof ApiWebhooksBrevoRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/account': typeof AuthedAccountIndexRoute
   '/admin/drafts/$id': typeof AdminShellDraftsIdRoute
@@ -489,6 +521,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/top-20': typeof Top20Route
+  '/unsubscribe': typeof UnsubscribeRoute
   '/welcome': typeof WelcomeRoute
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/checkout': typeof AuthedCheckoutRoute
@@ -497,12 +530,14 @@ export interface FileRoutesById {
   '/admin-files/$key': typeof AdminFilesKeyRoute
   '/admin/_shell': typeof AdminShellRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/authors/$slug': typeof AuthorsSlugRoute
   '/books/$slug': typeof BooksSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/covers/$key': typeof CoversKeyRoute
   '/legal/$page': typeof LegalPageRoute
+  '/newsletter/confirm': typeof NewsletterConfirmRoute
   '/publishers/$slug': typeof PublishersSlugRoute
   '/sellers/$slug': typeof SellersSlugRoute
   '/authors/': typeof AuthorsIndexRoute
@@ -526,6 +561,7 @@ export interface FileRoutesById {
   '/admin/_shell/reviews': typeof AdminShellReviewsRoute
   '/admin/_shell/sellers': typeof AdminShellSellersRoute
   '/admin/_shell/verification': typeof AdminShellVerificationRoute
+  '/api/webhooks/brevo': typeof ApiWebhooksBrevoRoute
   '/api/webhooks/lenco': typeof ApiWebhooksLencoRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/admin/_shell/': typeof AdminShellIndexRoute
@@ -550,6 +586,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/top-20'
+    | '/unsubscribe'
     | '/welcome'
     | '/account'
     | '/checkout'
@@ -557,12 +594,14 @@ export interface FileRouteTypes {
     | '/start-selling'
     | '/admin-files/$key'
     | '/admin/login'
+    | '/api/unsubscribe'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
     | '/legal/$page'
+    | '/newsletter/confirm'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors/'
@@ -586,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/sellers'
     | '/admin/verification'
+    | '/api/webhooks/brevo'
     | '/api/webhooks/lenco'
     | '/account/'
     | '/admin/'
@@ -608,18 +648,21 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/top-20'
+    | '/unsubscribe'
     | '/welcome'
     | '/checkout'
     | '/sell'
     | '/start-selling'
     | '/admin-files/$key'
     | '/admin/login'
+    | '/api/unsubscribe'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
     | '/legal/$page'
+    | '/newsletter/confirm'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors'
@@ -643,6 +686,7 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/sellers'
     | '/admin/verification'
+    | '/api/webhooks/brevo'
     | '/api/webhooks/lenco'
     | '/account'
     | '/admin/drafts/$id'
@@ -665,6 +709,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/terms'
     | '/top-20'
+    | '/unsubscribe'
     | '/welcome'
     | '/_authed/account'
     | '/_authed/checkout'
@@ -673,12 +718,14 @@ export interface FileRouteTypes {
     | '/admin-files/$key'
     | '/admin/_shell'
     | '/admin/login'
+    | '/api/unsubscribe'
     | '/auth/callback'
     | '/authors/$slug'
     | '/books/$slug'
     | '/claim/$token'
     | '/covers/$key'
     | '/legal/$page'
+    | '/newsletter/confirm'
     | '/publishers/$slug'
     | '/sellers/$slug'
     | '/authors/'
@@ -702,6 +749,7 @@ export interface FileRouteTypes {
     | '/admin/_shell/reviews'
     | '/admin/_shell/sellers'
     | '/admin/_shell/verification'
+    | '/api/webhooks/brevo'
     | '/api/webhooks/lenco'
     | '/_authed/account/'
     | '/admin/_shell/'
@@ -726,18 +774,22 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   Top20Route: typeof Top20Route
+  UnsubscribeRoute: typeof UnsubscribeRoute
   WelcomeRoute: typeof WelcomeRoute
   AdminFilesKeyRoute: typeof AdminFilesKeyRoute
+  ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
   BooksSlugRoute: typeof BooksSlugRoute
   ClaimTokenRoute: typeof ClaimTokenRoute
   CoversKeyRoute: typeof CoversKeyRoute
   LegalPageRoute: typeof LegalPageRoute
+  NewsletterConfirmRoute: typeof NewsletterConfirmRoute
   PublishersSlugRoute: typeof PublishersSlugRoute
   SellersSlugRoute: typeof SellersSlugRoute
   AuthorsIndexRoute: typeof AuthorsIndexRoute
   PublishersIndexRoute: typeof PublishersIndexRoute
+  ApiWebhooksBrevoRoute: typeof ApiWebhooksBrevoRoute
   ApiWebhooksLencoRoute: typeof ApiWebhooksLencoRoute
 }
 
@@ -855,6 +907,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Top20RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/welcome': {
       id: '/welcome'
       path: '/welcome'
@@ -911,6 +970,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/unsubscribe': {
+      id: '/api/unsubscribe'
+      path: '/api/unsubscribe'
+      fullPath: '/api/unsubscribe'
+      preLoaderRoute: typeof ApiUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -958,6 +1024,13 @@ declare module '@tanstack/react-router' {
       path: '/legal/$page'
       fullPath: '/legal/$page'
       preLoaderRoute: typeof LegalPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/newsletter/confirm': {
+      id: '/newsletter/confirm'
+      path: '/newsletter/confirm'
+      fullPath: '/newsletter/confirm'
+      preLoaderRoute: typeof NewsletterConfirmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publishers/': {
@@ -1128,6 +1201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminShellVerificationRouteImport
       parentRoute: typeof AdminShellRoute
     }
+    '/api/webhooks/brevo': {
+      id: '/api/webhooks/brevo'
+      path: '/api/webhooks/brevo'
+      fullPath: '/api/webhooks/brevo'
+      preLoaderRoute: typeof ApiWebhooksBrevoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/lenco': {
       id: '/api/webhooks/lenco'
       path: '/api/webhooks/lenco'
@@ -1264,18 +1344,22 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   Top20Route: Top20Route,
+  UnsubscribeRoute: UnsubscribeRoute,
   WelcomeRoute: WelcomeRoute,
   AdminFilesKeyRoute: AdminFilesKeyRoute,
+  ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
   BooksSlugRoute: BooksSlugRoute,
   ClaimTokenRoute: ClaimTokenRoute,
   CoversKeyRoute: CoversKeyRoute,
   LegalPageRoute: LegalPageRoute,
+  NewsletterConfirmRoute: NewsletterConfirmRoute,
   PublishersSlugRoute: PublishersSlugRoute,
   SellersSlugRoute: SellersSlugRoute,
   AuthorsIndexRoute: AuthorsIndexRoute,
   PublishersIndexRoute: PublishersIndexRoute,
+  ApiWebhooksBrevoRoute: ApiWebhooksBrevoRoute,
   ApiWebhooksLencoRoute: ApiWebhooksLencoRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "alerts_sent_at" timestamp with time zone;

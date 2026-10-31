@@ -136,7 +136,7 @@ function CookieIcon({ className }: { className?: string }) {
   )
 }
 
-function Switch({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+export function Switch({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
   return (
     <button
       type="button"

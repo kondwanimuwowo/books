@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ChevronRightIcon, EnvelopeIcon } from '@heroicons/react/16/solid'
 import { getCoverWall } from '#/functions/catalog.functions'
+import { NewsletterForm } from '#/components/newsletter'
 import { ClosingBand, Feature, MarketingHero, ON_BAND_BUTTON, Points } from '#/components/marketing'
 import { ABOUT_PAGE as PAGE, ILLUSTRATIONS } from '#/data/marketing'
 import { ogMeta } from '#/lib/og'
@@ -71,6 +72,7 @@ function About() {
               {PAGE.contact.whatsapp.label}
             </a>
           </div>
+          <NewsletterForm source="about" className="mx-auto mt-12 max-w-sm text-left" />
         </section>
       </div>
 

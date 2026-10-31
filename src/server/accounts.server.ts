@@ -8,6 +8,7 @@ import type { SessionUser } from './auth'
 import { sendEmail } from './email.server'
 import { AppError } from './errors.server'
 import { deletePrivate } from './private-files.server'
+import { forgetSubscriber } from './newsletter.server'
 
 const count = sql<number>`count(*)::int`
 // A payment prompt older than this has long since failed or settled.
@@ -90,6 +91,7 @@ export async function deleteAccount(db: Db, user: SessionUser, confirmEmail: str
   await Promise.allSettled([
     coverKeys.length ? env.COVERS.delete(coverKeys) : null,
     deletePrivate(documents.flatMap((d) => d.documents.map((doc) => doc.key))),
+    forgetSubscriber(db, user.email),
     // The account is gone, so this goes to their address directly rather than through notify().
     sendEmail({ to: user.email, subject: DELETE_ACCOUNT_COPY.emailSubject, lines: DELETE_ACCOUNT_COPY.emailLines }),
   ])

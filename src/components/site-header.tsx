@@ -17,6 +17,7 @@ import { cn } from '#/lib/utils'
 import { useBag, useCurrency } from './providers'
 import { PhotoFallback } from './photo-fallback'
 import { Wordmark } from './wordmark'
+import { NewsletterForm } from '#/components/newsletter'
 import { Segmented } from './segmented'
 
 interface HeaderUser {
@@ -492,6 +493,7 @@ export function SiteFooter() {
               {FOOTER_COPY.facebook}
             </a>
           </address>
+          <NewsletterForm source="footer" tone="band" className="mt-8" />
         </div>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3">

@@ -9,6 +9,7 @@ export const DELETE_ACCOUNT_COPY = {
     'Your sign-in, name, email, phone and saved addresses',
     'Your shop, listings, offers and shop photo',
     'Verification documents, if you sent any',
+    'Your saved books, follows and email choices, including the newsletter',
   ],
   keeps: 'Orders and payments stay in our records without your account, as the law requires. Your book reviews stay up as from a former member.',
   blocked: 'Finish these first:',

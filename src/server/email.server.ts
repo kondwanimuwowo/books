@@ -7,13 +7,15 @@ export interface Message {
   subject: string
   lines: string[]
   action?: { label: string; path: string }
+  // Alerts and the newsletter: the link that turns them off, shown in the footer.
+  unsubscribe?: { label: string; path: string }
 }
 
 export function escapeHtml(text: string) {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 }
 
-function render({ lines, action }: Message) {
+export function render({ lines, action, unsubscribe }: Message) {
   const body = lines.map((l) => `<p style="margin:0 0 12px">${l}</p>`).join('')
   const button = action
     ? `<p style="margin:20px 0"><a href="${env.APP_ORIGIN}${action.path}" style="background:#722F37;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">${action.label}</a></p>`
@@ -21,7 +23,7 @@ function render({ lines, action }: Message) {
   // A white page, so the wordmark and text read the same in clients that default to a dark background.
   return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#2A1E17;background:#ffffff;max-width:520px;padding:24px">
 <p style="margin:0 0 20px"><img src="${env.APP_ORIGIN}/brand/wordmark.png" width="160" height="20" alt="Kuwala Books" style="display:block;border:0"></p>${body}${button}
-<p style="margin-top:28px;font-size:13px;color:#776453">Kuwala Books, Zambia's book marketplace</p></div>`
+<p style="margin-top:28px;font-size:13px;color:#776453">Kuwala Books, Zambia's book marketplace${unsubscribe ? ` · <a href="${env.APP_ORIGIN}${unsubscribe.path}" style="color:#776453">${unsubscribe.label}</a>` : ''}</p></div>`
 }
 
 /** The team's own inbox: the address part of EMAIL_FROM. */

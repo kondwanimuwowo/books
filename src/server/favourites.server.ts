@@ -4,6 +4,7 @@ import { authors, books, favourites, follows, publishers, sellers } from '#/db/s
 import { savedKey } from '#/schemas/favourites'
 import type { SaveKind, SetSavedInput } from '#/schemas/favourites'
 import { cardColumns, offersSubquery } from './catalog.server'
+import { cheapestFor } from './alerts.server'
 import { NotFoundError } from './errors.server'
 
 type FollowKind = Exclude<SaveKind, 'book'>
@@ -33,7 +34,8 @@ async function targetId(db: Db, kind: SaveKind, slug: string) {
 export async function setSaved(db: Db, profileId: string, input: SetSavedInput) {
   const id = await targetId(db, input.kind, input.slug)
   if (input.kind === 'book') {
-    if (input.saved) await db.insert(favourites).values({ profileId, bookId: id }).onConflictDoNothing()
+    // Alerts compare against the price when it was saved.
+    if (input.saved) await db.insert(favourites).values({ profileId, bookId: id, seenPriceNgwee: cheapestFor(id, profileId) }).onConflictDoNothing()
     else await db.delete(favourites).where(and(eq(favourites.profileId, profileId), eq(favourites.bookId, id)))
   } else {
     const target = { author: { authorId: id }, seller: { sellerId: id }, publisher: { publisherId: id } }[input.kind]

@@ -17,5 +17,11 @@ declare namespace Cloudflare {
     ANTHROPIC_API_KEY?: string
     RESEND_API_KEY?: string
     EMAIL_FROM: string
+    // Brevo sends alerts and the newsletter from the news subdomain; Resend keeps orders and accounts.
+    BREVO_API_KEY?: string
+    NEWS_FROM: string
+    BREVO_LIST_ID?: string
+    BREVO_WEBHOOK_KEY?: string
+    SIGNUP_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> }
   }
 }
