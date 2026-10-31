@@ -18,7 +18,7 @@ import { deletePrivate } from '#/server/private-files.server'
 import { uniqueSlug } from '#/server/catalog.server'
 import { completeOrderIfSettled, loadDeliveryRates, releaseToSeller } from '#/server/orders.server'
 import { payOutSeller } from '#/server/payouts.server'
-import { refundParcel } from '#/server/refunds.server'
+import { notifyRefund, refundParcel } from '#/server/refunds.server'
 import { CLAIM_WINDOW_DAYS } from '#/data/fulfilment'
 import { AppError } from '#/server/errors.server'
 
@@ -183,19 +183,20 @@ export const resolveDispute = createServerFn({ method: 'POST' })
       await completeOrderIfSettled(db, part.orderId)
     }
 
-    const orderLink = `${env.APP_ORIGIN}/orders/${part.orderNumber}`
     const refunded = data.outcome === 'refund'
+    const store = escapeHtml(part.storeName)
+    const note = escapeHtml(data.note)
     await Promise.all([
       notify('orders', {
         to: part.buyerEmail,
         subject: `Update on your problem report for order ${part.orderNumber}`,
         lines: [
           refunded
-            ? `We've refunded ${formatMoney(part.refundNgwee)} for the books from ${part.storeName}.`
-            : `We've looked into your report about the books from ${part.storeName} and released the payment to the seller.`,
-          data.note,
-          orderLink,
+            ? `We’re refunding ${formatMoney(part.refundNgwee)} for the books from ${store}. We’ll email you when it’s sent.`
+            : `We’ve looked into your report about the books from ${store} and released the payment to the seller.`,
+          note,
         ],
+        action: { label: 'Your order', path: `/orders/${part.orderNumber}` },
       }),
       notify('selling', {
         to: part.sellerEmail,
@@ -204,8 +205,9 @@ export const resolveDispute = createServerFn({ method: 'POST' })
           refunded
             ? 'The buyer has been refunded, so this sale will not be paid out.'
             : `The payment of ${formatMoney(part.payoutNgwee)} has been released to you.`,
-          data.note,
+          note,
         ],
+        action: { label: 'Your sales', path: '/account/sales' },
       }),
     ])
     return { ok: true }
@@ -674,5 +676,6 @@ export const markRefundDone = createServerFn({ method: 'POST' })
       .where(and(eq(refunds.id, data.id), inArray(refunds.status, ['manual', 'failed'])))
       .returning({ id: refunds.id })
     if (!row) throw new AppError('This refund isn’t waiting on you')
+    await notifyRefund(getDb(), row.id, 'done')
     return { ok: true }
   })

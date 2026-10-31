@@ -46,6 +46,24 @@ export const NOTIFY_COPY = {
     lines: (amount: string, phone: string) => [`We’ve sent ${amount} to ${phone}. It should show on your phone shortly.`],
     action: 'Your sales',
   },
+  payoutFailed: {
+    subject: (amount: string) => `We couldn’t send your ${amount}`,
+    lines: (amount: string, phone: string) => [
+      `Your payout of ${amount} to ${phone} didn’t go through. The money is safe in your balance and we’ll try again.`,
+      'If that number is wrong or no longer has mobile money, update it in Your shop.',
+    ],
+    action: 'Check your number',
+  },
+  refund: {
+    subject: (outcome: 'paid' | 'manual' | 'done', number: string) => (outcome === 'manual' ? `Your refund for order ${number} is delayed` : `Refunded: order ${number}`),
+    lines: (outcome: 'paid' | 'manual' | 'done', amount: string, to: string) =>
+      outcome === 'paid'
+        ? [`${amount} has been sent back to ${to}. It should show on your phone shortly.`]
+        : outcome === 'manual'
+          ? [`We couldn’t send ${amount} back to ${to} automatically, so the team is sending it by hand. We’ll email you when it’s done.`]
+          : [`We’ve sent your refund of ${amount}. A card refund can take a few days to show.`],
+    action: 'Your order',
+  },
   offerWithdrawn: {
     subject: (title: string) => `Offer withdrawn: ${title}`,
     lines: (title: string) => [`The buyer withdrew their offer on ${title}. Your copy stays on sale.`],

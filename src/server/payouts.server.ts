@@ -103,6 +103,26 @@ async function settle(db: Db, payoutId: string, status: 'paid' | 'failed' | 'pro
   if (status === 'paid') await db.update(sellerOrders).set({ payoutStatus: 'paid' }).where(eq(sellerOrders.payoutId, payoutId))
   if (status === 'failed') await giveBack(db, payoutId)
   if (status === 'paid' && before?.status !== 'paid' && payout?.sellerId) await notifyPayoutSent(db, payout.sellerId, payout.amountNgwee)
+  if (status === 'failed' && before?.status !== 'failed' && payout?.sellerId) await notifyPayoutFailed(db, payoutId, payout.sellerId, payout.amountNgwee)
+}
+
+async function notifyPayoutFailed(db: Db, payoutId: string, sellerId: string, amountNgwee: number) {
+  const [recent] = await db
+    .select({ id: payouts.id })
+    .from(payouts)
+    .where(and(eq(payouts.sellerId, sellerId), eq(payouts.status, 'failed'), sql`${payouts.id} <> ${payoutId}`, sql`${payouts.createdAt} > now() - interval '1 day'`))
+    .limit(1)
+  if (recent) return
+  const [seller] = await db
+    .select({ email: profiles.email, phone: sellers.payoutPhone })
+    .from(sellers)
+    .innerJoin(profiles, eq(profiles.id, sellers.profileId))
+    .where(eq(sellers.id, sellerId))
+    .limit(1)
+  if (!seller) return
+  const copy = NOTIFY_COPY.payoutFailed
+  const amount = formatMoney(amountNgwee)
+  await notify('selling', { to: seller.email, subject: copy.subject(amount), lines: copy.lines(amount, seller.phone ?? 'your phone'), action: { label: copy.action, path: '/account/shop' } })
 }
 
 async function notifyPayoutSent(db: Db, sellerId: string, amountNgwee: number) {

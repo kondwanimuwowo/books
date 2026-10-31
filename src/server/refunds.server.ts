@@ -1,9 +1,11 @@
 import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm'
 import type { Db } from '#/db/client.server'
 import { listings, orderItems, orders, payments, profiles, refunds, sellerOrders, sellers } from '#/db/schema'
-import { FULFILMENT_COPY, MAX_REFUND_ATTEMPTS, SHIP_REMINDER_HOUR, SHIP_REMINDER_MIN_HOURS, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
+import { FULFILMENT_COPY, MAX_REFUND_ATTEMPTS, REFUND_COPY, SHIP_REMINDER_HOUR, SHIP_REMINDER_MIN_HOURS, SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { formatMoney, ngweeToAmount } from '#/lib/money'
 import { randomCode } from '#/lib/utils'
+import { NOTIFY_COPY } from '#/data/notifications'
+import { escapeHtml } from './email.server'
 import { notify } from './notify.server'
 import { createMobileMoneyRecipient, getTransferStatus, initiateMobileMoneyTransfer } from './lenco.server'
 import { completeOrderIfSettled } from './orders.server'
@@ -60,6 +62,7 @@ export async function sendRefund(db: Db, refundId: string) {
     const transfer = await initiateMobileMoneyTransfer({ recipientId: recipient.id, amount: ngweeToAmount(refund.amountNgwee), reference, narration: 'Kuwala Books refund' })
     const status = transfer.status === 'successful' ? 'paid' : transfer.status === 'failed' ? 'failed' : 'processing'
     await db.update(refunds).set({ status, lencoReference: transfer.lencoReference, failureReason: transfer.reasonForFailure ?? null }).where(eq(refunds.id, refundId))
+    if (status === 'paid') await notifyRefund(db, refundId, 'paid')
   } catch (error) {
     console.error('Refund failed', refundId, error)
     await db.update(refunds).set({ status: 'failed', failureReason: String(error) }).where(eq(refunds.id, refundId))
@@ -76,17 +79,43 @@ export async function settleRefunds(db: Db) {
   for (const r of open) {
     const transfer = await getTransferStatus(r.reference).catch(() => null)
     if (!transfer || transfer.status === 'pending') continue
-    await db
+    const status = transfer.status === 'successful' ? 'paid' : 'failed'
+    const [moved] = await db
       .update(refunds)
-      .set({ status: transfer.status === 'successful' ? 'paid' : 'failed', lencoReference: transfer.lencoReference, failureReason: transfer.reasonForFailure ?? null })
-      .where(eq(refunds.id, r.id))
+      .set({ status, lencoReference: transfer.lencoReference, failureReason: transfer.reasonForFailure ?? null })
+      .where(and(eq(refunds.id, r.id), eq(refunds.status, 'processing')))
+      .returning({ id: refunds.id })
+    if (moved && status === 'paid') await notifyRefund(db, r.id, 'paid')
   }
   const failed = await db.select({ id: refunds.id, attempts: refunds.attempts }).from(refunds).where(eq(refunds.status, 'failed')).limit(BATCH)
   for (const r of failed) {
-    if (r.attempts >= MAX_REFUND_ATTEMPTS) await db.update(refunds).set({ status: 'manual' }).where(eq(refunds.id, r.id))
-    else await sendRefund(db, r.id)
+    if (r.attempts >= MAX_REFUND_ATTEMPTS) {
+      const [moved] = await db.update(refunds).set({ status: 'manual' }).where(and(eq(refunds.id, r.id), eq(refunds.status, 'failed'))).returning({ id: refunds.id })
+      if (moved) await notifyRefund(db, r.id, 'manual')
+    } else await sendRefund(db, r.id)
   }
   return open.length + failed.length
+}
+
+/** Tells the buyer their refund reached them, or that automatic tries failed and the team is sending it. */
+export async function notifyRefund(db: Db, refundId: string, outcome: 'paid' | 'manual' | 'done') {
+  const [row] = await db
+    .select({ amountNgwee: refunds.amountNgwee, phone: refunds.phone, number: orders.number, email: profiles.email })
+    .from(refunds)
+    .innerJoin(sellerOrders, eq(sellerOrders.id, refunds.sellerOrderId))
+    .innerJoin(orders, eq(orders.id, sellerOrders.orderId))
+    .innerJoin(profiles, eq(profiles.id, orders.buyerId))
+    .where(eq(refunds.id, refundId))
+    .limit(1)
+  if (!row) return
+  const copy = NOTIFY_COPY.refund
+  const amount = formatMoney(row.amountNgwee)
+  await notify('orders', {
+    to: row.email,
+    subject: copy.subject(outcome, row.number),
+    lines: copy.lines(outcome, amount, REFUND_COPY.number(row.phone?.slice(-3) ?? null)),
+    action: { label: copy.action, path: `/orders/${row.number}` },
+  })
 }
 
 const LUSAKA_OFFSET_HOURS = 2
@@ -113,7 +142,7 @@ export async function remindToShip(db: Db) {
   for (const row of due) {
     const deadline = new Date(new Date(row.paid_at).getTime() + SHIP_WITHIN_DAYS * 86_400_000)
     const daysLeft = Math.max(1, Math.ceil((deadline.getTime() - Date.now()) / 86_400_000))
-    const day = deadline.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+    const day = deadline.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Lusaka' })
     await notify('selling', { to: row.email, subject: FULFILMENT_COPY.reminderSubject(row.number, daysLeft), lines: [...FULFILMENT_COPY.reminderLines(day, daysLeft)], action: { label: 'Your sales', path: '/account/sales' } })
   }
   return due.length
@@ -156,7 +185,7 @@ export async function cancelUnshipped(db: Db) {
       await notify('orders', {
         to: who.buyerEmail,
         subject: FULFILMENT_COPY.cancelledBuyerSubject(who.number),
-        lines: [...FULFILMENT_COPY.cancelledBuyerLines(who.store, formatMoney(refund.amountNgwee), refund.automatic)],
+        lines: [...FULFILMENT_COPY.cancelledBuyerLines(escapeHtml(who.store), formatMoney(refund.amountNgwee), refund.automatic)],
         action: { label: 'Your order', path: `/orders/${who.number}` },
       })
     }

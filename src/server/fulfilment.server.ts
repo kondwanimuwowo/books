@@ -159,7 +159,7 @@ export async function reportBuyerProblem(db: Db, user: SessionUser, sellerOrderI
   await sendEmail({
     to: teamInbox(),
     subject: 'A buyer reported a problem with an order',
-    lines: [`Buyer ${user.email} reported a problem:`, note, `Resolve it at ${env.APP_ORIGIN}/admin`],
+    lines: [`Buyer ${escapeHtml(user.email)} reported a problem:`, escapeHtml(note), `Resolve it at ${env.APP_ORIGIN}/admin`],
   })
   // The seller hears straight away and has a window to give their side.
   const [seller] = await db
@@ -267,7 +267,7 @@ export async function shipSellerOrder(db: Db, seller: Seller, input: MarkShipped
   await notify('orders', {
     to: buyer.email,
     subject: `${seller.storeName} has shipped part of ${buyer.number}`,
-    lines: [`Delivery details from the seller: ${input.trackingNote}`, 'When the books arrive, confirm delivery so the seller gets paid.'],
+    lines: [`Delivery details from the seller: ${escapeHtml(input.trackingNote)}`, 'When the books arrive, confirm delivery so the seller gets paid.'],
     action: { label: 'Track your order', path: `/orders/${buyer.number}` },
   })
   return { ok: true }

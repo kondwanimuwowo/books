@@ -8,6 +8,7 @@ import { formatMoney } from '#/lib/money'
 import { SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { randomCode } from '#/lib/utils'
 import { getCollectionStatus, isPendingStatus } from './lenco.server'
+import { escapeHtml } from './email.server'
 import { notify } from './notify.server'
 import { notifySoldElsewhere } from './offers.server'
 import { AppError } from './errors.server'
@@ -294,7 +295,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
       to: order.email,
       subject: `Order ${order.number} confirmed`,
       lines: [
-        `Hi ${order.name},`,
+        `Hi ${escapeHtml(order.name)},`,
         `We have received your payment of ${formatMoney(order.totalNgwee)} for order ${order.number}.`,
         'Your money is held safely until you confirm the books have arrived. Each seller will ship their part and update you here.',
       ],
@@ -305,7 +306,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
         to: s.email,
         subject: `New order ${order.number}`,
         lines: [
-          `Good news, ${s.storeName}: a buyer has paid for books from your shop.`,
+          `Good news, ${escapeHtml(s.storeName)}: a buyer has paid for books from your shop.`,
           `Please ship by ${shipByDay} (within ${SHIP_WITHIN_DAYS} days). You will receive ${formatMoney(s.payoutNgwee)} once the buyer confirms delivery.`,
         ],
         action: { label: 'See what to ship', path: '/account/sales' },
