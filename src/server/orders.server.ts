@@ -5,6 +5,7 @@ import { AUTO_RELEASE_DAYS, shippingOptions, PICKUP_RELEASE_DAYS } from '#/data/
 import type { DeliveryRate, ShippingMethod } from '#/data/shipping'
 import { COMMISSION_RATE } from '#/data/listing-options'
 import { formatMoney } from '#/lib/money'
+import { SHIP_WITHIN_DAYS } from '#/data/fulfilment'
 import { randomCode } from '#/lib/utils'
 import { getCollectionStatus, isPendingStatus } from './lenco.server'
 import { notify } from './notify.server'
@@ -286,6 +287,8 @@ async function sendPaidEmails(db: Db, orderId: string) {
     .innerJoin(profiles, eq(profiles.id, sellers.profileId))
     .where(eq(sellerOrders.orderId, orderId))
 
+  // The same deadline the cancellation job enforces: the payment, just now, plus SHIP_WITHIN_DAYS.
+  const shipByDay = new Date(Date.now() + SHIP_WITHIN_DAYS * 86_400_000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Lusaka' })
   await Promise.all([
     notify('orders', {
       to: order.email,
@@ -303,7 +306,7 @@ async function sendPaidEmails(db: Db, orderId: string) {
         subject: `New order ${order.number}`,
         lines: [
           `Good news, ${s.storeName}: a buyer has paid for books from your shop.`,
-          `Please ship within 3 days. You will receive ${formatMoney(s.payoutNgwee)} once the buyer confirms delivery.`,
+          `Please ship by ${shipByDay} (within ${SHIP_WITHIN_DAYS} days). You will receive ${formatMoney(s.payoutNgwee)} once the buyer confirms delivery.`,
         ],
         action: { label: 'See what to ship', path: '/account/sales' },
       }),
