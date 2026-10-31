@@ -216,9 +216,10 @@ export const ABOUT_PAGE = {
   },
   storyHeading: 'Why Kuwala',
   story: [
-    'Zambia is full of stories: told on verandas, written by local authors, printed in small runs and sold by hand.',
-    'Too many of those books never travel far from where they were printed, and good used books sit on shelves while someone else goes looking for them.',
-    'Kuwala Books puts them in one place, so a reader in Mongu can find a book written in Kitwe and have it sent to them.',
+    'Kuwala started with one book, found through an Instagram ad. The link led to a seller on WhatsApp, who agreed to send it with a delivery rider and be paid once it arrived.',
+    'The rider handed the book over and rode off without checking that the money had been sent. It was. But the seller had no way of knowing it would be, and a dishonest buyer could have switched off their phone and kept the book. When buyers pay first, it’s the other way round: they’re the ones left hoping.',
+    'So Kuwala Books sits in the middle. The buyer pays first and we hold the money. The seller sends knowing it’s there, and it’s released to them once the books arrive. Neither side has to trust a stranger.',
+    'Zambia is full of stories too: written by local authors, printed in small runs and sold by hand. We wanted them in one place, so a reader in Mongu can find a book written in Kitwe and have it sent to them.',
   ],
   whatHeading: 'What we do',
   what: [
